@@ -1,0 +1,6 @@
+{
+  "name": "Dad's Burger - Cardápio Digital & Delivery",
+  "description": "Cardápio digital responsivo com pedidos via WhatsApp, reserva de mesas e painel para o estabelecimento.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

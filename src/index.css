@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --brand: #FAB309;
+    --brand-dark: #D69700;
+    --brand-text: #121212;
+    --btn: #121212;
+    --btn-text: #FFFFFF;
+    --ink: #121212;
+    --muted: #6B635B;
+    --cream: #F4EFEB;
+    --card: #FFFFFF;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+}
+
+/* Custom scrollbars & smooth horizontal scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Glass effect */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(20px) saturate(190%) brightness(1.05);
+  backdrop-filter: blur(20px) saturate(190%) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 16px 36px rgba(18, 18, 18, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+.dark-glass {
+  background: rgba(18, 18, 18, 0.88);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+}
