@@ -1,0 +1,6 @@
+{
+  "summary": "Plano de implementação para a subpágina de administração em `/admin`, projetada especificamente para telas de computador (desktop), com proteção por senha, layout de lista densa e painel lateral de comanda, e sistema de alarme sonoro contínuo que toca sem parar até ser desligado.",
+  "updatedAt": "2026-11-06T03:53:04.471263602Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

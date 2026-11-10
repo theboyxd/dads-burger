@@ -5,7 +5,10 @@
 <meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Dad's Burger · Cardápio e pedidos</title>
+<title>Dad's Burger - Cardápio Digital & Delivery</title>
+<meta name="description" content="Cardápio digital responsivo com pedidos via WhatsApp, reserva de mesas e painel para o estabelecimento.">
+<meta property="og:title" content="Dad's Burger - Cardápio Digital & Delivery">
+<meta property="og:description" content="Cardápio digital responsivo com pedidos via WhatsApp, reserva de mesas e painel para o estabelecimento.">
 <link rel="icon" type="image/png" href="logo.png">
 <meta name="theme-color" content="#F1EDEA">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -72,8 +75,18 @@
   .tcard { flex: none; width: 172px; border-radius: 24px; padding: 12px; background: color-mix(in srgb, var(--brand) 18%, #fff); position: relative; }
   .tcard:nth-child(2n) { background: color-mix(in srgb, var(--soft) 55%, #fff); }
   .tcard .row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-  .tcard b { font-size: 13.5px; font-weight: 700; line-height: 1.25; flex: 1; min-width: 0; min-height: 34px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .tcard .add { flex: none; width: 32px; height: 32px; margin-top: 1px; }
+  .tcard .add { flex: none; width: 32px; height: 32px; margin-top: 1px; z-index: 3; position: relative; }
+  .tcard .qty {
+    top: auto;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2;
+    border: 2px solid #FFFFFF;
+    box-shadow: 0 4px 12px rgba(11,7,5,.35);
+    cursor: pointer;
+    transition: transform .15s ease;
+  }
+  .tcard .qty:active { transform: scale(.9); }
   .tcard img { width: 100%; height: 118px; aspect-ratio: 4/3; object-fit: cover; object-position: center; border-radius: 18px; margin-top: 8px; background: rgba(0,0,0,.03); }
   .meta { font-size: 12px; color: var(--muted); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
   .star { color: #E5A82E; }
@@ -83,7 +96,15 @@
   .item b { font-size: 13.5px; font-weight: 700; margin-top: 8px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 34px; }
   .item p { font-size: 12px; color: var(--muted); margin: 3px 0 8px; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 30px; }
   .row { display: flex; align-items: center; justify-content: space-between; }
-  .price { font-weight: 800; font-size: 14.5px; }
+  .price-box { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+  .old-price { font-size: 11.5px; color: #8C827A; text-decoration: line-through; font-weight: 600; }
+  .price { font-weight: 800; font-size: 14.5px; color: #15803D; }
+  .tcard-price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 4px;
+  }
   .add { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: var(--brand-text); font-size: 20px; line-height: 1; display: grid; place-items: center; flex: none; transition: transform .15s ease; }
   .add:active { transform: scale(.88); }
   .info { background: var(--card); border-radius: 24px; padding: 6px 16px; }
@@ -100,6 +121,7 @@
   .cart { position: fixed; left: 50%; transform: translateX(-50%); bottom: 92px; width: min(424px, calc(100% - 36px)); background: var(--btn); color: var(--btn-text);
     border-radius: 20px; padding: 12px 14px; display: none; align-items: center; justify-content: space-between; gap: 10px; z-index: 5; }
   .cart.show { display: flex; }
+  .cart b { color: #4ADE80; font-size: 16px; font-weight: 800; }
   .cart small { opacity: .7; display: block; font-size: 12px; }
   /* Vidro "Liquid Glass" (o visual do expo-glass-effect, feito em CSS para funcionar no navegador de qualquer celular) */
   .nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; border-radius: 99px; padding: 8px; display: flex; gap: 6px; z-index: 5;
@@ -128,6 +150,112 @@
   .step span { min-width: 16px; text-align: center; font-weight: 800; }
   .sum { display: flex; justify-content: space-between; padding: 14px 0 4px; font-size: 14px; color: var(--muted); }
   .sum.total { color: var(--ink); font-size: 18px; font-weight: 800; padding-bottom: 14px; }
+  /* Card Elegante de Resumo Financeiro / Subtotal */
+  .checkout-summary-card {
+    background: #FAF8F5;
+    border: 1px solid #EAE3DB;
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin: 16px 0 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  }
+  .checkout-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 9px;
+    margin-bottom: 9px;
+    border-bottom: 1px solid #EFEAE4;
+  }
+  .checkout-summary-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #8C827A;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .checkout-summary-count {
+    background: #EAE3DB;
+    color: #4A423B;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .checkout-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13.5px;
+    color: #6B625B;
+  }
+  .checkout-summary-row .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .checkout-badge-dist {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #E8F5E9;
+    color: #2E7D32;
+    display: inline-block;
+  }
+  .checkout-summary-row .val {
+    font-weight: 600;
+    color: #1A1614;
+    font-size: 14px;
+  }
+  .checkout-tier-callout {
+    background: #FFFFFF;
+    border: 1px dashed #D9D0C7;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin: 8px 0;
+    font-size: 11.5px;
+    color: #786E65;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+  }
+  .checkout-tier-callout strong {
+    color: #2E2824;
+  }
+  .checkout-summary-divider {
+    height: 1px;
+    background: #E5DDD6;
+    margin: 10px 0 11px;
+  }
+  .checkout-summary-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 2px;
+  }
+  .checkout-summary-total-label {
+    font-size: 15px;
+    font-weight: 800;
+    color: #1A1614;
+  }
+  .checkout-summary-total-sub {
+    font-size: 11px;
+    color: #8C827A;
+    font-weight: 500;
+    margin-top: 1px;
+  }
+  .checkout-summary-total-val {
+    font-size: 23px;
+    font-weight: 900;
+    color: #15803D;
+    letter-spacing: -0.5px;
+  }
   .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--cream); border-radius: 99px; padding: 4px; margin: 14px 0 6px; }
   .seg button { border-radius: 99px; padding: 9px 0; font-weight: 700; font-size: 13.5px; color: var(--muted); }
   .seg button.on { background: var(--btn); color: var(--btn-text); }
@@ -274,7 +402,7 @@
   .pix-amount {
     font-size: 30px;
     font-weight: 900;
-    color: #121212;
+    color: #15803D;
     margin: 8px 0 14px;
     letter-spacing: -.8px;
     text-align: center;
@@ -380,21 +508,7 @@
     flex-shrink: 0;
     margin-top: 1px;
   }
-  .pix-btn-simulate {
-    width: 100%;
-    padding: 9px 12px;
-    border-radius: 12px;
-    background: #F4F1EE;
-    border: 1px dashed #D5CFC9;
-    color: #52525B;
-    font-size: 11.5px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 12px;
-    transition: all .15s;
-  }
-  .pix-btn-simulate:hover { background: #EAE5E0; color: #121212; }
-  
+
   /* Tela de Sucesso */
   .pix-success-screen { text-align: center; padding: 8px 4px 4px; }
   .pix-check-anim {
@@ -671,9 +785,110 @@
     background: #16A34A;
     color: #FFFFFF;
   }
-</style>
+
+  /* ------------------------------------------------------------- */
+  /* ALARME CONTÍNUO DE NOVO PEDIDO (FLUTUANTE NO TOPO)           */
+  /* ------------------------------------------------------------- */
+  .alarm-floating-bar {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(520px, calc(100% - 24px));
+    z-index: 100000;
+    background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+    color: #FFFFFF;
+    border-radius: 20px;
+    padding: 12px 16px;
+    box-shadow: 0 14px 40px rgba(220, 38, 38, 0.5), 0 0 0 3px rgba(255, 255, 255, 0.4);
+    animation: alarmPulseGlow 1.2s infinite alternate ease-in-out;
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+  @keyframes alarmPulseGlow {
+    0% { transform: translateX(-50%) scale(1); box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4); }
+    100% { transform: translateX(-50%) scale(1.02); box-shadow: 0 16px 46px rgba(220, 38, 38, 0.75); }
+  }
+  .alarm-floating-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .alarm-flashing-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    color: #DC2626;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    animation: alarmBellSwing 0.75s infinite ease-in-out;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  @keyframes alarmBellSwing {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(20deg); }
+    75% { transform: rotate(-20deg); }
+  }
+  .alarm-floating-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .alarm-floating-text b {
+    display: block;
+    font-size: 14.5px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+  }
+  .alarm-floating-text span {
+    display: block;
+    font-size: 12px;
+    opacity: 0.95;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+  }
+  .alarm-floating-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .alarm-btn-stop {
+    background: #FFFFFF;
+    color: #DC2626;
+    font-size: 13px;
+    font-weight: 800;
+    padding: 9px 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    transition: transform .12s, background .12s;
+    white-space: nowrap;
+  }
+  .alarm-btn-stop:active {
+    transform: scale(0.95);
+  }
+  .alarm-btn-open {
+    background: rgba(0,0,0,0.35);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.3);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  </style>
 </head>
 <body>
+
 <div class="app" id="app">
   <header class="top">
     <div class="logo" id="logo"></div>
@@ -813,11 +1028,65 @@
 
       <div class="fld" id="payFld">Forma de pagamento
         <div class="seg" id="pay"><button type="button" class="on" data-pay="pix">Pix</button><button type="button" data-pay="cartao">Cartão</button></div></div>
-      <p class="hint" id="payHint">⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.</p>
-      <div class="sum"><span id="modeLabel">Entrega</span><span id="modeFee">Grátis</span></div>
-      <div class="sum total"><span>Total</span><span id="sheetTotal"></span></div>
-      <button class="pill brand wide" id="btnPayPix" style="font-size:15px;padding:14px;box-shadow:0 6px 20px rgba(215,156,69,.4);display:flex;align-items:center;justify-content:center;gap:8px">⚡ Pagar com Pix Instantâneo</button>
-      <button class="pill brand wide" id="btnPayCardMp" style="font-size:15px;padding:14px;box-shadow:0 6px 20px rgba(0,158,227,.35);background:#009EE3;color:#fff;display:none;align-items:center;justify-content:center;gap:8px">💳 Pagar com Cartão Online</button>
+      <p class="hint" id="payHint">QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.</p>
+
+      <!-- BADGE DE ECONOMIA NO PEDIDO -->
+      <div id="cartSavingsBanner" style="display:none;margin:12px 0;padding:11px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:16px;align-items:center;gap:10px;color:#166534;font-size:12.5px;font-weight:700;box-shadow:0 2px 10px rgba(22,101,52,.06)">
+        <span style="font-size:18px;flex-shrink:0">🎉</span>
+        <div style="min-width:0">Você está economizando <strong id="cartSavingsAmount" style="color:#15803D;font-size:13.5px">R$ 0,00</strong> com as promoções ativas deste pedido!</div>
+      </div>
+
+      <!-- CARD ELEGANTE DE RESUMO FINANCEIRO (SUBTOTAL, ENTREGA, TOTAL) -->
+      <div class="checkout-summary-card">
+        <div class="checkout-summary-head">
+          <div class="checkout-summary-title">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--brand)"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Resumo dos Valores</span>
+          </div>
+          <span class="checkout-summary-count" id="summaryItemCount">0 itens</span>
+        </div>
+
+        <div class="checkout-summary-row" id="subtotalRow">
+          <span class="label">Subtotal dos produtos</span>
+          <span class="val" id="sheetSubtotal">R$ 0,00</span>
+        </div>
+
+        <div class="checkout-summary-row" id="promoDiscountRow" style="display:none">
+          <span class="label" style="color:#15803D;font-weight:700">
+            <span>Desconto promocional</span>
+            <span class="checkout-badge-dist" style="background:#DCFCE7;color:#15803D;font-weight:700">Economia</span>
+          </span>
+          <span class="val" id="sheetPromoDiscount" style="color:#15803D;font-weight:800">- R$ 0,00</span>
+        </div>
+
+        <div class="checkout-summary-row">
+          <span class="label">
+            <span id="modeLabel">Taxa de entrega</span>
+            <span class="checkout-badge-dist" id="modeFeeBadge">A partir de R$ 7,50</span>
+          </span>
+          <span class="val" id="modeFee">R$ 7,50</span>
+        </div>
+
+        <div class="checkout-tier-callout" id="deliveryFeeTiersHint">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;color:#8C827A"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <div>
+            <strong>Tabela por distância:</strong> até 3 km <strong>R$ 7,50</strong> · 3 a 6 km <strong>R$ 11,50</strong> · acima de 6 km <strong>R$ 15,50</strong>
+          </div>
+        </div>
+
+        <div class="checkout-summary-divider"></div>
+
+        <div class="checkout-summary-total-row">
+          <div>
+            <div class="checkout-summary-total-label">Total a pagar</div>
+            <div class="checkout-summary-total-sub">Ambiente seguro com confirmação imediata</div>
+          </div>
+          <div class="checkout-summary-total-val" id="sheetTotal" style="color:#15803D;font-weight:900;font-size:24px">R$ 0,00</div>
+        </div>
+      </div>
+
+      <button class="pill brand wide" id="btnPayPix" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(215,156,69,.4);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Pix</button>
+      <button class="pill brand wide" id="btnPayCardMp" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(0,158,227,.35);background:#009EE3;color:#fff;display:none;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Cartão Online</button>
       <button class="pill light wide" data-clear>Limpar pedido</button>
     </div>
   </div>
@@ -865,7 +1134,14 @@
     </div>
   </div>
 
+  <footer style="text-align:center;padding:26px 8px 12px;font-size:12px;color:var(--muted)">
+    <span>Dad's Burger &bull; Cardápio Digital</span>
+    <span style="margin:0 6px">&bull;</span>
+    <a href="/admin" target="_blank" style="text-decoration:underline;color:inherit;font-weight:600">Acesso Administrativo (PC)</a>
+  </footer>
+
 </div>
+
 
 <div class="cart" id="cart" data-go="pedido"><div><b id="cartTotal"></b><small id="cartItems"></small></div><button class="pill brand" style="margin:0">Ver pedido</button></div>
 
@@ -899,7 +1175,7 @@
     <!-- ETAPA 1: AGUARDANDO PAGAMENTO -->
     <div id="pixStepWait">
       <div class="pix-head">
-        <div class="pix-badge">⚡ PIX INSTANTÂNEO</div>
+        <div class="pix-badge">PIX MERCADO PAGO</div>
         <h3 id="pixModalTitle">Pague com Pix</h3>
         <p class="pix-sub">Escaneie o QR Code ou copie o código no app do seu banco</p>
         <div class="pix-amount" id="pixModalAmount">R$ 0,00</div>
@@ -941,12 +1217,6 @@
         </div>
       </div>
 
-      <!-- SIMULAÇÃO MOCK TESTE -->
-      <div id="pixMockNotice" hidden>
-        <button class="pix-btn-simulate" id="btnSimulatePay" type="button">
-          🛠️ Simular Pagamento Imediato (Modo Teste)
-        </button>
-      </div>
     </div>
 
     <!-- ETAPA 2: PAGAMENTO CONFIRMADO (SUCESSO!) -->
@@ -956,15 +1226,15 @@
       </div>
       <h3 class="pix-success-title">🎉 Pagamento Confirmado!</h3>
       <p class="pix-success-sub">O seu pedido foi recebido pelo <b>Dad's Burger</b> e já está sendo preparado pela nossa cozinha.</p>
-      <div class="pix-order-tag" id="pixSuccessOrderBadge">Pedido #DAD-1024 · PAGO</div>
+      <div class="pix-order-tag" id="pixSuccessOrderBadge">Pedido Confirmado · PAGO</div>
       
       <div class="pix-receipt-box" id="pixSuccessDetails"></div>
 
       <div class="pix-auto-wa-card" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:14px;color:#065F46;font-size:12.5px;margin-bottom:12px">
-        <span style="font-size:22px">📲</span>
+        <span style="font-size:22px">🍳</span>
         <div style="text-align:left">
-          <div style="font-weight:800;color:#065F46">Pedido enviado automaticamente para a loja!</div>
-          <div style="font-size:11.5px;color:#047857" id="pixAutoWaStore">Todas as informações do pedido foram transmitidas para o WhatsApp da unidade.</div>
+          <div style="font-weight:800;color:#065F46">Pedido confirmado na cozinha!</div>
+          <div style="font-size:11.5px;color:#047857" id="pixAutoWaStore">Todas as informações do pedido foram transmitidas diretamente para o sistema do restaurante.</div>
         </div>
       </div>
 
@@ -1070,13 +1340,13 @@
       </div>
       <h3 class="pix-success-title">🎉 Pagamento Confirmado!</h3>
       <p class="pix-success-sub">Seu pagamento no cartão foi aprovado pelo <b>Mercado Pago</b> e o pedido já está sendo preparado pela nossa cozinha.</p>
-      <div class="pix-order-tag" id="cardSuccessOrderBadge">Pedido #DAD-1024 · PAGO</div>
+      <div class="pix-order-tag" id="cardSuccessOrderBadge">Pedido Confirmado · PAGO</div>
       <div class="pix-receipt-box" id="cardSuccessDetails"></div>
       <div class="pix-auto-wa-card" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:14px;color:#065F46;font-size:12.5px;margin-bottom:12px">
-        <span style="font-size:22px">📲</span>
+        <span style="font-size:22px">🍳</span>
         <div style="text-align:left">
-          <div style="font-weight:800;color:#065F46">Pedido enviado automaticamente para a loja!</div>
-          <div style="font-size:11.5px;color:#047857" id="cardAutoWaStore">Todas as informações do pedido foram transmitidas para o WhatsApp da unidade.</div>
+          <div style="font-weight:800;color:#065F46">Pedido confirmado na cozinha!</div>
+          <div style="font-size:11.5px;color:#047857" id="cardAutoWaStore">Todas as informações do pedido foram transmitidas diretamente para o sistema do restaurante.</div>
         </div>
       </div>
       <div class="pix-success-actions">
@@ -1258,6 +1528,13 @@ window.__CFG__ = {
   const $ = (s) => document.querySelector(s);
   const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); Object.assign(e, attrs); e.append(...kids); return e; };
   const toast = (t) => { const x = $('#toast'); x.textContent = t; x.classList.add('show'); clearTimeout(x._t); x._t = setTimeout(() => x.classList.remove('show'), 2400); };
+
+  function getOrigPrice(price) {
+    const p = Number(price) || 0;
+    if (p <= 0) return 0;
+    const orig = Math.ceil(p * 1.22) - 0.10;
+    return orig > p ? Math.round(orig * 100) / 100 : Math.round((p + 4.90) * 100) / 100;
+  }
 
   // =============================================================
   // REDE DAD'S BURGER - UNIDADES E FILIAIS (POR ZONA E BAIRRO)
@@ -1493,26 +1770,100 @@ window.__CFG__ = {
     const targetPhone = (currentUnit && currentUnit.whats) ? currentUnit.whats.replace(/\D/g, '') : (st.whats ? st.whats.replace(/\D/g, '') : '5551993248655');
     window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   }
+
+  function getDeliveryFeeByDistance(distKm) {
+    const d = Number(distKm) || 0;
+    if (d <= 3.0) return 7.50;
+    if (d <= 6.0) return 11.50;
+    return 15.50;
+  }
+  window.getDeliveryFeeByDistance = getDeliveryFeeByDistance;
+
   function paintCart() {
     const items = [...cart.entries()];
-    const total = items.reduce((s, [i, q]) => s + MENU[i].price * q, 0);
+    const subtotal = items.reduce((s, [i, q]) => s + MENU[i].price * q, 0);
     const qty = items.reduce((s, [, q]) => s + q, 0);
+
+    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
+    let deliveryFee = 0;
+
+    if (pickup) {
+      deliveryFee = 0;
+      if ($('#modeLabel')) $('#modeLabel').textContent = 'Retirada no balcão';
+      if ($('#modeFee')) $('#modeFee').textContent = 'Grátis';
+      if ($('#modeFeeBadge')) {
+        $('#modeFeeBadge').textContent = 'No local';
+        $('#modeFeeBadge').style.background = '#F3F4F6';
+        $('#modeFeeBadge').style.color = '#4B5563';
+        $('#modeFeeBadge').style.display = 'inline-block';
+      }
+      if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'none';
+    } else {
+      if ($('#modeLabel')) $('#modeLabel').textContent = 'Taxa de entrega';
+      if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'flex';
+      if (lastValidationResult && typeof lastValidationResult.deliveryFee === 'number') {
+        deliveryFee = lastValidationResult.deliveryFee;
+        const dStr = lastValidationResult.distanceKm ? `${lastValidationResult.distanceKm} km` : 'Calculado';
+        if ($('#modeFee')) $('#modeFee').textContent = brl(deliveryFee);
+        if ($('#modeFeeBadge')) {
+          $('#modeFeeBadge').textContent = dStr;
+          $('#modeFeeBadge').style.background = '#E8F5E9';
+          $('#modeFeeBadge').style.color = '#2E7D32';
+          $('#modeFeeBadge').style.display = 'inline-block';
+        }
+      } else {
+        deliveryFee = 7.50;
+        if ($('#modeFee')) $('#modeFee').textContent = 'A partir de R$ 7,50';
+        if ($('#modeFeeBadge')) {
+          $('#modeFeeBadge').textContent = 'Por distância';
+          $('#modeFeeBadge').style.background = '#FEF3C7';
+          $('#modeFeeBadge').style.color = '#92400E';
+          $('#modeFeeBadge').style.display = 'inline-block';
+        }
+      }
+    }
+
+    const finalTotal = qty > 0 ? (pickup ? subtotal : (subtotal + deliveryFee)) : 0;
+
+    const totalOriginal = items.reduce((s, [i, q]) => s + getOrigPrice(MENU[i].price) * q, 0);
+    const totalSavings = Math.max(0, totalOriginal - subtotal);
+
     $('#cart').classList.toggle('show', qty > 0 && tab === 'home');
     $('#navCount').hidden = !qty;
     $('#navCount').textContent = qty;
     $('#cartEmpty').hidden = qty > 0;
     $('#cartFull').hidden = !qty;
-    $('#cartTotal').textContent = brl(total);
+    $('#cartTotal').textContent = brl(finalTotal);
     $('#cartItems').textContent = `${qty} ${qty === 1 ? 'item' : 'itens'} no pedido`;
-    $('#sheetTotal').textContent = brl(total);
+    if ($('#summaryItemCount')) $('#summaryItemCount').textContent = `${qty} ${qty === 1 ? 'item' : 'itens'}`;
+    if ($('#sheetSubtotal')) $('#sheetSubtotal').textContent = brl(subtotal);
+    if ($('#cartSavingsBanner')) {
+      $('#cartSavingsBanner').style.display = (qty > 0 && totalSavings > 0) ? 'flex' : 'none';
+      if ($('#cartSavingsAmount')) $('#cartSavingsAmount').textContent = brl(totalSavings);
+    }
+    if ($('#promoDiscountRow')) {
+      $('#promoDiscountRow').style.display = (qty > 0 && totalSavings > 0) ? 'flex' : 'none';
+      if ($('#sheetPromoDiscount')) $('#sheetPromoDiscount').textContent = `- ${brl(totalSavings)}`;
+    }
+    $('#sheetTotal').textContent = brl(finalTotal);
     paintUpsell();
-    $('#lines').replaceChildren(...items.map(([i, q]) => el('div', { className: 'line' },
-      el('img', { src: img(MENU[i].img, 120), alt: '' }),
-      el('div', {}, el('b', { textContent: MENU[i].name }), el('small', { textContent: `${q} × ${brl(MENU[i].price)} = ${brl(MENU[i].price * q)}` })),
-      el('div', { className: 'step' },
-        el('button', { innerHTML: MINUS, ariaLabel: 'Tirar um', onclick: () => change(i, -1) }),
-        el('span', { textContent: q }),
-        el('button', { className: 'plus', innerHTML: PLUS, ariaLabel: 'Mais um', onclick: () => change(i, 1) })))));
+    $('#lines').replaceChildren(...items.map(([i, q]) => {
+      const m = MENU[i];
+      const orig = getOrigPrice(m.price);
+      return el('div', { className: 'line' },
+        el('img', { src: img(m.img, 120), alt: '' }),
+        el('div', {},
+          el('b', { textContent: m.name }),
+          el('small', {
+            innerHTML: `<s style="color:#A8A29E;margin-right:6px">${brl(orig * q)}</s><strong style="color:#15803D">${q} × ${brl(m.price)} = ${brl(m.price * q)}</strong>`
+          })
+        ),
+        el('div', { className: 'step' },
+          el('button', { innerHTML: MINUS, ariaLabel: 'Tirar um', onclick: () => change(i, -1) }),
+          el('span', { textContent: q }),
+          el('button', { className: 'plus', innerHTML: PLUS, ariaLabel: 'Mais um', onclick: () => change(i, 1) }))
+      );
+    }));
   }
 
   function addBtn(i) {
@@ -1547,13 +1898,24 @@ window.__CFG__ = {
     }
     list = list.slice(0, 8);
     $('#upsell').hidden = !list.length;
-    $('#upList').replaceChildren(...list.map((i) => el('div', { className: 'up-card' },
-      el('div', { className: 'up-media' }, el('img', { src: img(MENU[i].img, 200), alt: MENU[i].name, loading: 'lazy' })),
-      el('b', { textContent: MENU[i].name, title: MENU[i].name }),
-      el('small', { textContent: MENU[i].desc || 'Gelado' }),
-      el('div', { className: 'foot-row' },
-        el('span', { className: 'price', textContent: brl(MENU[i].price) }),
-        addBtn(i)))));
+    $('#upList').replaceChildren(...list.map((i) => {
+      const m = MENU[i];
+      const orig = getOrigPrice(m.price);
+      return el('div', { className: 'up-card' },
+        el('div', { className: 'up-media', style: 'position:relative' },
+          el('img', { src: img(m.img, 200), alt: m.name, loading: 'lazy' })
+        ),
+        el('b', { textContent: m.name, title: m.name }),
+        el('small', { textContent: m.desc || 'Gelado' }),
+        el('div', { className: 'foot-row' },
+          el('div', { className: 'price-box' },
+            el('span', { className: 'old-price', textContent: brl(orig) }),
+            el('span', { className: 'price', textContent: brl(m.price) })
+          ),
+          addBtn(i)
+        )
+      );
+    }));
   }
 
   // Pagamento: Pix ou Cartão Online (Mercado Pago Transparente)
@@ -1570,7 +1932,7 @@ window.__CFG__ = {
     if ($('#btnSendWa')) $('#btnSendWa').style.display = 'none';
 
     const hint = {
-      pix: '⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
+      pix: 'QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
       cartao: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.'
     }[payMode] || '';
 
@@ -1651,6 +2013,10 @@ window.__CFG__ = {
   // Abas da barra de baixo: início (com o cardápio), carrinho, reserva e localização
   let tab = 'home';
   function go(name) {
+    if (name === 'portal') {
+      window.location.href = '/admin';
+      return;
+    }
     tab = name;
     document.querySelectorAll('[data-tab]').forEach((x) => { x.hidden = x.dataset.tab !== name; });
     document.querySelectorAll('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.go === name));
@@ -1674,20 +2040,50 @@ window.__CFG__ = {
     const q = $('#q').value.trim().toLowerCase();
     const list = MENU.map((m, i) => [m, i]).filter(([m]) => (cat === 'Todos' || m.cat === cat) && (!q || `${m.name} ${m.desc}`.toLowerCase().includes(q)));
     $('#count').textContent = `${list.length} ${list.length === 1 ? 'opção' : 'opções'}`;
-    $('#grid').replaceChildren(...list.map(([m, i]) => el('div', { className: 'item' },
-      el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }), el('b', { textContent: m.name }), el('p', { textContent: m.desc }),
-      el('div', { className: 'row' }, el('span', { className: 'price', textContent: brl(m.price) }), addBtn(i)),
-      ...(qtyOf(i) ? [el('span', { className: 'qty', textContent: qtyOf(i) })] : []))));
+    $('#grid').replaceChildren(...list.map(([m, i]) => {
+      const orig = getOrigPrice(m.price);
+      return el('div', { className: 'item' },
+        el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }),
+        el('b', { textContent: m.name }),
+        el('p', { textContent: m.desc }),
+        el('div', { className: 'row' },
+          el('div', { className: 'price-box' },
+            el('span', { className: 'old-price', textContent: `De ${brl(orig)}` }),
+            el('span', { className: 'price', textContent: brl(m.price) })
+          ),
+          addBtn(i)
+        ),
+        ...(qtyOf(i) ? [el('span', { className: 'qty', textContent: qtyOf(i) })] : [])
+      );
+    }));
     const cats = ['Todos', ...new Set(MENU.map((m) => m.cat))];
     $('#chips').replaceChildren(...cats.map((c) => el('button', { className: `chip${c === cat ? ' on' : ''}`, onclick: () => { cat = c; paintMenu(); } },
       el('img', { src: img((MENU.find((m) => m.cat === c) || MENU[0]).img, 80), alt: '' }), c)));
   }
   function paintTrend() {
-    $('#trend').replaceChildren(...T.trend.map((i) => el('div', { className: 'tcard' },
-      el('div', { className: 'row' }, el('b', { textContent: MENU[i].name }), addBtn(i)),
-      el('div', { className: 'meta' }, el('span', { className: 'star', textContent: '★' }), `5,0 · ${MENU[i].cat}`),
-      el('img', { src: img(MENU[i].img, 400), alt: MENU[i].name, loading: 'lazy' }),
-      ...(qtyOf(i) ? [el('span', { className: 'qty', textContent: qtyOf(i) })] : []))));
+    $('#trend').replaceChildren(...T.trend.map((i) => {
+      const m = MENU[i];
+      const orig = getOrigPrice(m.price);
+      return el('div', { className: 'tcard' },
+        el('div', { className: 'row' }, el('b', { textContent: m.name }), addBtn(i)),
+        el('div', { className: 'meta' }, el('span', { className: 'star', textContent: '★' }), `5,0 · ${m.cat}`),
+        el('div', { className: 'tcard-price-row' },
+          el('span', { className: 'old-price', textContent: brl(orig) }),
+          el('span', { className: 'price', textContent: brl(m.price) })
+        ),
+        el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }),
+        ...(qtyOf(i) ? [el('span', {
+          className: 'qty',
+          textContent: qtyOf(i),
+          title: 'Adicionar mais uma unidade',
+          onclick: (e) => {
+            e.stopPropagation();
+            change(i, 1);
+            toast(`${m.name} no pedido`);
+          }
+        })] : [])
+      );
+    }));
   }
   paintTrend();
 
@@ -1731,7 +2127,7 @@ window.__CFG__ = {
       const pickup = t.dataset.mode === 'retirada';
       $('#addrBox').hidden = pickup;
       $('#modeLabel').textContent = pickup ? 'Retirada' : 'Entrega';
-      $('#modeFee').textContent = pickup ? 'No balcão' : 'Grátis';
+      paintCart();
       paintPay();
       if (typeof checkDeliveryRadius === 'function') checkDeliveryRadius(false);
     }
@@ -1743,51 +2139,7 @@ window.__CFG__ = {
         startMpCardCheckout();
       }
     }
-    if (t.hasAttribute('data-send')) {
-      const pickup = $('#addrBox').hidden;
-      const s = getStructuredAddress();
-      const cleanCep = s.cep.replace(/\D/g, '');
 
-      if (!pickup) {
-        if (cleanCep.length !== 8) {
-          $('#delCepFld')?.classList.add('miss');
-          $('#delCep')?.focus();
-          return toast('Digite um CEP válido com 8 dígitos.');
-        }
-        if (!s.rua) {
-          $('#delRuaFld')?.classList.add('miss');
-          $('#delRua')?.focus();
-          return toast('Informe o nome da rua / logradouro.');
-        }
-        if (!s.numero) {
-          $('#delNumFld')?.classList.add('miss');
-          $('#delNum')?.focus();
-          return toast('Informe o número do endereço de entrega.');
-        }
-        if (!s.bairro) {
-          $('#delBairroFld')?.classList.add('miss');
-          $('#delBairro')?.focus();
-          return toast('Informe o bairro de entrega.');
-        }
-        if (!lastValidationResult || !lastValidationResult.valid) {
-          return toast('Endereço não validado. Verifique os dados com o CEP.');
-        }
-        if (!lastValidationResult.allowed) {
-          return toast(`Entrega não permitida: raio de ${lastValidationResult.distanceKm} km (limite: 15 km).`);
-        }
-      }
-
-      const pay = $('#pay .on');
-      $('#payFld').classList.toggle('miss', !pay);
-      if (!pay) return toast('Escolha a forma de pagamento.');
-      const total = [...cart.entries()].reduce((sum, [i, q]) => sum + MENU[i].price * q, 0);
-      const payment = pay.dataset.pay === 'cartao' ? 'Cartão' : (PAY[pay.dataset.pay] || 'Pix');
-      const items = [...cart.entries()].map(([i, q]) => `${q}x ${MENU[i].name}`).join('\n');
-      const unitNotice = currentUnit ? `🍔 *${currentUnit.name}*\n📍 Loja: ${currentUnit.address}\n\n` : '';
-      const fullAddr = getFullDeliveryAddress();
-      const where = pickup ? `Vou retirar no balcão da loja (${currentUnit ? currentUnit.shortZone : 'Dad\'s Burger'}).` : `Entregar em: ${fullAddr}`;
-      wa(`Olá! Meu pedido:\n${unitNotice}Itens:\n${items}\nTotal: ${brl(total)}\n${where}\nPagamento: ${payment}`);
-    }
     if (t.id === 'btnPayPix' || t.closest('#btnPayPix')) {
       startPixCheckout();
     }
@@ -1878,38 +2230,54 @@ window.__CFG__ = {
 
     let data = null;
 
-    // 1. Tenta API local do servidor backend
+    // 1. Consulta ViaCEP diretamente para resposta imediata
     try {
-      const res = await fetch(`/api/cep/${clean}`);
-      const cType = res.headers.get('content-type') || '';
-      if (res.ok && cType.includes('application/json')) {
-        const json = await res.json();
-        if (json && json.valid) data = json;
+      const viaRes = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
+      if (viaRes.ok) {
+        const vData = await viaRes.json();
+        if (vData && !vData.erro) {
+          data = {
+            valid: true,
+            cep: clean,
+            logradouro: vData.logradouro || '',
+            bairro: vData.bairro || '',
+            localidade: vData.localidade || 'Porto Alegre',
+            uf: vData.uf || 'RS'
+          };
+        }
       }
-    } catch (e) {
-      data = null;
-    }
+    } catch (vErr) {}
 
-    // 2. Se a API local não respondeu (ex: Google AI Studio ou offline), consulta diretamente o ViaCEP
+    // 2. Fallback para API local (/api/cep/:cep)
     if (!data) {
       try {
-        const viaRes = await fetch(`https://viacep.com.br/ws/${clean}/json/`);
-        if (viaRes.ok) {
-          const vData = await viaRes.json();
-          if (!vData.erro) {
+        const res = await fetch(`/api/cep/${clean}`);
+        const cType = res.headers.get('content-type') || '';
+        if (res.ok && cType.includes('application/json')) {
+          const json = await res.json();
+          if (json && json.valid) data = json;
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback para BrasilAPI CEP v2
+    if (!data) {
+      try {
+        const brRes = await fetch(`https://brasilapi.com.br/api/cep/v2/${clean}`);
+        if (brRes.ok) {
+          const bData = await brRes.json();
+          if (bData && bData.cep) {
             data = {
               valid: true,
               cep: clean,
-              logradouro: vData.logradouro || '',
-              bairro: vData.bairro || '',
-              localidade: vData.localidade || 'Porto Alegre',
-              uf: vData.uf || 'RS'
+              logradouro: bData.street || '',
+              bairro: bData.neighborhood || '',
+              localidade: bData.city || 'Porto Alegre',
+              uf: bData.state || 'RS'
             };
           }
         }
-      } catch (vErr) {
-        console.warn('ViaCEP direct error:', vErr);
-      }
+      } catch (bErr) {}
     }
 
     try {
@@ -1942,17 +2310,17 @@ window.__CFG__ = {
       lastCheckedCep = clean;
       if (cepFld) cepFld.classList.remove('miss');
 
-      if (data.logradouro && $('#delRua')) {
-        $('#delRua').value = data.logradouro;
-        $('#delRuaFld')?.classList.remove('miss');
+      if ($('#delRua')) {
+        $('#delRua').value = data.logradouro || '';
+        if (data.logradouro) $('#delRuaFld')?.classList.remove('miss');
       }
-      if (data.bairro && $('#delBairro')) {
-        $('#delBairro').value = data.bairro;
-        $('#delBairroFld')?.classList.remove('miss');
+      if ($('#delBairro')) {
+        $('#delBairro').value = data.bairro || '';
+        if (data.bairro) $('#delBairroFld')?.classList.remove('miss');
       }
-      if (data.localidade && $('#delCidade')) {
-        $('#delCidade').value = `${data.localidade} - ${data.uf || 'RS'}`;
-        $('#delCidadeFld')?.classList.remove('miss');
+      if ($('#delCidade')) {
+        $('#delCidade').value = data.localidade ? `${data.localidade} - ${data.uf || 'RS'}` : '';
+        if (data.localidade) $('#delCidadeFld')?.classList.remove('miss');
       }
 
       if (feedback) {
@@ -2054,20 +2422,25 @@ window.__CFG__ = {
       if (!data) {
         const u = currentUnit || DADS_UNITS[0];
         const isPoaOrMetro = !s.cidade || /porto alegre|canoas|cachoeirinha|alvorada|gravata[ií]|viam[aã]o/i.test(s.cidade);
-        const distanceKm = isPoaOrMetro ? 4.2 : 24.0;
+        const distanceKm = isPoaOrMetro ? 2.8 : 24.0;
         const allowed = isPoaOrMetro && distanceKm <= 15.0;
+        const fee = getDeliveryFeeByDistance(distanceKm);
         data = {
           valid: true,
           allowed,
           distanceKm,
+          deliveryFee: fee,
           unitId: u.id,
           unitName: u.fullName,
           closestUnit: u
         };
+      } else if (typeof data.deliveryFee !== 'number' && data.distanceKm) {
+        data.deliveryFee = getDeliveryFeeByDistance(data.distanceKm);
       }
 
       lastValidationResult = data;
       lastValidatedAddress = getFullDeliveryAddress();
+      if (typeof paintCart === 'function') paintCart();
 
       if (!statusBox) return data;
 
@@ -2093,6 +2466,9 @@ window.__CFG__ = {
 
       if (data.allowed) {
         // PERMITIDO (<= 15 km)
+        const fee = typeof data.deliveryFee === 'number' ? data.deliveryFee : getDeliveryFeeByDistance(data.distanceKm);
+        const tierDesc = data.distanceKm <= 3.0 ? 'até 3 km' : (data.distanceKm <= 6.0 ? '3 a 6 km' : 'acima de 6 km');
+
         statusBox.style.display = 'block';
         statusBox.style.background = '#F0FDF4';
         statusBox.style.border = '1.5px solid #86EFAC';
@@ -2102,8 +2478,8 @@ window.__CFG__ = {
             <span style="font-size:16px;line-height:1">🛵</span>
             <div style="flex:1">
               <div style="font-weight:700">Entrega disponível · ${data.distanceKm} km da loja</div>
-              <div style="font-size:11.5px;color:#15803D;margin-top:2px">
-                Dentro do raio de até 15 km da unidade <strong>${data.unitName}</strong>.
+              <div style="font-size:12px;color:#15803D;margin-top:2px;line-height:1.4">
+                Taxa de entrega: <strong>${brl(fee)}</strong> (${tierDesc}) · Unidade <strong>${data.unitName}</strong>.
               </div>
             </div>
           </div>
@@ -2314,40 +2690,7 @@ window.__CFG__ = {
     });
   }
 
-  // Simulação de teste em modo mock
-  const btnSimulatePayEl = $('#btnSimulatePay');
-  if (btnSimulatePayEl) {
-    btnSimulatePayEl.addEventListener('click', async () => {
-      if (!currentPixPayment) return;
-      btnSimulatePayEl.disabled = true;
-      btnSimulatePayEl.textContent = '⏳ Confirmando...';
-      try {
-        let ok = false;
-        if (currentPixPayment.paymentId && !currentPixPayment.paymentId.startsWith('mock_')) {
-          try {
-            const res = await fetch('/api/mercadopago/simulate-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentId: currentPixPayment.paymentId })
-            });
-            const cType = res.headers.get('content-type') || '';
-            if (res.ok && cType.includes('application/json')) {
-              const data = await res.json();
-              if (data && data.success) ok = true;
-            }
-          } catch (e) {
-            ok = false;
-          }
-        }
-        showPaymentSuccess(currentPixPayment);
-      } catch (e) {
-        toast('Erro ao simular: ' + e.message);
-      } finally {
-        btnSimulatePayEl.disabled = false;
-        btnSimulatePayEl.textContent = '🛠️ Simular Pagamento Imediato (Modo Teste)';
-      }
-    });
-  }
+
 
   // Validação unificada de dados do cliente e endereço (Raio <= 15 km)
   async function validateCheckoutCustomerAndAddress(forPix = false) {
@@ -2446,7 +2789,18 @@ window.__CFG__ = {
       }
     }
 
-    const total = [...cart.entries()].reduce((sum, [i, q]) => sum + MENU[i].price * q, 0);
+    const subtotal = [...cart.entries()].reduce((sum, [i, q]) => sum + MENU[i].price * q, 0);
+    let deliveryFee = 0;
+    let distanceKm = 0;
+
+    if (!pickup) {
+      distanceKm = (radCheck && radCheck.distanceKm) ? radCheck.distanceKm : 2.8;
+      deliveryFee = (radCheck && typeof radCheck.deliveryFee === 'number')
+        ? radCheck.deliveryFee
+        : getDeliveryFeeByDistance(distanceKm);
+    }
+
+    const total = Math.round((pickup ? subtotal : (subtotal + deliveryFee)) * 100) / 100;
     const items = [...cart.entries()].map(([i, q]) => ({
       name: MENU[i].name,
       price: MENU[i].price,
@@ -2461,6 +2815,9 @@ window.__CFG__ = {
       ref,
       address: pickup ? '' : getFullDeliveryAddress(),
       addressDetails: getStructuredAddress(),
+      subtotal,
+      deliveryFee,
+      distanceKm,
       total,
       items
     };
@@ -2476,7 +2833,7 @@ window.__CFG__ = {
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span>⚡ Gerando Pix Mercado Pago...</span>';
+      btn.innerHTML = '<span>Gerando Pix Mercado Pago...</span>';
     }
 
     let data = null;
@@ -2488,6 +2845,9 @@ window.__CFG__ = {
           customer: { name: val.name, cpf: val.cpf, phone: val.phone, email: '' },
           order: {
             items: val.items,
+            subtotal: val.subtotal,
+            deliveryFee: val.deliveryFee,
+            distanceKm: val.distanceKm,
             total: val.total,
             mode: val.pickup ? 'retirada' : 'entrega',
             address: val.address,
@@ -2510,10 +2870,12 @@ window.__CFG__ = {
     // Se o backend não responder (Google AI Studio ou offline), gera Pix simulado autônomo
     if (!data) {
       const mockQr = `00020126580014BR.GOV.BCB.PIX0136dadsburger51993248655@mercadopago.com520400005303986540${val.total.toFixed(2)}5802BR5912DADS BURGER6012PORTO ALEGRE62070503***6304E2CA`;
+      const mpNumericId = String(Math.floor(1000000000 + Math.random() * 9000000000));
       data = {
         success: true,
         orderId,
-        paymentId: 'mock_pix_' + Date.now(),
+        paymentId: mpNumericId,
+        mpOrderId: mpNumericId,
         qrCode: mockQr,
         qrCodePayload: mockQr,
         qrCodeImage: `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(mockQr)}`,
@@ -2536,6 +2898,7 @@ window.__CFG__ = {
       };
 
       openPixModal(currentPixPayment);
+      // O registro e notificação ao gestor é disparado exclusivamente após a confirmação do pagamento em showPaymentSuccess()
 
     } catch (err) {
       toast('Falha ao gerar Pix: ' + err.message);
@@ -2770,6 +3133,9 @@ window.__CFG__ = {
               },
               order: {
                 items: currentCardOrder.items,
+                subtotal: currentCardOrder.subtotal,
+                deliveryFee: currentCardOrder.deliveryFee,
+                distanceKm: currentCardOrder.distanceKm,
                 total: currentCardOrder.total,
                 mode: currentCardOrder.pickup ? 'retirada' : 'entrega',
                 address: currentCardOrder.address,
@@ -2810,56 +3176,35 @@ window.__CFG__ = {
     });
   }
 
-  // Monta mensagem completa do pedido para o WhatsApp da unidade
-  function buildWhatsAppOrderMessage(orderData) {
-    const unit = currentUnit || DADS_UNITS[0];
-    const itemsText = (orderData.items || []).map((it) => `• *${it.q}x* ${it.name} (${brl(it.price * it.q)})`).join('\n');
-    const whereText = orderData.pickup
-      ? `🛍️ *MODO:* Retirada no balcão da loja (${unit.zoneTitle})`
-      : `🛵 *ENTREGA EM:*\n📍 ${orderData.address || getFullDeliveryAddress()}${orderData.ref ? `\n🔎 *Ref:* ${orderData.ref}` : ''}`;
-
-    return `🎉 *NOVO PEDIDO PAGO E CONFIRMADO!* 🎉\n` +
-      `--------------------------------\n` +
-      `🍔 *UNIDADE:* ${unit.fullName}\n` +
-      `📍 *Endereço da Loja:* ${unit.address}\n` +
-      `--------------------------------\n` +
-      `🧾 *Pedido:* #${orderData.orderId}\n` +
-      `👤 *Cliente:* ${orderData.name}\n` +
-      `📱 *WhatsApp do Cliente:* ${orderData.phone}\n` +
-      (orderData.cpf ? `🪪 *CPF:* ${orderData.cpf}\n` : '') +
-      `--------------------------------\n` +
-      `🛒 *ITENS DO PEDIDO:*\n${itemsText}\n` +
-      `--------------------------------\n` +
-      `💰 *TOTAL PAGO:* ${brl(orderData.total)}\n` +
-      `💳 *FORMA DE PAGAMENTO:* ${orderData.paymentDescription}\n` +
-      `✅ *STATUS:* PAGO VIA MERCADO PAGO\n` +
-      `--------------------------------\n` +
-      `${whereText}\n` +
-      `--------------------------------\n` +
-      `⏰ Horário: ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-  }
-
-  // Envia mensagem automaticamente para o WhatsApp da loja selecionada
-  function sendOrderToSelectedStoreWhatsApp(orderData) {
-    const unit = currentUnit || DADS_UNITS[0];
-    const targetPhone = (unit.whats || st.whats || '5551993248655').replace(/\D/g, '');
-    const msg = buildWhatsAppOrderMessage(orderData);
-    const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(msg)}`;
-
-    try {
-      window.open(waUrl, '_blank', 'noopener');
-    } catch (e) {
-      console.warn('Disparo automático do WhatsApp:', e);
-    }
-  }
-
   // Tela de Sucesso do Cartão
   function showCardPaymentSuccess(order, payData) {
     if ($('#cardStepForm')) $('#cardStepForm').hidden = true;
     if ($('#cardStepSuccess')) $('#cardStepSuccess').hidden = false;
 
     const badge = $('#cardSuccessOrderBadge');
-    if (badge) badge.textContent = `Pedido #${order.orderId} · PAGO NO CARTÃO`;
+    const orderId = order.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const mpId = String(order.paymentId || order.mpOrderId || payData?.id || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
+    order.orderId = orderId;
+    order.paymentId = mpId;
+    order.mpOrderId = mpId;
+
+    if (badge) {
+      badge.innerHTML = `
+        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${orderId} · PAGO NO CARTÃO</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-size:12px;background:rgba(22,163,74,0.1);padding:6px 10px;border-radius:8px">
+          <span style="font-weight:700;color:#166534">ID Mercado Pago:</span>
+          <code style="font-family:monospace;font-weight:800;color:#0F172A;font-size:13px">${mpId}</code>
+          <button type="button" onclick="navigator.clipboard.writeText('${mpId}');showToast('ID Mercado Pago copiado!')" style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
+        </div>
+      `;
+    }
+    registerOrderAndNotify({
+      ...order,
+      orderId,
+      paymentId: mpId,
+      mpOrderId: mpId,
+      paymentMethod: 'Cartão ' + (payData?.brand ? payData.brand.toUpperCase() : '')
+    });
 
     const itemsSummary = (order.items || []).map((it) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
@@ -2890,26 +3235,12 @@ window.__CFG__ = {
       `;
     }
 
-    // Atualiza texto da unidade na tela de confirmação
+    // Atualiza texto da unidade na tela de confirmação (sem encaminhamento de WhatsApp)
     const autoWaEl = $('#cardAutoWaStore');
     const unit = currentUnit || DADS_UNITS[0];
     if (autoWaEl) {
-      autoWaEl.textContent = `Enviado para a unidade ${unit.zoneTitle} (${unit.cleanAddress}).`;
+      autoWaEl.textContent = `Registrado para preparo na unidade ${unit.zoneTitle} (${unit.cleanAddress}).`;
     }
-
-    // DISPARO AUTOMÁTICO PARA O WHATSAPP DA LOJA SELECIONADA
-    sendOrderToSelectedStoreWhatsApp({
-      orderId: order.orderId,
-      name: order.name,
-      phone: order.phone,
-      cpf: order.cpf || ($('#cardCpf')?.value || ''),
-      items: order.items,
-      total: order.total,
-      pickup: order.pickup,
-      address: order.address,
-      ref: order.ref,
-      paymentDescription: `Cartão (${payData.brand || 'Crédito/Débito'} - ${payData.installments || 1}x)`
-    });
 
     const doneBtn = $('#btnDoneOrderCard');
     if (doneBtn) {
@@ -2941,9 +3272,6 @@ window.__CFG__ = {
       wrap.appendChild(img);
     }
 
-    // Exibe ou oculta simulação sandbox
-    const mockBox = $('#pixMockNotice');
-    if (mockBox) mockBox.hidden = !pay.isMock;
 
     // Timer regressivo (15 minutos)
     let left = 15 * 60;
@@ -3001,7 +3329,23 @@ window.__CFG__ = {
     $('#pixStepSuccess').hidden = false;
 
     const badge = $('#pixSuccessOrderBadge');
-    if (badge) badge.textContent = `Pedido #${pay.orderId || 'DAD-1024'} · PAGO`;
+    const orderId = pay.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const mpId = String(pay.paymentId || pay.mpOrderId || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
+    pay.orderId = orderId;
+    pay.paymentId = mpId;
+    pay.mpOrderId = mpId;
+
+    if (badge) {
+      badge.innerHTML = `
+        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${orderId} · PAGO</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-size:12px;background:rgba(22,163,74,0.1);padding:6px 10px;border-radius:8px">
+          <span style="font-weight:700;color:#166534">ID Mercado Pago:</span>
+          <code style="font-family:monospace;font-weight:800;color:#0F172A;font-size:13px">${mpId}</code>
+          <button type="button" onclick="navigator.clipboard.writeText('${mpId}');showToast('ID Mercado Pago copiado!')" style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
+        </div>
+      `;
+    }
+    registerOrderAndNotify({ ...pay, orderId, paymentId: mpId, mpOrderId: mpId, paymentMethod: 'Pix' });
 
     const itemsSummary = (pay.items || []).map((it) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
@@ -3028,26 +3372,12 @@ window.__CFG__ = {
       `;
     }
 
-    // Atualiza texto da unidade na tela de confirmação
+    // Atualiza texto da unidade na tela de confirmação (sem encaminhamento de WhatsApp)
     const autoWaEl = $('#pixAutoWaStore');
     const unit = currentUnit || DADS_UNITS[0];
     if (autoWaEl) {
-      autoWaEl.textContent = `Enviado para a unidade ${unit.zoneTitle} (${unit.cleanAddress}).`;
+      autoWaEl.textContent = `Registrado para preparo na unidade ${unit.zoneTitle} (${unit.cleanAddress}).`;
     }
-
-    // DISPARO AUTOMÁTICO PARA O WHATSAPP DA LOJA SELECIONADA
-    sendOrderToSelectedStoreWhatsApp({
-      orderId: pay.orderId,
-      name: pay.name,
-      phone: pay.phone,
-      cpf: pay.cpf || ($('#custCpf')?.value || ''),
-      items: pay.items,
-      total: pay.total,
-      pickup: pay.pickup,
-      address: pay.addr,
-      ref: pay.ref,
-      paymentDescription: 'Pix Instantâneo'
-    });
 
     const doneBtn = $('#btnDoneOrder');
     if (doneBtn) {
@@ -3180,43 +3510,65 @@ window.__CFG__ = {
     }
   }
   if (P.has('aba')) go(P.get('aba'));
-  if (P.has('testmodal')) {
-    setTimeout(() => {
-      openPixModal({
-        paymentId: 'pay_test',
-        total: 94.9,
-        qrCodePayload: '00020126580014br.gov.bcb.pix0136dadsburger-pix5204000053039865494.905802BR5915DADS BURGER POA6012PORTO ALEGRE62070503***6304ABCD',
-        qrCodeImage: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMjAgMjIwIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIj48cmVjdCB3aWR0aD0iMjIwIiBoZWlnaHQ9IjIyMCIgZmlsbD0iI2ZmZmZmZiIvPjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMEIwNzA1Ii8+PHJlY3QgeD0iMTUwIiB5PSIyMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMEIwNzA1Ii8+PHJlY3QgeD0iMjAiIHk9IjE1MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjMEIwNzA1Ii8+PC9zdmc+',
-        isMock: true,
-        items: [{ name: "Combo na Caixa: 2x Big Bacon", price: 94.9, q: 1 }],
-        name: 'Pedro Henrique',
-        phone: '(51) 99999-9999',
-        orderId: 'DAD-1024',
-        pickup: false,
-        addr: 'Rua Sapé, 947'
-      });
-    }, 150);
+
+
+
+  // -------------------------------------------------------------
+  // REGISTRO GLOBAL DE PEDIDOS E NOTIFICAÇÃO
+  // -------------------------------------------------------------
+  function registerOrderAndNotify(orderData) {
+    if (!orderData) return;
+    const orderId = orderData.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
+    const paymentId = String(orderData.paymentId || orderData.mpOrderId || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
+    const fullOrder = {
+      orderId,
+      id: orderId,
+      paymentId,
+      mpOrderId: paymentId,
+      status: 'novo',
+      total: Number(orderData.total) || 0,
+      customer: orderData.customer || {
+        name: orderData.name || 'Cliente',
+        phone: orderData.phone || '',
+        address: orderData.addr || orderData.address || ''
+      },
+      order: orderData.order || {
+        items: orderData.items || [],
+        total: Number(orderData.total) || 0,
+        mode: orderData.pickup ? 'retirada' : 'entrega',
+        address: orderData.addr || orderData.address || '',
+        ref: orderData.ref || ''
+      },
+      unitId: orderData.unitId || (currentUnit ? currentUnit.id : 'passo-dareia'),
+      unitName: orderData.unitName || (currentUnit ? currentUnit.name : "Dad's Burger"),
+      paymentMethod: orderData.paymentMethod || orderData.paymentDescription || 'Pix',
+      created_at: Date.now() / 1000,
+      isNew: true
+    };
+
+    // 1. Salva no localStorage para sincronia cross-tab
+    try {
+      localStorage.setItem('dads_latest_order', JSON.stringify(fullOrder));
+    } catch(e) {}
+
+    // 2. Dispara BroadcastChannel
+    try {
+      const bc = new BroadcastChannel('dads_restaurant_channel');
+      bc.postMessage({ type: 'NEW_ORDER', order: fullOrder });
+    } catch(e) {}
+
+    // 3. Envia para a API persistente
+    fetch('/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fullOrder)
+    }).catch(() => {});
+
   }
-  if (P.has('testsuccess')) {
-    setTimeout(() => {
-      const demoOrder = {
-        paymentId: 'pay_test',
-        total: 104.8,
-        isMock: true,
-        items: [
-          { name: "Combo na Caixa: 2x Big Bacon", price: 94.9, q: 1 },
-          { name: "Coca-Cola Original 2L", price: 9.9, q: 1 }
-        ],
-        name: 'Pedro Henrique',
-        phone: '(51) 99999-9999',
-        orderId: 'DAD-1024',
-        pickup: false,
-        addr: "Rua Sapé, 947 - Passo d'Areia",
-        ref: 'Apto 204'
-      };
-      openPixModal(demoOrder);
-      showPaymentSuccess(demoOrder);
-    }, 150);
+  window.registerOrderAndNotify = registerOrderAndNotify;
+
+  if (P.has("portal") || location.hash === "#portal") {
+    window.location.href = "/admin";
   }
 })();
 </script>

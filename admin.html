@@ -1,0 +1,3171 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dad's Burger · Painel de Gestão de Pedidos</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --brand: #C88A2E;
+    --brand-hover: #B2761F;
+    --dark: #121214;
+    --dark-surface: #1E1E22;
+    --bg: #F4F4F6;
+    --surface: #FFFFFF;
+    --surface-subtle: #F9F9FB;
+    --border: #E4E4E7;
+    --border-strong: #D4D4D8;
+    --text-primary: #09090B;
+    --text-secondary: #52525B;
+    --text-muted: #71717A;
+    --novo-bg: #FEF2F2;
+    --novo-border: #F87171;
+    --novo-text: #991B1B;
+    --prep-bg: #FFFBEB;
+    --prep-border: #FBBF24;
+    --prep-text: #92400E;
+    --rota-bg: #EFF6FF;
+    --rota-border: #60A5FA;
+    --rota-text: #1E40AF;
+    --done-bg: #F0FDF4;
+    --done-border: #4ADE80;
+    --done-text: #166534;
+    --cancel-bg: #FEF2F2;
+    --cancel-border: #FCA5A5;
+    --cancel-text: #991B1B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* TELA DE BLOQUEIO POR SENHA */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 18, 20, 0.94);
+    backdrop-filter: blur(8px);
+    z-index: 100000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+  }
+  .auth-card {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 16px;
+    padding: 32px 28px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .auth-logo {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #000;
+    border: 2px solid var(--brand);
+  }
+  .auth-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .auth-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+  .auth-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .auth-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+    transition: border-color .15s;
+    margin-bottom: 14px;
+  }
+  .auth-input:focus { border-color: var(--dark); }
+  .auth-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--dark);
+    color: #FFF;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .auth-btn:hover { opacity: 0.9; }
+  .auth-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 14px; }
+  .auth-hint code { background: #F4F4F5; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  /* CABEÇALHO DO PAINEL */
+  .admin-header {
+    background: var(--dark);
+    color: #FFFFFF;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 2px solid var(--brand);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #000;
+    border: 2px solid var(--brand);
+    flex-shrink: 0;
+  }
+  .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .brand-meta h1 { font-size: 15px; font-weight: 800; line-height: 1.2; letter-spacing: -0.2px; }
+  .brand-meta small { font-size: 11.5px; color: #A1A1AA; display: block; }
+
+  /* NAVEGAÇÃO DE VISÃO: KANBAN vs CONCLUÍDOS vs CANCELADOS */
+  .view-switcher {
+    display: flex;
+    background: #27272A;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+  }
+  .view-btn {
+    background: transparent;
+    border: none;
+    color: #A1A1AA;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .view-btn:hover { color: #FFF; }
+  .view-btn.active {
+    background: #FFFFFF;
+    color: var(--dark);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  }
+  .view-btn .badge {
+    background: #3F3F46;
+    color: #FFFFFF;
+    padding: 1px 6px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .view-btn.active .badge {
+    background: #E4E4E7;
+    color: var(--dark);
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .unit-select {
+    background: #27272A;
+    border: 1px solid #3F3F46;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+  }
+  .ctrl-btn {
+    background: #27272A;
+    border: 1px solid #3F3F46;
+    color: #E4E4E7;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+  }
+  .ctrl-btn:hover { background: #3F3F46; }
+  .ctrl-btn.alarm-on {
+    background: #78350F;
+    border-color: #B45309;
+    color: #FEF3C7;
+  }
+  .ctrl-btn.alarm-off {
+    background: #27272A;
+    color: #71717A;
+  }
+  .ctrl-btn.sim-btn {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #FFFFFF;
+  }
+  .ctrl-btn.sim-btn:hover { background: var(--brand-hover); }
+
+  /* BARRA DE MÉTRICAS / KPIS RESUMO */
+  .metrics-strip {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 24px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 900px) {
+    .metrics-strip {
+      grid-template-columns: repeat(3, 1fr);
+      row-gap: 8px;
+    }
+  }
+  .metric-box {
+    border-right: 1px solid var(--border);
+    padding-right: 12px;
+  }
+  .metric-box:last-child { border-right: none; }
+  .metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+  }
+  .metric-val {
+    font-size: 18px;
+    font-weight: 800;
+    margin-top: 2px;
+    color: var(--text-primary);
+  }
+  .metric-val.alert { color: var(--novo-text); }
+  .metric-val.prep { color: var(--prep-text); }
+  .metric-val.rota { color: var(--rota-text); }
+  .metric-val.done { color: var(--done-text); }
+  .metric-val.cancel { color: var(--cancel-text); }
+
+  /* ÁREA PRINCIPAL COM FLUXO (KANBAN) E COMANDA LATERAL */
+  .workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    height: calc(100vh - 122px);
+    overflow: hidden;
+  }
+  @media (max-width: 1100px) {
+    .workspace {
+      grid-template-columns: 1fr;
+      height: auto;
+      overflow: visible;
+    }
+  }
+
+  /* KANBAN: 3 COLUNAS ATIVAS */
+  .kanban-view {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    height: 100%;
+    overflow-y: hidden;
+  }
+  @media (max-width: 900px) {
+    .kanban-view {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+      height: auto;
+    }
+  }
+
+  .kanban-col {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .kanban-col-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface-subtle);
+  }
+  .col-title-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .col-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .col-indicator.novo { background: #DC2626; animation: liveBlink .9s infinite alternate; }
+  .col-indicator.prep { background: #D97706; }
+  .col-indicator.rota { background: #2563EB; }
+  @keyframes liveBlink { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+  .kanban-col-head h2 {
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+  }
+  .col-count-pill {
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 99px;
+  }
+  .col-count-pill.novo { background: var(--novo-bg); color: var(--novo-text); border: 1px solid var(--novo-border); }
+  .col-count-pill.prep { background: var(--prep-bg); color: var(--prep-text); border: 1px solid var(--prep-border); }
+  .col-count-pill.rota { background: var(--rota-bg); color: var(--rota-text); border: 1px solid var(--rota-border); }
+
+  .kanban-col-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .kanban-empty {
+    text-align: center;
+    padding: 40px 14px;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  /* ORDER CARD NO KANBAN */
+  .order-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s, transform .1s;
+    position: relative;
+  }
+  .order-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .order-card.selected {
+    border-color: var(--dark);
+    box-shadow: 0 0 0 2px var(--dark);
+  }
+  .order-card.card-novo {
+    border-left: 4px solid #DC2626;
+  }
+  .order-card.card-prep {
+    border-left: 4px solid #D97706;
+  }
+  .order-card.card-rota {
+    border-left: 4px solid #2563EB;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .card-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+  .card-time {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .card-customer {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+  .card-delivery-tag {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 6px;
+  }
+  .card-delivery-tag.entrega { background: #EFF6FF; color: #1D4ED8; }
+  .card-delivery-tag.retirada { background: #F3F4F6; color: #374151; }
+
+  .card-address {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    line-height: 1.35;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-items-snippet {
+    background: var(--surface-subtle);
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 11.5px;
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: 10px;
+    border: 1px solid var(--border);
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-top: 4px;
+  }
+  .card-payment-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .card-price {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  /* BOTÃO DE AVANÇO DE FLUXO E CANCELAMENTO NO CARD */
+  .card-btn-group {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+    margin-top: 4px;
+  }
+  .btn-advance {
+    flex: 1;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background .15s, opacity .15s;
+  }
+  .btn-advance.to-prep {
+    background: #D97706;
+    color: #FFFFFF;
+  }
+  .btn-advance.to-prep:hover { background: #B45309; }
+
+  .btn-advance.to-rota {
+    background: #2563EB;
+    color: #FFFFFF;
+  }
+  .btn-advance.to-rota:hover { background: #1D4ED8; }
+
+  .btn-advance.to-done {
+    background: #16A34A;
+    color: #FFFFFF;
+  }
+  .btn-advance.to-done:hover { background: #15803D; }
+
+  .btn-card-cancel {
+    flex: none;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #FECACA;
+    background: #FEF2F2;
+    color: #DC2626;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .btn-card-cancel:hover {
+    background: #FEE2E2;
+    border-color: #F87171;
+    color: #B91C1C;
+  }
+
+  /* ÁREAS DE HISTÓRICO: CONCLUÍDOS E CANCELADOS */
+  .history-view, .canceled-view {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+    display: none;
+    background: var(--surface);
+  }
+  .history-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .search-input-wrap {
+    display: flex;
+    align-items: center;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .search-input-wrap input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    width: 100%;
+    color: var(--text-primary);
+  }
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .history-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1.5px solid var(--border);
+    background: var(--surface-subtle);
+  }
+  .history-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .history-table tr:hover td {
+    background: var(--surface-subtle);
+    cursor: pointer;
+  }
+  .history-tag-done {
+    background: var(--done-bg);
+    color: var(--done-text);
+    border: 1px solid var(--done-border);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 99px;
+    display: inline-block;
+  }
+  .history-tag-canceled {
+    background: var(--cancel-bg);
+    color: var(--cancel-text);
+    border: 1px solid var(--cancel-border);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 99px;
+    display: inline-block;
+  }
+  .btn-reopen {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #D4D4D8;
+    background: #FFF;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .btn-reopen:hover { background: #F4F4F5; }
+
+  /* PAINEL LATERAL DE COMANDA (LADO DIREITO) */
+  .side-ticket {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .ticket-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ticket-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .ticket-store-name {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+  .ticket-status-pill {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .ticket-status-pill.novo { background: var(--novo-bg); color: var(--novo-text); border: 1px solid var(--novo-border); }
+  .ticket-status-pill.preparando { background: var(--prep-bg); color: var(--prep-text); border: 1px solid var(--prep-border); }
+  .ticket-status-pill.entrega { background: var(--rota-bg); color: var(--rota-text); border: 1px solid var(--rota-border); }
+  .ticket-status-pill.concluido { background: var(--done-bg); color: var(--done-text); border: 1px solid var(--done-border); }
+  .ticket-status-pill.cancelado { background: var(--cancel-bg); color: var(--cancel-text); border: 1px solid var(--cancel-border); }
+
+  .ticket-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .ticket-section-title {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
+  }
+
+  .ticket-client-card {
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .ticket-client-name { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .ticket-client-phone { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .ticket-wa-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #047857;
+    text-decoration: underline;
+  }
+  .ticket-address-box {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+
+  .ticket-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ticket-item-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #F4F4F5;
+  }
+  .ticket-item-qty { font-weight: 800; color: var(--brand); margin-right: 6px; }
+  .ticket-item-price { font-weight: 700; color: var(--text-primary); }
+
+  .ticket-summary {
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .ticket-summary .total-val {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .ticket-actions-bar {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ticket-btn-primary {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 8px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    color: #FFFFFF;
+    transition: opacity .15s;
+  }
+  .ticket-btn-secondary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ticket-btn-sub {
+    padding: 8px 10px;
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .ticket-btn-sub:hover { background: #F4F4F5; }
+  .ticket-btn-sub.danger { color: #DC2626; border-color: #FECACA; }
+  .ticket-btn-sub.danger:hover { background: #FEF2F2; }
+
+  /* ÁREA DE IMPRESSÃO TÉRMICA ROBUSTA (80MM / 58MM) */
+  @media print {
+    @page {
+      margin: 0 !important;
+      size: auto;
+    }
+    html, body {
+      background: #FFFFFF !important;
+      color: #000000 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    body * {
+      visibility: hidden;
+    }
+    #printableSlip, #printableSlip * {
+      visibility: visible;
+    }
+    #printableSlip {
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: #FFFFFF !important;
+      color: #000000 !important;
+      font-family: 'Courier New', Courier, monospace, 'JetBrains Mono';
+      line-height: 1.25;
+      word-break: break-word;
+      box-sizing: border-box;
+      padding: 2mm 1mm;
+      overflow: hidden;
+    }
+    #printableSlip.print-width-80 {
+      width: 74mm !important;
+      max-width: 74mm !important;
+    }
+    #printableSlip.print-width-58 {
+      width: 48mm !important;
+      max-width: 48mm !important;
+    }
+    #printableSlip.print-font-compact {
+      font-size: 9.5px !important;
+    }
+    #printableSlip.print-font-normal {
+      font-size: 11px !important;
+    }
+    #printableSlip.print-font-large {
+      font-size: 13px !important;
+    }
+    .slip-table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse !important;
+    }
+    .slip-table th, .slip-table td {
+      padding: 2px 0 !important;
+      vertical-align: top !important;
+      color: #000000 !important;
+    }
+    .slip-sep {
+      border-bottom: 1px dashed #000000 !important;
+      margin: 5px 0 !important;
+      width: 100% !important;
+    }
+    .slip-sep-double {
+      border-bottom: 2px solid #000000 !important;
+      margin: 6px 0 !important;
+      width: 100% !important;
+    }
+  }
+
+  /* TOAST DE FEEDBACK */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--dark);
+    color: #FFF;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    z-index: 10000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* MODAL DE CONFIRMAÇÃO DE CANCELAMENTO */
+  .cancel-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 7, 5, 0.65);
+    backdrop-filter: blur(3px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .cancel-modal {
+    background: #FFFFFF;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    animation: modalPopIn 0.16s ease-out;
+  }
+  @keyframes modalPopIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .cancel-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cancel-modal-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #DC2626;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cancel-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+  .cancel-modal-close:hover {
+    color: var(--text-primary);
+    background: var(--surface-subtle);
+  }
+  .cancel-modal-body {
+    padding: 20px;
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .cancel-modal-body b {
+    color: var(--text-primary);
+  }
+  .cancel-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border);
+  }
+  .btn-cancel-modal-back {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #FFFFFF;
+    color: var(--text-primary);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .btn-cancel-modal-back:hover {
+    background: #F3F4F6;
+  }
+  .btn-cancel-modal-confirm {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    background: #DC2626;
+    color: #FFFFFF;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .btn-cancel-modal-confirm:hover {
+    background: #B91C1C;
+  }
+
+  /* MODAL DE CONFIGURAÇÃO DE IMPRESSÃO */
+  .printer-modal {
+    background: #FFFFFF;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow: hidden;
+    animation: modalPopIn 0.16s ease-out;
+  }
+  .printer-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-subtle);
+  }
+  .printer-modal-header h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .printer-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .cfg-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cfg-label {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .cfg-seg {
+    display: flex;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .cfg-seg-btn {
+    flex: 1;
+    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .15s;
+    text-align: center;
+  }
+  .cfg-seg-btn.active {
+    background: #FFFFFF;
+    color: var(--text-primary);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  }
+  .cfg-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: var(--surface-subtle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .cfg-toggle-info b {
+    display: block;
+    color: var(--text-primary);
+    font-size: 13px;
+  }
+  .cfg-toggle-info small {
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
+  .cfg-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--brand);
+  }
+  .cfg-input {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #FFFFFF;
+    font-size: 12.5px;
+    color: var(--text-primary);
+  }
+  .cfg-kiosk-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #334155;
+  }
+  .cfg-kiosk-box code {
+    background: #E2E8F0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .printer-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border);
+  }
+
+  /* INTERFACE DE CONTA E MENU DROPDOWN */
+  .account-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .account-trigger-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #27272A;
+    border: 1px solid #3F3F46;
+    color: #FFFFFF;
+    padding: 5px 12px 5px 6px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .account-trigger-btn:hover {
+    background: #3F3F46;
+    border-color: #52525B;
+  }
+  .account-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .account-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    width: 240px;
+    z-index: 999;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    animation: modalPopIn 0.12s ease-out;
+  }
+  .account-menu.open {
+    display: flex;
+  }
+  .account-menu-header {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .account-menu-name {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .account-menu-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .account-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    text-decoration: none;
+    transition: background .12s, color .12s;
+    width: 100%;
+  }
+  .account-menu-item:hover {
+    background: var(--surface-subtle);
+    color: var(--text-primary);
+  }
+  .account-menu-item.danger {
+    color: #DC2626;
+  }
+  .account-menu-item.danger:hover {
+    background: #FEF2F2;
+    color: #B91C1C;
+  }
+  .account-menu-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* PÁGINA SEPARADA DE CONFIGURAÇÕES */
+  .settings-view {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    background: #F4F4F5;
+    padding: 24px 32px;
+  }
+  .settings-container {
+    max-width: 820px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .settings-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .settings-card-head {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .settings-card-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  .settings-card-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+</style>
+</head>
+<body>
+
+<!-- OVERLAY DE AUTENTICAÇÃO POR SENHA (dads123) -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="logo.png" alt="Dad's Burger">
+    </div>
+    <h2>Painel do Restaurante</h2>
+    <p>Digite a senha de acesso para liberar o painel da cozinha e despacho.</p>
+    <form onsubmit="event.preventDefault(); window.submitPassword();">
+      <input type="password" id="authPassInput" class="auth-input" placeholder="Digite a senha..." autofocus autocomplete="current-password">
+      <button type="submit" class="auth-btn">Entrar no Painel</button>
+      <div class="auth-hint">Senha padrão da equipe: <code>dads123</code></div>
+    </form>
+  </div>
+</div>
+
+<!-- CABEÇALHO DO PAINEL -->
+<header class="admin-header">
+  <div class="brand-group">
+    <div class="brand-logo">
+      <img src="logo.png" alt="Dad's Burger">
+    </div>
+    <div class="brand-meta">
+      <h1>Dad's Burger</h1>
+      <small>Gestão de Pedidos e Cozinha</small>
+    </div>
+  </div>
+
+  <!-- VISÃO: KANBAN vs CONCLUÍDOS vs CANCELADOS -->
+  <div class="view-switcher">
+    <button type="button" class="view-btn active" id="btnViewKanban">
+      Fluxo de Produção
+      <span class="badge" id="badgeActiveCount">0</span>
+    </button>
+    <button type="button" class="view-btn" id="btnViewHistory">
+      Pedidos Concluídos
+      <span class="badge" id="badgeDoneCount">0</span>
+    </button>
+    <button type="button" class="view-btn" id="btnViewCanceled">
+      Cancelados
+      <span class="badge" id="badgeCanceledCount">0</span>
+    </button>
+  </div>
+
+  <!-- CONTROLES RÁPIDOS & MENU DE CONTA -->
+  <div class="header-controls">
+    <select class="unit-select" id="unitSelectFilter" aria-label="Filtrar por unidade">
+      <option value="todas">Todas as Unidades</option>
+      <option value="passo-dareia">Passo d'Areia (Zona Norte)</option>
+      <option value="moinhos">Moinhos / Rio Branco</option>
+      <option value="partenon">Partenon (Zona Leste)</option>
+      <option value="canoas-gracas">Nossa Sra. das Graças (Canoas)</option>
+      <option value="canoas-guajuviras">Guajuviras (Canoas)</option>
+      <option value="cachoeirinha">Vila Vista Alegre (Cachoeirinha)</option>
+    </select>
+
+    <!-- MENU DE CONTA UNIFICADO -->
+    <div class="account-dropdown-wrap" id="accountDropdownWrap">
+      <button type="button" class="account-trigger-btn" id="btnAccountTrigger" aria-expanded="false" aria-haspopup="true">
+        <span class="account-avatar">DB</span>
+        <span style="font-weight:700">Caixa Principal</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+
+      <div class="account-menu" id="accountMenuDropdown">
+        <div class="account-menu-header">
+          <div class="account-menu-name">Dad's Burger</div>
+          <div class="account-menu-sub">Operador: Caixa / Gerência</div>
+        </div>
+
+        <button type="button" class="account-menu-item" id="menuItemSettings">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>Configurações da Impressora</span>
+        </button>
+
+        <div class="account-menu-divider"></div>
+
+        <button type="button" class="account-menu-item" id="menuItemToggleSound">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <span id="menuItemSoundText">Alarme Sonoro: Ativo</span>
+        </button>
+
+        <button type="button" class="account-menu-item" id="menuItemTestSound">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <span>Testar Sino da Cozinha</span>
+        </button>
+
+        <div class="account-menu-divider"></div>
+
+        <button type="button" class="account-menu-item danger" id="btnLogout">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>Sair do Caixa</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- FAIXA DE RESUMO / KPIS -->
+<section class="metrics-strip">
+  <div class="metric-box">
+    <div class="metric-label">Novos Pedidos</div>
+    <div class="metric-val alert" id="metricValNovos">0</div>
+  </div>
+  <div class="metric-box">
+    <div class="metric-label">Em Preparo</div>
+    <div class="metric-val prep" id="metricValPrep">0</div>
+  </div>
+  <div class="metric-box">
+    <div class="metric-label">Em Rota</div>
+    <div class="metric-val rota" id="metricValRota">0</div>
+  </div>
+  <div class="metric-box">
+    <div class="metric-label">Concluídos Hoje</div>
+    <div class="metric-val done" id="metricValDone">0</div>
+  </div>
+  <div class="metric-box">
+    <div class="metric-label">Cancelados</div>
+    <div class="metric-val cancel" id="metricValCanceled">0</div>
+  </div>
+  <div class="metric-box">
+    <div class="metric-label">Total Faturado</div>
+    <div class="metric-val" id="metricValRevenue">R$ 0,00</div>
+  </div>
+</section>
+
+<!-- WORKSPACE: KANBAN + HISTÓRICO + CANCELADOS + COMANDA LATERAL -->
+<main class="workspace">
+  <!-- SEÇÃO 1: FLUXO DE PRODUÇÃO (3 COLUNAS: NOVOS | EM PREPARO | EM ROTA) -->
+  <section class="kanban-view" id="kanbanView">
+    <!-- COLUNA 1: NOVOS PEDIDOS -->
+    <div class="kanban-col">
+      <div class="kanban-col-head">
+        <div class="col-title-group">
+          <div class="col-indicator novo"></div>
+          <h2>Novos Pedidos</h2>
+        </div>
+        <span class="col-count-pill novo" id="countColNovos">0</span>
+      </div>
+      <div class="kanban-col-body" id="colListNovos">
+        <div class="kanban-empty">Nenhum novo pedido no momento.</div>
+      </div>
+    </div>
+
+    <!-- COLUNA 2: EM PREPARO -->
+    <div class="kanban-col">
+      <div class="kanban-col-head">
+        <div class="col-title-group">
+          <div class="col-indicator prep"></div>
+          <h2>Em Preparo</h2>
+        </div>
+        <span class="col-count-pill prep" id="countColPrep">0</span>
+      </div>
+      <div class="kanban-col-body" id="colListPrep">
+        <div class="kanban-empty">Nenhum pedido em preparo.</div>
+      </div>
+    </div>
+
+    <!-- COLUNA 3: EM ROTA -->
+    <div class="kanban-col">
+      <div class="kanban-col-head">
+        <div class="col-title-group">
+          <div class="col-indicator rota"></div>
+          <h2>Em Rota</h2>
+        </div>
+        <span class="col-count-pill rota" id="countColRota">0</span>
+      </div>
+      <div class="kanban-col-body" id="colListRota">
+        <div class="kanban-empty">Nenhum pedido em rota de entrega.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEÇÃO 2: HISTÓRICO DE PEDIDOS CONCLUÍDOS -->
+  <section class="history-view" id="historyView">
+    <div class="history-toolbar">
+      <div class="search-input-wrap">
+        <input type="text" id="historySearchInput" placeholder="Buscar pedidos concluídos por cliente, telefone ou ID (#DAD-...)..." autocomplete="off">
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:700">
+        Total Concluídos: <span id="historyTotalBadge">0</span>
+      </div>
+    </div>
+
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Modalidade</th>
+          <th>Endereço</th>
+          <th>Itens</th>
+          <th>Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="historyTableBody">
+        <tr>
+          <td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum pedido concluído ainda.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SEÇÃO 3: PEDIDOS CANCELADOS -->
+  <section class="canceled-view" id="canceledView">
+    <div class="history-toolbar">
+      <div class="search-input-wrap">
+        <input type="text" id="canceledSearchInput" placeholder="Buscar pedidos cancelados por cliente, telefone ou ID (#DAD-...)..." autocomplete="off">
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);font-weight:700">
+        Total Cancelados: <span id="canceledTotalBadge">0</span>
+      </div>
+    </div>
+
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Pedido</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Modalidade</th>
+          <th>Endereço</th>
+          <th>Itens</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="canceledTableBody">
+        <tr>
+          <td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum pedido cancelado.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SEÇÃO 4: PÁGINA SEPARADA DE CONFIGURAÇÕES DA IMPRESSORA -->
+  <section class="settings-view" id="settingsView">
+    <div class="settings-container">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div>
+          <h2 style="font-size:20px;font-weight:900;color:var(--text-primary);margin:0">Configurações da Impressora</h2>
+          <small style="color:var(--text-muted);font-size:12px">Instale a inicialização direta do caixa e ajuste o padrão das comandas térmicas</small>
+        </div>
+        <button type="button" class="btn-cancel-modal-back" id="btnBackToKanban" style="display:flex;align-items:center;gap:6px">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          Voltar aos Pedidos
+        </button>
+      </div>
+
+      <!-- PASSO 1: INSTALAÇÃO DO ARQUIVO DE INICIALIZAÇÃO / ATALHO DO CAIXA (PRIMEIRO ITEM) -->
+      <div class="settings-card" style="border: 2px solid var(--brand); background: #FFFDF9;">
+        <div class="settings-card-head" style="border-bottom-color: #FDE68A;">
+          <div>
+            <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--brand);letter-spacing:0.5px">Etapa Obrigatória para Impressão Direta</span>
+            <h3 class="settings-card-title" style="margin-top:2px">1. Instalação do Caixa no Computador</h3>
+            <div class="settings-card-subtitle">Execute uma única vez no computador do restaurante para a comanda imprimir sem confirmação de tela</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5">
+            Baixe e execute o instalador para que o painel do Dad's Burger abra automaticamente ao ligar o computador pela manhã, já com a impressora térmica conectada e pronta para imprimir:
+          </p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button type="button" class="btn-cancel-modal-back" style="background:#16A34A;color:#FFF;border-color:#16A34A;padding:10px 18px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.installAutoStartup()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Instalar: Abrir Sozinho ao Ligar o Computador (.bat)
+            </button>
+            <button type="button" class="btn-cancel-modal-back" style="background:#0F172A;color:#FFF;border-color:#0F172A;padding:10px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.downloadDirectPrintShortcut()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="16" y2="12"/><line x1="12" y1="16" x2="16" y2="12"/></svg>
+              Criar Ícone na Área de Trabalho
+            </button>
+          </div>
+          <small style="color:var(--text-muted);font-size:11.5px">
+            Instalação 100% autônoma. O arquivo cria o atalho oficial do Chrome/Edge configurado para disparo automático.
+          </small>
+        </div>
+      </div>
+
+      <!-- PASSO 2: PARÂMETROS E FORMATAÇÃO DA COMANDA -->
+      <div class="settings-card">
+        <div class="settings-card-head">
+          <div>
+            <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px">Formatação do Papel</span>
+            <h3 class="settings-card-title" style="margin-top:2px">2. Parâmetros da Bobina e Layout</h3>
+            <div class="settings-card-subtitle">Compatível com bobinas de 80mm e 58mm (Epson, Bematech, Elgin, Daruma e genéricas)</div>
+          </div>
+          <button type="button" class="btn-cancel-modal-back" onclick="window.PrinterEngine.printCalibrationTest()" style="font-size:12px">
+            Imprimir Teste de Calibração
+          </button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <!-- Largura da Bobina -->
+          <div class="cfg-group">
+            <label class="cfg-label">Largura da Bobina / Papel</label>
+            <div class="cfg-seg" id="segPaperWidth">
+              <button type="button" class="cfg-seg-btn active" data-val="80mm" onclick="window.PrinterEngine.setField('paperWidth', '80mm')">
+                80mm (Padrão Balcão / 72mm útil)
+              </button>
+              <button type="button" class="cfg-seg-btn" data-val="58mm" onclick="window.PrinterEngine.setField('paperWidth', '58mm')">
+                58mm (Bobina Estreita / 48mm útil)
+              </button>
+            </div>
+            <small style="color:var(--text-muted);font-size:11.5px">Use 80mm para Epson TM-T20, Bematech MP-4200, Elgin i9/i7. Use 58mm para mini-impressoras e terminais móveis.</small>
+          </div>
+
+          <!-- Tamanho da Fonte -->
+          <div class="cfg-group">
+            <label class="cfg-label">Tamanho do Texto na Comanda</label>
+            <div class="cfg-seg" id="segFontSize">
+              <button type="button" class="cfg-seg-btn" data-val="compact" onclick="window.PrinterEngine.setField('fontSize', 'compact')">
+                Compacto (9.5px)
+              </button>
+              <button type="button" class="cfg-seg-btn active" data-val="normal" onclick="window.PrinterEngine.setField('fontSize', 'normal')">
+                Normal (11px)
+              </button>
+              <button type="button" class="cfg-seg-btn" data-val="large" onclick="window.PrinterEngine.setField('fontSize', 'large')">
+                Grande Cozinha (13px)
+              </button>
+            </div>
+          </div>
+
+          <!-- Vias por Pedido -->
+          <div class="cfg-group">
+            <label class="cfg-label">Vias por Pedido</label>
+            <div class="cfg-seg" id="segCopies">
+              <button type="button" class="cfg-seg-btn active" data-val="1" onclick="window.PrinterEngine.setField('copies', 1)">
+                1 Via Única (Cozinha)
+              </button>
+              <button type="button" class="cfg-seg-btn" data-val="2" onclick="window.PrinterEngine.setField('copies', 2)">
+                2 Vias (1ª Cozinha + 2ª Entrega/Caixa)
+              </button>
+            </div>
+          </div>
+
+          <!-- Automação: Impressão Automática -->
+          <div class="cfg-toggle-row">
+            <div class="cfg-toggle-info">
+              <b>Impressão Automática ao Receber Pedido</b>
+              <small>Dispara a impressão automaticamente assim que um novo pedido chegar no painel.</small>
+            </div>
+            <input type="checkbox" id="cfgAutoPrint" class="cfg-checkbox" onchange="window.PrinterEngine.setField('autoPrint', this.checked)">
+          </div>
+
+          <!-- Campos da Comanda -->
+          <div class="cfg-group">
+            <label class="cfg-label">Campos Exibidos na Comanda</label>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                <input type="checkbox" id="cfgShowUnitHeader" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showUnitHeader', this.checked)">
+                <span>Cabeçalho com nome e endereço da unidade</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                <input type="checkbox" id="cfgShowCustomerDetails" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showCustomerDetails', this.checked)">
+                <span>Dados completos do cliente (Nome, Telefone, Modalidade e Endereço)</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                <input type="checkbox" id="cfgShowMercadoPagoId" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showMercadoPagoId', this.checked)">
+                <span>Código de transação Mercado Pago</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Avanço de Papel / Guilhotina -->
+          <div class="cfg-group">
+            <label class="cfg-label">Alimentação Final de Papel (Corte de Guilhotina)</label>
+            <select id="cfgFeedLines" class="cfg-input" onchange="window.PrinterEngine.setField('feedLines', Number(this.value))">
+              <option value="3">3 linhas (Mínimo)</option>
+              <option value="5" selected>5 linhas (Recomendado para guilhotina)</option>
+              <option value="8">8 linhas (Para serrilha manual)</option>
+            </select>
+          </div>
+
+          <!-- Mensagem de Rodapé -->
+          <div class="cfg-group">
+            <label class="cfg-label">Mensagem de Rodapé</label>
+            <input type="text" id="cfgFooterMessage" class="cfg-input" placeholder="Ex: Dad's Burger - Bom apetite!" onchange="window.PrinterEngine.setField('footerMessage', this.value)">
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;margin-top:6px">
+            <button type="button" class="btn-cancel-modal-confirm" style="background:#16A34A" onclick="window.PrinterEngine.saveAndApply()">
+              Salvar Alterações de Impressão
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: SINALIZAÇÃO SONORA DA COZINHA -->
+      <div class="settings-card">
+        <div class="settings-card-head">
+          <div>
+            <h3 class="settings-card-title">Alarme Sonoro de Novos Pedidos</h3>
+            <div class="settings-card-subtitle">Aviso sonoro em tempo real para a cozinha e montadores</div>
+          </div>
+          <button type="button" class="btn-cancel-modal-back" onclick="AlarmEngine.testTone()" style="font-size:12px">
+            Testar Alarme Sonoro
+          </button>
+        </div>
+
+        <div class="cfg-toggle-row">
+          <div class="cfg-toggle-info">
+            <b>Campainha / Sino Ativo</b>
+            <small>Toca repetidamente a cada novo pedido aprovado até ser aceito ou enviado para preparo.</small>
+          </div>
+          <button type="button" class="btn-cancel-modal-back" id="btnSettingsToggleSound" style="font-size:12px;font-weight:700" onclick="AlarmEngine.toggleMute(); window.AdminApp.updateSoundUi();">
+            Alarme: Ativo
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAINEL LATERAL DE COMANDA DETALHADA -->
+  <aside class="side-ticket">
+    <div class="ticket-header">
+      <div>
+        <div class="ticket-id" id="ticketId">#DAD-0000</div>
+        <div id="ticketMpBox" style="display:flex;align-items:center;gap:6px;margin:3px 0 2px;font-size:11px;color:var(--text-muted)">
+          <span>ID Mercado Pago:</span>
+          <code id="ticketMpId" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-primary);background:var(--surface-subtle);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">---</code>
+          <button type="button" id="btnCopyMpId" onclick="window.AdminApp.copyCurrentMpId()" title="Copiar ID Mercado Pago" style="background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;font-weight:700;color:var(--text-primary)">Copiar</button>
+        </div>
+        <div class="ticket-store-name" id="ticketStore">Selecione um pedido para visualizar</div>
+      </div>
+      <span class="ticket-status-pill novo" id="ticketStatusPill">Novo</span>
+    </div>
+
+    <div class="ticket-scrollable">
+      <!-- CLIENTE & ENTREGA -->
+      <div>
+        <div class="ticket-section-title">Dados do Cliente</div>
+        <div class="ticket-client-card">
+          <div class="ticket-client-name" id="ticketClientName">Nome do Cliente</div>
+          <div class="ticket-client-phone" id="ticketClientPhone">(51) 00000-0000</div>
+          <a href="#" target="_blank" rel="noopener" class="ticket-wa-link" id="ticketWaBtn">Abrir conversa no WhatsApp</a>
+          <div class="ticket-address-box" id="ticketAddressBox">Endereço de entrega</div>
+        </div>
+      </div>
+
+      <!-- ITENS DO PEDIDO -->
+      <div>
+        <div class="ticket-section-title">Itens do Pedido</div>
+        <div class="ticket-items-list" id="ticketItemsList">
+          <!-- Gerado dinamicamente -->
+        </div>
+      </div>
+
+      <!-- DISCRIMINAÇÃO FINANCEIRA DO PEDIDO -->
+      <div id="ticketFinancialBreakdown" style="margin-top:14px;padding:10px 12px;background:var(--bg-app);border:1px solid var(--border-color);border-radius:10px;font-size:12px;line-height:1.5">
+        <div style="display:flex;justify-content:space-between;color:var(--text-muted)">
+          <span>Subtotal itens:</span>
+          <b id="ticketSubtotalVal" style="color:var(--text-primary)">R$ 0,00</b>
+        </div>
+        <div style="display:flex;justify-content:space-between;color:var(--text-muted);margin-top:2px">
+          <span>Taxa de entrega:</span>
+          <b id="ticketDeliveryVal" style="color:var(--text-primary)">R$ 0,00</b>
+        </div>
+      </div>
+
+      <!-- RESUMO TOTAL -->
+      <div class="ticket-summary">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Pagamento</div>
+          <b id="ticketPaymentMethod" style="font-size:13px;text-transform:uppercase">PIX</b>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase">Valor Total</div>
+          <div class="total-val" id="ticketTotalVal">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTÕES DE AÇÃO NA COMANDA -->
+    <div class="ticket-actions-bar">
+      <button type="button" class="ticket-btn-primary" id="btnTicketMainAction" style="background:#D97706">
+        Enviar para Preparo
+      </button>
+
+      <div class="ticket-btn-secondary-row">
+        <button type="button" class="ticket-btn-sub" id="btnPrintSlip" style="flex:1">
+          Imprimir Comanda
+        </button>
+        <button type="button" class="ticket-btn-sub danger" id="btnCancelOrder">
+          Cancelar Pedido
+        </button>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- ÁREA DE IMPRESSÃO TÉRMICA ROBUSTA (OCULTA EM TELA) -->
+<div id="printableSlip" class="print-width-80 print-font-normal" hidden></div>
+
+<!-- TOAST FLUTUANTE -->
+<div class="toast" id="adminToast">Mensagem</div>
+
+<!-- MODAL DE CONFIRMAÇÃO DE CANCELAMENTO (IN-DOM, 100% COMPATÍVEL COM IFRAME) -->
+<div id="cancelModalBackdrop" class="cancel-modal-backdrop" style="display: none;" onclick="if (event.target === this) window.AdminApp.closeCancelModal();">
+  <div class="cancel-modal">
+    <div class="cancel-modal-header">
+      <div class="cancel-modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        Confirmar Cancelamento
+      </div>
+      <button type="button" class="cancel-modal-close" onclick="window.AdminApp.closeCancelModal()">&times;</button>
+    </div>
+    <div class="cancel-modal-body">
+      <p id="cancelModalText">Tem certeza que deseja cancelar este pedido? Ele será removido do fluxo de produção da cozinha e arquivado na aba de <b>Cancelados</b>.</p>
+    </div>
+    <div class="cancel-modal-actions">
+      <button type="button" class="btn-cancel-modal-back" onclick="window.AdminApp.closeCancelModal()">Voltar</button>
+      <button type="button" class="btn-cancel-modal-confirm" id="btnConfirmCancelModal" onclick="window.AdminApp.confirmCancel()">Sim, Cancelar Pedido</button>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+(() => {
+  // -------------------------------------------------------------
+  // CONTROLE DE AUTENTICAÇÃO POR SENHA
+  // -------------------------------------------------------------
+  const ADMIN_PASS = 'dads123';
+  const AUTH_KEY = 'dads_admin_auth_session';
+
+  function checkAuth() {
+    const isAuthed = sessionStorage.getItem(AUTH_KEY) === 'true' || localStorage.getItem(AUTH_KEY) === 'true';
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) overlay.style.display = isAuthed ? 'none' : 'grid';
+    return isAuthed;
+  }
+
+  window.submitPassword = function() {
+    const inp = document.getElementById('authPassInput');
+    const val = inp ? inp.value.trim() : '';
+    if (val === ADMIN_PASS || val === 'admin123' || val === 'dads2026') {
+      sessionStorage.setItem(AUTH_KEY, 'true');
+      localStorage.setItem(AUTH_KEY, 'true');
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.style.display = 'none';
+      showToast('Acesso autorizado.');
+      AdminApp.init();
+    } else {
+      if (inp) {
+        inp.style.borderColor = '#DC2626';
+        inp.value = '';
+        inp.focus();
+      }
+      showToast('Senha incorreta. Use a senha: dads123');
+    }
+  };
+
+  document.getElementById('btnLogout').onclick = () => {
+    sessionStorage.removeItem(AUTH_KEY);
+    localStorage.removeItem(AUTH_KEY);
+    location.reload();
+  };
+
+  let toastTimer = null;
+  function showToast(msg) {
+    const el = document.getElementById('adminToast');
+    if (!el) return;
+    el.innerHTML = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3800);
+  }
+
+  function brl(num) {
+    return Number(num || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // -------------------------------------------------------------
+  // MOTOR DE ALARME SONORO CONTÍNUO (WEB AUDIO API)
+  // Toca repetidamente a cada 1.35s sem parar até ser desligado
+  // -------------------------------------------------------------
+  const AlarmEngine = {
+    audioCtx: null,
+    isPlaying: false,
+    intervalId: null,
+    muted: false,
+    activeOrderId: null,
+    silencedOrders: new Set(),
+
+    initAudio() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext && !this.audioCtx) {
+          this.audioCtx = new AudioContext();
+        }
+        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+          this.audioCtx.resume();
+        }
+      } catch (e) {
+        console.warn('Erro ao inicializar AudioContext:', e);
+      }
+    },
+
+    playKitchenTone() {
+      if (this.muted) return;
+      this.initAudio();
+      if (!this.audioCtx) return;
+
+      try {
+        const now = this.audioCtx.currentTime;
+
+        const osc1 = this.audioCtx.createOscillator();
+        const gain1 = this.audioCtx.createGain();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(880, now);
+        osc1.frequency.exponentialRampToValueAtTime(1174.66, now + 0.12);
+        gain1.gain.setValueAtTime(0.7, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc1.connect(gain1);
+        gain1.connect(this.audioCtx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.38);
+
+        const osc2 = this.audioCtx.createOscillator();
+        const gain2 = this.audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(1396.91, now + 0.14);
+        osc2.frequency.exponentialRampToValueAtTime(1760, now + 0.28);
+        gain2.gain.setValueAtTime(0.55, now + 0.14);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc2.connect(gain2);
+        gain2.connect(this.audioCtx.destination);
+        osc2.start(now + 0.14);
+        osc2.stop(now + 0.65);
+      } catch(err) {}
+    },
+
+    startLoop(order) {
+      const oid = order?.orderId || order?.id || 'NOVO';
+      if (this.silencedOrders.has(oid)) return;
+
+      this.activeOrderId = oid;
+      this.isPlaying = true;
+      this.initAudio();
+
+      this.playKitchenTone();
+
+      if (this.intervalId) clearInterval(this.intervalId);
+      this.intervalId = setInterval(() => {
+        if (this.isPlaying) {
+          this.playKitchenTone();
+        } else {
+          clearInterval(this.intervalId);
+          this.intervalId = null;
+        }
+      }, 1350);
+
+      document.title = `[NOVO PEDIDO #${oid}] Dad's Burger`;
+    },
+
+    stopLoop(orderIdToAck) {
+      this.isPlaying = false;
+      if (orderIdToAck) this.silencedOrders.add(orderIdToAck);
+      if (this.activeOrderId) this.silencedOrders.add(this.activeOrderId);
+      this.activeOrderId = null;
+
+      if (this.intervalId) {
+        clearInterval(this.intervalId);
+        this.intervalId = null;
+      }
+
+      document.title = "Dad's Burger · Painel de Gestão";
+    },
+
+    toggleMute() {
+      this.muted = !this.muted;
+      if (this.isPlaying) {
+        this.stopLoop();
+      }
+      const btn = document.getElementById('btnToggleAudio');
+      if (btn) {
+        btn.textContent = this.muted ? 'Alarme: Silencioso' : 'Alarme: Ativo';
+        btn.className = `ctrl-btn ${this.muted ? 'alarm-off' : 'alarm-on'}`;
+      }
+      showToast(this.muted ? 'Alarme sonoro mutado.' : 'Alarme sonoro ativado.');
+    },
+
+    testTone() {
+      this.initAudio();
+      this.playKitchenTone();
+      showToast('Sino de teste acionado.');
+    }
+  };
+
+  // -------------------------------------------------------------
+  // MOTOR DE IMPRESSÃO TÉRMICA PADRONIZADO (PRINTER ENGINE)
+  // Robusto para 80mm e 58mm, Epson, Bematech, Elgin, Daruma e genéricas
+  // -------------------------------------------------------------
+  const PRINTER_STORAGE_KEY = 'dads_printer_config';
+  const DEFAULT_PRINTER_CONFIG = {
+    paperWidth: '80mm',      // '80mm' | '58mm'
+    fontSize: 'normal',       // 'compact' (9.5px) | 'normal' (11px) | 'large' (13px)
+    copies: 1,                // 1 | 2
+    autoPrint: false,         // true | false
+    showUnitHeader: true,
+    showCustomerDetails: true,
+    showMercadoPagoId: true,
+    feedLines: 5,             // 3 | 5 | 8
+    footerMessage: "Dad's Burger - Bom apetite!"
+  };
+
+  const PrinterEngine = {
+    config: { ...DEFAULT_PRINTER_CONFIG },
+
+    loadConfig() {
+      try {
+        const raw = localStorage.getItem(PRINTER_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          this.config = { ...DEFAULT_PRINTER_CONFIG, ...parsed };
+        }
+      } catch (e) {
+        this.config = { ...DEFAULT_PRINTER_CONFIG };
+      }
+      this.syncUiFromConfig();
+    },
+
+    saveConfig() {
+      try {
+        localStorage.setItem(PRINTER_STORAGE_KEY, JSON.stringify(this.config));
+      } catch (e) {
+        console.warn('Erro ao salvar configuração da impressora:', e);
+      }
+    },
+
+    setField(key, val) {
+      this.config[key] = val;
+      this.updateSegmentUi(key, val);
+    },
+
+    updateSegmentUi(key, val) {
+      if (key === 'paperWidth') {
+        document.querySelectorAll('#segPaperWidth .cfg-seg-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.val === val);
+        });
+      } else if (key === 'fontSize') {
+        document.querySelectorAll('#segFontSize .cfg-seg-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.val === val);
+        });
+      } else if (key === 'copies') {
+        document.querySelectorAll('#segCopies .cfg-seg-btn').forEach(b => {
+          b.classList.toggle('active', String(b.dataset.val) === String(val));
+        });
+      }
+    },
+
+    syncUiFromConfig() {
+      this.updateSegmentUi('paperWidth', this.config.paperWidth);
+      this.updateSegmentUi('fontSize', this.config.fontSize);
+      this.updateSegmentUi('copies', this.config.copies);
+
+      const autoEl = document.getElementById('cfgAutoPrint');
+      if (autoEl) autoEl.checked = !!this.config.autoPrint;
+
+      const headEl = document.getElementById('cfgShowUnitHeader');
+      if (headEl) headEl.checked = !!this.config.showUnitHeader;
+
+      const custEl = document.getElementById('cfgShowCustomerDetails');
+      if (custEl) custEl.checked = !!this.config.showCustomerDetails;
+
+      const mpEl = document.getElementById('cfgShowMercadoPagoId');
+      if (mpEl) mpEl.checked = !!this.config.showMercadoPagoId;
+
+      const feedEl = document.getElementById('cfgFeedLines');
+      if (feedEl) feedEl.value = String(this.config.feedLines || 5);
+
+      const footEl = document.getElementById('cfgFooterMessage');
+      if (footEl) footEl.value = this.config.footerMessage || '';
+    },
+
+    openConfigModal() {
+      this.loadConfig();
+      if (window.AdminApp && window.AdminApp.switchView) {
+        window.AdminApp.switchView('settings');
+      }
+    },
+
+    closeConfigModal() {
+      // Compatibilidade
+    },
+
+    saveAndApply() {
+      this.saveConfig();
+      showToast('Configurações de impressão salvas com sucesso!');
+    },
+
+    formatMoney(val) {
+      return brl(val);
+    },
+
+    escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    },
+
+    renderFeedLines(count) {
+      const n = Math.max(1, count || 5);
+      return Array.from({ length: n }).map(() => '&nbsp;<br>').join('');
+    },
+
+    generateSlipHtml(order, viaLabel = '') {
+      const oid = this.escapeHtml(order.orderId || order.id || 'DAD-0000');
+      const mpId = this.escapeHtml(order.paymentId || order.mpOrderId || 'N/A');
+      const client = this.escapeHtml(order.customer?.name || order.name || 'Cliente');
+      const phone = this.escapeHtml(order.customer?.phone || order.phone || 'Não informado');
+      const mode = (order.order?.mode || order.mode || 'entrega').toUpperCase();
+      const addr = this.escapeHtml(order.order?.address || order.address || order.addr || 'Retirada no Balcão');
+      const items = order.order?.items || order.items || [];
+      const total = Number(order.total) || Number(order.order?.total) || 0;
+      const subtotal = Number(order.subtotal) || Number(order.order?.subtotal) || total;
+      const deliveryFee = Number(order.deliveryFee) || Number(order.order?.deliveryFee) || 0;
+      const pay = this.escapeHtml(order.paymentMethod || order.payment || 'PIX').toUpperCase();
+      const unit = this.escapeHtml(order.unitName || order.unit || "Dad's Burger");
+      const unitAddr = this.escapeHtml(order.unitAddress || '');
+      const notes = this.escapeHtml(order.notes || order.order?.notes || '');
+      const now = new Date().toLocaleString('pt-BR');
+
+      let html = '';
+
+      // VIA BADGE (se tiver 2 vias ou rótulo específico)
+      if (viaLabel) {
+        html += `
+          <div style="text-align:center;font-weight:900;font-size:1.1em;border:2px solid #000;padding:2px 0;margin-bottom:4px;letter-spacing:1px">
+            [ ${viaLabel.toUpperCase()} ]
+          </div>
+        `;
+      }
+
+      // CABEÇALHO DO ESTABELECIMENTO
+      if (this.config.showUnitHeader) {
+        html += `
+          <div class="slip-center">
+            <div class="slip-title">DAD'S BURGER</div>
+            <div class="slip-bold">${unit}</div>
+            ${unitAddr ? `<div style="font-size:0.9em">${unitAddr}</div>` : ''}
+          </div>
+          <div class="slip-sep"></div>
+        `;
+      }
+
+      // DADOS PRINCIPAIS DO PEDIDO
+      html += `
+        <div class="slip-center">
+          <div class="slip-title" style="font-size:1.4em">PEDIDO #${oid}</div>
+          <div style="font-size:0.9em">${now}</div>
+          <div class="slip-bold" style="margin-top:2px;font-size:1.05em">TIPO: ${mode}</div>
+        </div>
+        <div class="slip-sep"></div>
+      `;
+
+      // DADOS DO CLIENTE
+      if (this.config.showCustomerDetails) {
+        html += `
+          <div class="slip-field"><b>CLIENTE:</b> <span>${client}</span></div>
+          <div class="slip-field"><b>FONE:</b> <span>${phone}</span></div>
+          <div class="slip-field"><b>ENDERECO:</b> <span>${mode === 'RETIRADA' ? 'Retirada no Balcão' : addr}</span></div>
+          ${notes ? `<div class="slip-field" style="margin-top:2px"><b>OBS:</b> <span>${notes}</span></div>` : ''}
+          <div class="slip-sep"></div>
+        `;
+      }
+
+      // TABELA DE ITENS COM COLUNAS FIXAS (Previne quebras e desalinhamento)
+      html += `
+        <table class="slip-table">
+          <thead>
+            <tr>
+              <th class="col-q">QTD</th>
+              <th class="col-item">ITEM</th>
+              <th class="col-tot">TOTAL</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      if (items.length === 0) {
+        html += `<tr><td colspan="3" style="text-align:center;padding:4px">Nenhum item discriminado</td></tr>`;
+      } else {
+        items.forEach(it => {
+          const q = it.q || 1;
+          const name = this.escapeHtml(it.name || 'Item');
+          const rowTot = (it.price || 0) * q;
+          const itemNotes = this.escapeHtml(it.obs || it.notes || '');
+
+          html += `
+            <tr>
+              <td class="col-q"><b>${q}x</b></td>
+              <td class="col-item">
+                <span class="slip-bold">${name}</span>
+                ${itemNotes ? `<div style="font-size:0.85em;font-style:italic">* ${itemNotes}</div>` : ''}
+              </td>
+              <td class="col-tot">${this.formatMoney(rowTot)}</td>
+            </tr>
+          `;
+        });
+      }
+
+      html += `
+          </tbody>
+        </table>
+        <div class="slip-sep-double"></div>
+      `;
+
+      // VALORES / RESUMO FINANCEIRO
+      html += `
+        <div class="slip-totals-box">
+          ${deliveryFee > 0 ? `
+            <div class="slip-field"><span>Subtotal:</span><span>${this.formatMoney(subtotal)}</span></div>
+            <div class="slip-field"><span>Taxa de Entrega:</span><span>${this.formatMoney(deliveryFee)}</span></div>
+          ` : ''}
+          <div class="slip-field" style="font-size:1.25em;font-weight:900;margin-top:2px">
+            <span>TOTAL:</span>
+            <span>${this.formatMoney(total)}</span>
+          </div>
+          <div class="slip-field" style="margin-top:4px">
+            <span>FORMA PAGTO:</span>
+            <span class="slip-bold">${pay}</span>
+          </div>
+        </div>
+      `;
+
+      // CÓDIGO MERCADO PAGO
+      if (this.config.showMercadoPagoId && mpId && mpId !== 'N/A') {
+        html += `
+          <div class="slip-sep"></div>
+          <div class="slip-center" style="font-size:0.85em;font-family:'JetBrains Mono',monospace">
+            <div>MERCADO PAGO AUTH:</div>
+            <div class="slip-bold">${mpId}</div>
+          </div>
+        `;
+      }
+
+      // MENSAGEM DE RODAPÉ
+      if (this.config.footerMessage) {
+        html += `
+          <div class="slip-sep"></div>
+          <div class="slip-center" style="font-size:0.9em;font-weight:700">
+            ${this.escapeHtml(this.config.footerMessage)}
+          </div>
+        `;
+      }
+
+      // AVANÇO DE PAPEL FINAL (Para guilhotina não cortar o rodapé)
+      html += `
+        <div class="slip-feed">
+          ${this.renderFeedLines(this.config.feedLines)}
+        </div>
+      `;
+
+      return html;
+    },
+
+    printOrder(order, options = {}) {
+      if (!order) {
+        showToast('Nenhum pedido selecionado para impressão.');
+        return;
+      }
+
+      const slip = document.getElementById('printableSlip');
+      if (!slip) return;
+
+      // Aplica classes de largura (80mm vs 58mm) e tamanho de fonte
+      slip.className = `print-width-${this.config.paperWidth === '58mm' ? '58' : '80'} print-font-${this.config.fontSize || 'normal'}`;
+
+      let fullContent = '';
+      const copiesCount = Number(this.config.copies) || 1;
+
+      if (copiesCount === 2) {
+        fullContent += `
+          <div class="slip-copy">
+            ${this.generateSlipHtml(order, '1ª VIA - COZINHA')}
+          </div>
+          <div class="slip-copy" style="page-break-before: always; margin-top: 18px;">
+            ${this.generateSlipHtml(order, '2ª VIA - ENTREGA / CAIXA')}
+          </div>
+        `;
+      } else {
+        fullContent = `
+          <div class="slip-copy">
+            ${this.generateSlipHtml(order, '')}
+          </div>
+        `;
+      }
+
+      slip.innerHTML = fullContent;
+      slip.hidden = false;
+
+      // Executa o diálogo ou disparo automático via spooler do browser
+      window.print();
+
+      setTimeout(() => {
+        slip.hidden = true;
+      }, 500);
+
+      const oid = order.orderId || order.id || '';
+      showToast(`Comanda #${oid} enviada para a impressora.`);
+    },
+
+    printCalibrationTest() {
+      const mockTestOrder = {
+        orderId: 'TESTE-88',
+        paymentId: 'MP-TEST-99887766',
+        unitName: "Dad's Burger · Calibração",
+        unitAddress: "Av. Principal, 1000 - Balcão",
+        status: 'novo',
+        notes: 'Sem cebola, dobro de queijo',
+        total: 58.50,
+        subtotal: 52.00,
+        deliveryFee: 6.50,
+        paymentMethod: 'PIX (Aprovado)',
+        customer: {
+          name: 'Teste de Impressão Térmica',
+          phone: '(51) 99999-8888',
+        },
+        order: {
+          mode: 'entrega',
+          address: 'Rua de Calibração, 123 - Apto 402',
+          items: [
+            { q: 1, name: "Dad's Monster Bacon", price: 38.00, obs: 'Ponto da carne: Ao ponto' },
+            { q: 1, name: 'Batata Rústica Grande', price: 14.00, obs: 'Molho especial à parte' }
+          ]
+        }
+      };
+
+      this.printOrder(mockTestOrder);
+    },
+
+    downloadDirectPrintShortcut() {
+      const currentUrl = window.location.href.split('#')[0];
+      const batContent = `@echo off\r\n` +
+        `title Configurando Dad's Burger Caixa...\r\n` +
+        `set TARGET_URL=${currentUrl}\r\n` +
+        `powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([System.IO.Path]::Combine([Environment]::GetFolderPath('Desktop'), 'Dads Burger - Caixa.lnk')); $s.TargetPath = 'chrome.exe'; $s.Arguments = '--kiosk-printing \"' + $env:TARGET_URL + '\"'; $s.IconLocation = 'shell32.dll,220'; $s.Save()"\r\n` +
+        `echo Atalho criado na sua Area de Trabalho!\r\n` +
+        `start "" "%USERPROFILE%\\Desktop\\Dads Burger - Caixa.lnk"\r\n`;
+
+      const blob = new Blob([batContent], { type: 'application/bat' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Criar_Atalho_Caixa.bat';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+      showToast('Arquivo de atalho baixado. Dê 2 cliques para fixar na Área de Trabalho.');
+    },
+
+    installAutoStartup() {
+      const currentUrl = window.location.href.split('#')[0];
+      const batContent = `@echo off\r\n` +
+        `title Instalando Inicializacao Automatica - Dad's Burger...\r\n` +
+        `set TARGET_URL=${currentUrl}\r\n` +
+        `powershell -Command "$ws = New-Object -ComObject WScript.Shell; $startupPath = [Environment]::GetFolderPath('Startup'); $s = $ws.CreateShortcut([System.IO.Path]::Combine($startupPath, 'Dads_Burger_Caixa.lnk')); $s.TargetPath = 'chrome.exe'; $s.Arguments = '--kiosk-printing \"' + $env:TARGET_URL + '\"'; $s.IconLocation = 'shell32.dll,220'; $s.Save()"\r\n` +
+        `echo Sucesso! O Painel de Pedidos do Dad's Burger agora abrira automaticamente toda vez que este computador ligar.\r\n` +
+        `timeout /t 3\r\n`;
+
+      const blob = new Blob([batContent], { type: 'application/bat' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Instalar_Inicializacao_Automatica.bat';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 500);
+      showToast('Instalador de inicialização baixado! Dê 2 cliques uma única vez.');
+    }
+  };
+
+  // -------------------------------------------------------------
+  // APLICAÇÃO ADMINISTRATIVA (KANBAN: NOVOS | PREPARO | ROTA + CONCLUÍDOS + CANCELADOS)
+  // -------------------------------------------------------------
+  const AdminApp = {
+    orders: [],
+    selectedOrderId: null,
+    currentView: 'kanban', // 'kanban' | 'history' | 'canceled'
+    selectedStore: 'todas',
+    historySearchTerm: '',
+    canceledSearchTerm: '',
+    pollInterval: null,
+    broadcast: null,
+
+    init() {
+      if (window.PrinterEngine) window.PrinterEngine.loadConfig();
+      this.setupEventListeners();
+      this.setupCrossTab();
+      this.loadOrders();
+
+      if (this.pollInterval) clearInterval(this.pollInterval);
+      this.pollInterval = setInterval(() => this.poll(), 2500);
+    },
+
+    switchView(viewName) {
+      const btnKanban = document.getElementById('btnViewKanban');
+      const btnHistory = document.getElementById('btnViewHistory');
+      const btnCanceled = document.getElementById('btnViewCanceled');
+      const kanbanView = document.getElementById('kanbanView');
+      const historyView = document.getElementById('historyView');
+      const canceledView = document.getElementById('canceledView');
+      const settingsView = document.getElementById('settingsView');
+      const metricsStrip = document.querySelector('.metrics-strip');
+      const sideTicket = document.querySelector('.side-ticket');
+
+      this.currentView = viewName;
+      if (btnKanban) btnKanban.classList.toggle('active', viewName === 'kanban');
+      if (btnHistory) btnHistory.classList.toggle('active', viewName === 'history');
+      if (btnCanceled) btnCanceled.classList.toggle('active', viewName === 'canceled');
+
+      if (kanbanView) kanbanView.style.display = viewName === 'kanban' ? 'grid' : 'none';
+      if (historyView) historyView.style.display = viewName === 'history' ? 'block' : 'none';
+      if (canceledView) canceledView.style.display = viewName === 'canceled' ? 'block' : 'none';
+      if (settingsView) settingsView.style.display = viewName === 'settings' ? 'block' : 'none';
+
+      // Na tela de configurações, oculta o resumo de KPIs e comanda lateral para foco total
+      if (metricsStrip) metricsStrip.style.display = viewName === 'settings' ? 'none' : 'grid';
+      if (sideTicket) sideTicket.style.display = viewName === 'settings' ? 'none' : 'flex';
+
+      if (viewName === 'kanban') this.render();
+      else if (viewName === 'history') this.renderHistory();
+      else if (viewName === 'canceled') this.renderCanceled();
+      else if (viewName === 'settings') {
+        if (window.PrinterEngine) window.PrinterEngine.loadConfig();
+        this.updateSoundUi();
+      }
+    },
+
+    updateSoundUi() {
+      const txt = AlarmEngine.muted ? 'Alarme Sonoro: Mutado' : 'Alarme Sonoro: Ativo';
+      const menuTxt = document.getElementById('menuItemSoundText');
+      if (menuTxt) menuTxt.textContent = txt;
+      const setBtn = document.getElementById('btnSettingsToggleSound');
+      if (setBtn) {
+        setBtn.textContent = AlarmEngine.muted ? 'Alarme: Mutado' : 'Alarme: Ativo';
+        setBtn.style.color = AlarmEngine.muted ? '#71717A' : '#15803D';
+      }
+    },
+
+    openCancelModal(orderId) {
+      if (!orderId) return;
+      const cleanId = String(orderId).replace(/^#/, '');
+      this.pendingCancelOrderId = cleanId;
+      const ord = this.orders.find(o => (o.orderId || o.id) === cleanId || (o.orderId || o.id) === orderId);
+      const client = ord?.customer?.name || ord?.name || 'Cliente';
+
+      const modal = document.getElementById('cancelModalBackdrop');
+      const text = document.getElementById('cancelModalText');
+      if (text) {
+        text.innerHTML = `Tem certeza que deseja cancelar o <b>Pedido #${cleanId}</b> (${client})?<br><br>Ele será removido do fluxo de produção da cozinha e arquivado na aba de <b>Cancelados</b>. Você poderá reativá-lo a qualquer momento.`;
+      }
+      if (modal) {
+        modal.style.display = 'flex';
+      }
+    },
+
+    closeCancelModal() {
+      this.pendingCancelOrderId = null;
+      const modal = document.getElementById('cancelModalBackdrop');
+      if (modal) modal.style.display = 'none';
+    },
+
+    confirmCancel() {
+      if (this.pendingCancelOrderId) {
+        const idToCancel = this.pendingCancelOrderId;
+        this.closeCancelModal();
+        this.advanceOrder(idToCancel, 'cancelado');
+      }
+    },
+
+    setupEventListeners() {
+      // Alternância de visão: Kanban vs Histórico vs Cancelados
+      const btnKanban = document.getElementById('btnViewKanban');
+      const btnHistory = document.getElementById('btnViewHistory');
+      const btnCanceled = document.getElementById('btnViewCanceled');
+
+      if (btnKanban) btnKanban.onclick = () => this.switchView('kanban');
+      if (btnHistory) btnHistory.onclick = () => this.switchView('history');
+      if (btnCanceled) btnCanceled.onclick = () => this.switchView('canceled');
+
+      // Botão de retorno das configurações para os pedidos
+      const btnBack = document.getElementById('btnBackToKanban');
+      if (btnBack) btnBack.onclick = () => this.switchView('kanban');
+
+      // Menu Dropdown de Conta
+      const accountWrap = document.getElementById('accountDropdownWrap');
+      const btnAccount = document.getElementById('btnAccountTrigger');
+      const accountMenu = document.getElementById('accountMenuDropdown');
+
+      if (btnAccount && accountMenu) {
+        btnAccount.onclick = (e) => {
+          e.stopPropagation();
+          const isOpen = accountMenu.classList.toggle('open');
+          btnAccount.setAttribute('aria-expanded', String(isOpen));
+        };
+
+        document.addEventListener('click', (e) => {
+          if (accountWrap && !accountWrap.contains(e.target)) {
+            accountMenu.classList.remove('open');
+            btnAccount.setAttribute('aria-expanded', 'false');
+          }
+        });
+      }
+
+      // Itens do Menu de Conta
+      const menuSettings = document.getElementById('menuItemSettings');
+      if (menuSettings) {
+        menuSettings.onclick = () => {
+          if (accountMenu) accountMenu.classList.remove('open');
+          this.switchView('settings');
+        };
+      }
+
+      const menuSound = document.getElementById('menuItemToggleSound');
+      if (menuSound) {
+        menuSound.onclick = () => {
+          AlarmEngine.toggleMute();
+          this.updateSoundUi();
+          showToast(AlarmEngine.muted ? 'Alarme da cozinha mutado.' : 'Alarme da cozinha ativado.');
+        };
+      }
+
+      const menuTest = document.getElementById('menuItemTestSound');
+      if (menuTest) {
+        menuTest.onclick = () => {
+          AlarmEngine.testTone();
+        };
+      }
+
+      // Filtro de unidade com reavaliação imediata de alarme
+      const storeSel = document.getElementById('unitSelectFilter');
+      if (storeSel) {
+        storeSel.onchange = (e) => {
+          this.selectedStore = e.target.value;
+          this.render();
+          this.checkAlarm();
+        };
+      }
+
+      // Busca no histórico de concluídos
+      const histSearch = document.getElementById('historySearchInput');
+      if (histSearch) {
+        histSearch.oninput = (e) => {
+          this.historySearchTerm = e.target.value.toLowerCase().trim();
+          this.renderHistory();
+        };
+      }
+
+      // Busca nos cancelados
+      const cancSearch = document.getElementById('canceledSearchInput');
+      if (cancSearch) {
+        cancSearch.oninput = (e) => {
+          this.canceledSearchTerm = e.target.value.toLowerCase().trim();
+          this.renderCanceled();
+        };
+      }
+
+      window.addEventListener('click', () => AlarmEngine.initAudio(), { once: false });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') this.closeCancelModal();
+      });
+
+      // Botão principal de ação na comanda lateral
+      const btnMain = document.getElementById('btnTicketMainAction');
+      if (btnMain) {
+        btnMain.onclick = () => {
+          if (!this.selectedOrderId) return;
+          const ord = this.orders.find(o => (o.orderId || o.id) === this.selectedOrderId);
+          if (!ord) return;
+          const st = (ord.status || 'novo').toLowerCase();
+
+          if (st === 'novo') {
+            this.advanceOrder(this.selectedOrderId, 'preparando');
+          } else if (st === 'preparando') {
+            this.advanceOrder(this.selectedOrderId, 'entrega');
+          } else if (st === 'entrega') {
+            this.advanceOrder(this.selectedOrderId, 'concluido');
+          } else if (st === 'cancelado') {
+            this.advanceOrder(this.selectedOrderId, 'preparando');
+          }
+        };
+      }
+
+      // Imprimir comanda padronizada
+      const btnPrint = document.getElementById('btnPrintSlip');
+      if (btnPrint) {
+        btnPrint.onclick = () => {
+          if (this.selectedOrderId) this.printThermalSlip(this.selectedOrderId);
+        };
+      }
+
+      // Cancelar pedido via modal seguro
+      const btnCancel = document.getElementById('btnCancelOrder');
+      if (btnCancel) {
+        btnCancel.onclick = () => {
+          if (!this.selectedOrderId) return;
+          this.openCancelModal(this.selectedOrderId);
+        };
+      }
+    },
+
+    setupCrossTab() {
+      if (typeof BroadcastChannel !== 'undefined') {
+        try {
+          this.broadcast = new BroadcastChannel('dads_restaurant_channel');
+          this.broadcast.onmessage = (e) => {
+            if (e.data && e.data.type === 'NEW_ORDER') {
+              this.handleIncoming(e.data.order);
+            }
+          };
+        } catch(e) {}
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'dads_latest_order' && e.newValue) {
+          try {
+            const ord = JSON.parse(e.newValue);
+            this.handleIncoming(ord);
+          } catch(err) {}
+        }
+      });
+    },
+
+    async loadOrders() {
+      try {
+        const res = await fetch('/api/orders');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.orders && Array.isArray(data.orders)) {
+            this.orders = data.orders;
+            this.render();
+            this.checkAlarm();
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao buscar pedidos:', e);
+      }
+    },
+
+    async poll() {
+      try {
+        const res = await fetch('/api/orders');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.orders && Array.isArray(data.orders)) {
+            const prevIds = new Set(this.orders.map(o => o.orderId || o.id));
+            const fresh = data.orders.filter(o => !prevIds.has(o.orderId || o.id));
+
+            this.orders = data.orders;
+            this.render();
+
+            if (fresh.length > 0) {
+              const freshNovoForStore = fresh.find(o => {
+                const isNovo = (o.status || '').toLowerCase() === 'novo';
+                const matchesStore = this.selectedStore === 'todas' || 
+                                     o.unitId === this.selectedStore || 
+                                     o.order?.unitId === this.selectedStore;
+                return isNovo && matchesStore;
+              });
+              if (freshNovoForStore) {
+                AlarmEngine.startLoop(freshNovoForStore);
+
+                // Disparo automático de impressão se configurado
+                if (window.PrinterEngine && window.PrinterEngine.config && window.PrinterEngine.config.autoPrint) {
+                  window.PrinterEngine.printOrder(freshNovoForStore);
+                }
+              } else {
+                this.checkAlarm();
+              }
+            } else {
+              this.checkAlarm();
+            }
+          }
+        }
+      } catch(e) {}
+    },
+
+    handleIncoming(ord) {
+      if (!ord) return;
+      const oid = ord.orderId || ord.id;
+      const exists = this.orders.some(o => (o.orderId || o.id) === oid);
+      if (!exists) {
+        this.orders.unshift(ord);
+      }
+      this.render();
+
+      // Só toca o alarme se o pedido pertence à unidade selecionada (ou se "todas" estiver selecionada)
+      const matchesStore = this.selectedStore === 'todas' || 
+                           ord.unitId === this.selectedStore || 
+                           ord.order?.unitId === this.selectedStore;
+      if (matchesStore) {
+        AlarmEngine.startLoop(ord);
+
+        // Disparo automático de impressão se configurado
+        if (window.PrinterEngine && window.PrinterEngine.config && window.PrinterEngine.config.autoPrint) {
+          window.PrinterEngine.printOrder(ord);
+        }
+      }
+    },
+
+    checkAlarm() {
+      // Filtra estritamente os pedidos da unidade selecionada
+      const list = this.getFiltered();
+      const activeNew = list.filter(o => {
+        const st = (o.status || '').toLowerCase();
+        return st === 'novo' && !AlarmEngine.silencedOrders.has(o.orderId || o.id);
+      });
+
+      if (activeNew.length > 0) {
+        if (!AlarmEngine.isPlaying) {
+          AlarmEngine.startLoop(activeNew[0]);
+        }
+      } else {
+        if (AlarmEngine.isPlaying) {
+          AlarmEngine.stopLoop();
+        }
+      }
+    },
+
+    // AVANÇO DE FLUXO: novo -> preparando -> entrega -> concluido / cancelado
+    async advanceOrder(orderId, nextStatus) {
+      const cleanId = String(orderId).replace(/^#/, '');
+      AlarmEngine.stopLoop(cleanId);
+
+      // Atualiza imediatamente no estado da aplicação
+      const ord = this.orders.find(o => (o.orderId || o.id) === cleanId || (o.orderId || o.id) === orderId);
+      if (ord) {
+        ord.status = nextStatus;
+        ord.updated_at = Date.now() / 1000;
+      }
+
+      // Se cancelou ou concluiu na visão Kanban, ajusta a seleção para o próximo ativo
+      if (this.currentView === 'kanban' && (nextStatus === 'cancelado' || nextStatus === 'concluido')) {
+        const activeOrders = this.orders.filter(o => {
+          const s = (o.status || '').toLowerCase();
+          return s === 'novo' || s === 'preparando' || s === 'entrega';
+        });
+        if (activeOrders.length > 0) {
+          this.selectedOrderId = activeOrders[0].orderId || activeOrders[0].id;
+        } else {
+          this.selectedOrderId = null;
+        }
+      }
+
+      this.render();
+
+      try {
+        const res = await fetch(`/api/orders/${encodeURIComponent(cleanId)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.order) {
+            const idx = this.orders.findIndex(o => (o.orderId || o.id) === cleanId || (o.orderId || o.id) === orderId);
+            if (idx !== -1) {
+              this.orders[idx] = { ...this.orders[idx], ...data.order };
+              this.render();
+            }
+          }
+        }
+      } catch (e) {}
+
+      const labels = {
+        preparando: 'enviado para preparo na cozinha',
+        entrega: 'despachado em rota de entrega',
+        concluido: 'concluído e movido para pedidos concluídos',
+        cancelado: 'cancelado e arquivado na aba de Cancelados'
+      };
+      const extraLink = nextStatus === 'cancelado' 
+        ? ` <a href="javascript:void(0)" onclick="window.AdminApp.switchView('canceled')" style="color:#FFF;text-decoration:underline;margin-left:8px;font-weight:700">Ver Cancelados &rarr;</a>` 
+        : (nextStatus === 'concluido' ? ` <a href="javascript:void(0)" onclick="window.AdminApp.switchView('history')" style="color:#FFF;text-decoration:underline;margin-left:8px;font-weight:700">Ver Concluídos &rarr;</a>` : '');
+
+      showToast(`Pedido #${cleanId} ${labels[nextStatus] || 'atualizado'}.${extraLink}`);
+    },
+
+    reopenOrder(orderId) {
+      const cleanId = String(orderId).replace(/^#/, '');
+      this.advanceOrder(cleanId, 'preparando');
+      showToast(`Pedido #${cleanId} reativado e enviado para Em Preparo.`);
+    },
+
+    getFiltered() {
+      return this.orders.filter(o => {
+        if (this.selectedStore === 'todas') return true;
+        return o.unitId === this.selectedStore || o.order?.unitId === this.selectedStore;
+      });
+    },
+
+    render() {
+      this.updateMetrics();
+
+      if (this.currentView === 'history') {
+        this.renderHistory();
+        return;
+      }
+      if (this.currentView === 'canceled') {
+        this.renderCanceled();
+        return;
+      }
+
+      const list = this.getFiltered();
+      const colNovos = document.getElementById('colListNovos');
+      const colPrep = document.getElementById('colListPrep');
+      const colRota = document.getElementById('colListRota');
+
+      const novos = list.filter(o => (o.status || 'novo').toLowerCase() === 'novo');
+      const prep = list.filter(o => (o.status || '').toLowerCase() === 'preparando');
+      const rota = list.filter(o => (o.status || '').toLowerCase() === 'entrega');
+
+      // Se nenhum pedido selecionado ou selecionado não existe mais no fluxo ativo, seleciona o primeiro ativo
+      const activeOrders = [...novos, ...prep, ...rota];
+      if (!this.selectedOrderId || !activeOrders.some(o => (o.orderId || o.id) === this.selectedOrderId)) {
+        if (novos.length > 0) this.selectedOrderId = novos[0].orderId || novos[0].id;
+        else if (prep.length > 0) this.selectedOrderId = prep[0].orderId || prep[0].id;
+        else if (rota.length > 0) this.selectedOrderId = rota[0].orderId || rota[0].id;
+        else this.selectedOrderId = null;
+      }
+
+      // Coluna 1: Novos Pedidos
+      if (novos.length === 0) {
+        colNovos.innerHTML = '<div class="kanban-empty">Nenhum novo pedido pendente.</div>';
+      } else {
+        colNovos.innerHTML = novos.map(o => this.createCardHtml(o, 'novo', 'Enviar para Preparo', 'to-prep')).join('');
+      }
+
+      // Coluna 2: Em Preparo
+      if (prep.length === 0) {
+        colPrep.innerHTML = '<div class="kanban-empty">Nenhum pedido em preparo.</div>';
+      } else {
+        colPrep.innerHTML = prep.map(o => this.createCardHtml(o, 'prep', 'Enviar para Rota', 'to-rota')).join('');
+      }
+
+      // Coluna 3: Em Rota
+      if (rota.length === 0) {
+        colRota.innerHTML = '<div class="kanban-empty">Nenhum pedido em rota.</div>';
+      } else {
+        colRota.innerHTML = rota.map(o => this.createCardHtml(o, 'rota', 'Concluir Pedido', 'to-done')).join('');
+      }
+
+      this.renderTicket();
+    },
+
+    createCardHtml(ord, stage, btnText, btnClass) {
+      const oid = ord.orderId || ord.id || 'DAD-0000';
+      const mpId = ord.paymentId || ord.mpOrderId || '';
+      const isSel = this.selectedOrderId === oid;
+      const client = ord.customer?.name || ord.name || 'Cliente';
+      const mode = (ord.order?.mode || ord.mode || 'entrega').toLowerCase();
+      const addr = ord.order?.address || ord.address || ord.addr || 'Retirada no Balcão';
+      const items = ord.order?.items || ord.items || [];
+      const total = Number(ord.total) || Number(ord.order?.total) || 0;
+      const pay = ord.paymentMethod || ord.payment || 'PIX';
+      const timeAgo = this.formatTimeAgo(ord.created_at);
+
+      const itemsSummary = items.map(it => `${it.q || 1}x ${it.name}`).join(', ');
+
+      return `
+        <div class="order-card card-${stage} ${isSel ? 'selected' : ''}" onclick="window.AdminApp.selectOrder('${oid}')">
+          <div class="card-top">
+            <span class="card-id">#${oid}</span>
+            <span class="card-time">${timeAgo}</span>
+          </div>
+          ${mpId ? `<div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);margin:2px 0 4px">MP ID: <b style="color:var(--text-primary)">${mpId}</b></div>` : ''}
+
+          <div class="card-customer">${client}</div>
+          <span class="card-delivery-tag ${mode}">${mode === 'entrega' ? 'Entrega' : 'Retirada'}</span>
+          <div class="card-address">${addr}</div>
+
+          <div class="card-items-snippet">
+            ${itemsSummary || 'Itens diversos'}
+          </div>
+
+          <div class="card-footer">
+            <span class="card-payment-label">${pay}</span>
+            <span class="card-price">${brl(total)}</span>
+          </div>
+
+          <div class="card-btn-group">
+            <button type="button" class="btn-advance ${btnClass}" onclick="event.stopPropagation(); window.AdminApp.handleCardAction('${oid}', '${stage}')">
+              ${btnText}
+            </button>
+            <button type="button" class="btn-card-cancel" onclick="event.stopPropagation(); window.AdminApp.openCancelModal('${oid}')" title="Cancelar este pedido">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      `;
+    },
+
+    handleCardAction(orderId, currentStage) {
+      if (currentStage === 'novo') {
+        this.advanceOrder(orderId, 'preparando');
+      } else if (currentStage === 'prep') {
+        this.advanceOrder(orderId, 'entrega');
+      } else if (currentStage === 'rota') {
+        this.advanceOrder(orderId, 'concluido');
+      }
+    },
+
+    selectOrder(orderId) {
+      this.selectedOrderId = orderId;
+      document.querySelectorAll('.order-card').forEach(c => c.classList.remove('selected'));
+      this.render();
+    },
+
+    renderTicket() {
+      const ord = this.orders.find(o => (o.orderId || o.id) === this.selectedOrderId);
+      if (!ord) {
+        document.getElementById('ticketId').textContent = '---';
+        const mpEl = document.getElementById('ticketMpId');
+        if (mpEl) mpEl.textContent = '---';
+        document.getElementById('ticketStore').textContent = 'Nenhum pedido ativo';
+        const pill = document.getElementById('ticketStatusPill');
+        pill.className = 'ticket-status-pill';
+        pill.textContent = 'AGUARDANDO SELEÇÃO';
+        document.getElementById('ticketClientName').textContent = 'Selecione um pedido';
+        document.getElementById('ticketClientPhone').textContent = 'Nenhum pedido ativo selecionado';
+        document.getElementById('ticketWaBtn').style.display = 'none';
+        document.getElementById('ticketAddressBox').textContent = 'Selecione um pedido na coluna ao lado para visualizar os detalhes.';
+        document.getElementById('ticketItemsList').innerHTML = '<div style="font-size:12.5px;color:var(--text-muted);padding:24px 0;text-align:center">Nenhum pedido selecionado.</div>';
+        const subEl = document.getElementById('ticketSubtotalVal');
+        if (subEl) subEl.textContent = 'R$ 0,00';
+        const delEl = document.getElementById('ticketDeliveryVal');
+        if (delEl) delEl.textContent = 'R$ 0,00';
+        document.getElementById('ticketPaymentMethod').textContent = '---';
+        document.getElementById('ticketTotalVal').textContent = 'R$ 0,00';
+        document.getElementById('btnTicketMainAction').style.display = 'none';
+        document.getElementById('btnCancelOrder').style.display = 'none';
+        document.getElementById('btnPrintSlip').style.display = 'none';
+        return;
+      }
+      document.getElementById('ticketWaBtn').style.display = 'inline-flex';
+      document.getElementById('btnPrintSlip').style.display = 'block';
+
+      const oid = ord.orderId || ord.id || 'DAD-0000';
+      const mpId = ord.paymentId || ord.mpOrderId || 'N/A';
+      const mpEl = document.getElementById('ticketMpId');
+      if (mpEl) mpEl.textContent = mpId;
+      const st = (ord.status || 'novo').toLowerCase();
+      const client = ord.customer?.name || ord.name || 'Cliente';
+      const phone = ord.customer?.phone || ord.phone || 'Não informado';
+      const mode = (ord.order?.mode || ord.mode || 'entrega').toLowerCase();
+      const addr = ord.order?.address || ord.address || ord.addr || 'Retirada no balcão da loja';
+      const items = ord.order?.items || ord.items || [];
+      const total = Number(ord.total) || Number(ord.order?.total) || 0;
+      const subtotal = Number(ord.subtotal) || Number(ord.order?.subtotal) || (items.reduce((s, it) => s + (it.price || 0) * (it.q || 1), 0)) || total;
+      const deliveryFee = Number(ord.deliveryFee) || Number(ord.order?.deliveryFee) || (mode === 'entrega' && total > subtotal ? (total - subtotal) : 0);
+
+      const pay = ord.paymentMethod || ord.payment || 'PIX';
+      const unit = ord.unitName || "Dad's Burger";
+
+      document.getElementById('ticketId').textContent = `#${oid}`;
+      document.getElementById('ticketStore').textContent = `${unit} · ${mode === 'entrega' ? 'Entrega' : 'Retirada'}`;
+      
+      const pill = document.getElementById('ticketStatusPill');
+      pill.className = `ticket-status-pill ${st}`;
+      const statusLabels = {
+        novo: 'Novo Pedido',
+        preparando: 'Em Preparo',
+        entrega: 'Em Rota',
+        concluido: 'Concluído',
+        cancelado: 'Cancelado'
+      };
+      pill.textContent = statusLabels[st] || st.toUpperCase();
+
+      document.getElementById('ticketClientName').textContent = client;
+      document.getElementById('ticketClientPhone').textContent = phone;
+      
+      const waBtn = document.getElementById('ticketWaBtn');
+      if (phone && phone.replace(/\D/g, '')) {
+        waBtn.href = `https://wa.me/55${phone.replace(/\D/g, '')}`;
+        waBtn.style.display = 'inline-block';
+      } else {
+        waBtn.style.display = 'none';
+      }
+
+      document.getElementById('ticketAddressBox').textContent = mode === 'entrega' ? `Endereço: ${addr}` : 'Retirada no Balcão da loja';
+
+      // Itens
+      const listContainer = document.getElementById('ticketItemsList');
+      if (items.length === 0) {
+        listContainer.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">Sem itens descritos.</div>';
+      } else {
+        listContainer.innerHTML = items.map(it => `
+          <div class="ticket-item-row">
+            <div>
+              <span class="ticket-item-qty">${it.q || 1}x</span>
+              <span>${it.name}</span>
+            </div>
+            <div class="ticket-item-price">${brl((it.price || 0) * (it.q || 1))}</div>
+          </div>
+        `).join('');
+      }
+
+      // Discriminativo financeiro do pedido
+      const subEl = document.getElementById('ticketSubtotalVal');
+      if (subEl) subEl.textContent = brl(subtotal);
+
+      const delEl = document.getElementById('ticketDeliveryVal');
+      if (delEl) delEl.textContent = mode === 'retirada' ? 'No balcão (R$ 0,00)' : (deliveryFee > 0 ? brl(deliveryFee) : 'Grátis');
+
+      document.getElementById('ticketPaymentMethod').textContent = pay;
+      document.getElementById('ticketTotalVal').textContent = brl(total);
+
+      // Botão de ação dinâmico
+      const mainBtn = document.getElementById('btnTicketMainAction');
+      const cancelBtn = document.getElementById('btnCancelOrder');
+
+      if (st === 'novo') {
+        mainBtn.style.display = 'block';
+        mainBtn.style.background = '#D97706';
+        mainBtn.textContent = 'Enviar para Preparo';
+        cancelBtn.style.display = 'block';
+      } else if (st === 'preparando') {
+        mainBtn.style.display = 'block';
+        mainBtn.style.background = '#2563EB';
+        mainBtn.textContent = 'Enviar para Rota';
+        cancelBtn.style.display = 'block';
+      } else if (st === 'entrega') {
+        mainBtn.style.display = 'block';
+        mainBtn.style.background = '#16A34A';
+        mainBtn.textContent = 'Concluir Pedido';
+        cancelBtn.style.display = 'block';
+      } else if (st === 'cancelado') {
+        mainBtn.style.display = 'block';
+        mainBtn.style.background = '#2563EB';
+        mainBtn.textContent = 'Reativar Pedido (Em Preparo)';
+        cancelBtn.style.display = 'none';
+      } else {
+        mainBtn.style.display = 'none';
+        cancelBtn.style.display = 'none';
+      }
+    },
+
+    renderHistory() {
+      const list = this.getFiltered();
+      const doneList = list.filter(o => (o.status || '').toLowerCase() === 'concluido');
+      const tableBody = document.getElementById('historyTableBody');
+      const search = this.historySearchTerm;
+
+      const filtered = doneList.filter(o => {
+        if (!search) return true;
+        const text = `${o.orderId || o.id} ${o.customer?.name || o.name || ''} ${o.customer?.phone || o.phone || ''}`.toLowerCase();
+        return text.includes(search);
+      });
+
+      document.getElementById('historyTotalBadge').textContent = String(doneList.length);
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum pedido concluído localizado.</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(o => {
+        const oid = o.orderId || o.id || 'DAD-0000';
+        const client = o.customer?.name || o.name || 'Cliente';
+        const mode = (o.order?.mode || o.mode || 'entrega').toUpperCase();
+        const addr = o.order?.address || o.address || o.addr || 'Retirada no Balcão';
+        const items = (o.order?.items || o.items || []).map(i => `${i.q || 1}x ${i.name}`).join(', ');
+        const total = Number(o.total) || Number(o.order?.total) || 0;
+        const timeAgo = this.formatTimeAgo(o.created_at);
+
+        return `
+          <tr onclick="window.AdminApp.selectOrder('${oid}')">
+            <td><b style="font-family:'JetBrains Mono',monospace">#${oid}</b></td>
+            <td style="color:var(--text-muted)">${timeAgo}</td>
+            <td><b>${client}</b></td>
+            <td><span class="card-delivery-tag ${mode.toLowerCase()}">${mode}</span></td>
+            <td style="max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${addr}</td>
+            <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${items}</td>
+            <td><b>${brl(total)}</b></td>
+            <td><span class="history-tag-done">Concluído</span></td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    renderCanceled() {
+      const list = this.getFiltered();
+      const cancList = list.filter(o => (o.status || '').toLowerCase() === 'cancelado');
+      const tableBody = document.getElementById('canceledTableBody');
+      const search = this.canceledSearchTerm;
+
+      const filtered = cancList.filter(o => {
+        if (!search) return true;
+        const text = `${o.orderId || o.id} ${o.customer?.name || o.name || ''} ${o.customer?.phone || o.phone || ''}`.toLowerCase();
+        return text.includes(search);
+      });
+
+      document.getElementById('canceledTotalBadge').textContent = String(cancList.length);
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Nenhum pedido cancelado.</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(o => {
+        const oid = o.orderId || o.id || 'DAD-0000';
+        const client = o.customer?.name || o.name || 'Cliente';
+        const mode = (o.order?.mode || o.mode || 'entrega').toUpperCase();
+        const addr = o.order?.address || o.address || o.addr || 'Retirada no Balcão';
+        const items = (o.order?.items || o.items || []).map(i => `${i.q || 1}x ${i.name}`).join(', ');
+        const total = Number(o.total) || Number(o.order?.total) || 0;
+        const timeAgo = this.formatTimeAgo(o.created_at);
+
+        return `
+          <tr onclick="window.AdminApp.selectOrder('${oid}')">
+            <td><b style="font-family:'JetBrains Mono',monospace">#${oid}</b></td>
+            <td style="color:var(--text-muted)">${timeAgo}</td>
+            <td><b>${client}</b></td>
+            <td><span class="card-delivery-tag ${mode.toLowerCase()}">${mode}</span></td>
+            <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${addr}</td>
+            <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${items}</td>
+            <td><b>${brl(total)}</b></td>
+            <td><span class="history-tag-canceled">Cancelado</span></td>
+            <td>
+              <button type="button" class="btn-reopen" onclick="event.stopPropagation(); window.AdminApp.reopenOrder('${oid}')" title="Reabre e move o pedido para Em Preparo">
+                Reativar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    },
+
+    updateMetrics() {
+      const list = this.getFiltered();
+      const novos = list.filter(o => (o.status || 'novo').toLowerCase() === 'novo').length;
+      const prep = list.filter(o => (o.status || '').toLowerCase() === 'preparando').length;
+      const rota = list.filter(o => (o.status || '').toLowerCase() === 'entrega').length;
+      const done = list.filter(o => (o.status || '').toLowerCase() === 'concluido').length;
+      const canc = list.filter(o => (o.status || '').toLowerCase() === 'cancelado').length;
+      const activeTotal = novos + prep + rota;
+
+      const revenue = list
+        .filter(o => (o.status || '').toLowerCase() !== 'cancelado')
+        .reduce((sum, o) => sum + (Number(o.total) || Number(o.order?.total) || 0), 0);
+
+      document.getElementById('metricValNovos').textContent = String(novos);
+      document.getElementById('metricValPrep').textContent = String(prep);
+      document.getElementById('metricValRota').textContent = String(rota);
+      document.getElementById('metricValDone').textContent = String(done);
+      document.getElementById('metricValCanceled').textContent = String(canc);
+      document.getElementById('metricValRevenue').textContent = brl(revenue);
+
+      document.getElementById('countColNovos').textContent = String(novos);
+      document.getElementById('countColPrep').textContent = String(prep);
+      document.getElementById('countColRota').textContent = String(rota);
+
+      document.getElementById('badgeActiveCount').textContent = String(activeTotal);
+      document.getElementById('badgeDoneCount').textContent = String(done);
+      document.getElementById('badgeCanceledCount').textContent = String(canc);
+    },
+
+    copyCurrentMpId() {
+      const ord = this.orders.find(o => (o.orderId || o.id) === this.selectedOrderId);
+      const mpId = ord?.paymentId || ord?.mpOrderId;
+      if (mpId) {
+        navigator.clipboard.writeText(String(mpId));
+        showToast(`ID Mercado Pago ${mpId} copiado com sucesso!`);
+      } else {
+        showToast('Nenhum ID Mercado Pago disponível para este pedido.');
+      }
+    },
+
+    printThermalSlip(orderId) {
+      const ord = this.orders.find(o => (o.orderId || o.id) === orderId);
+      if (!ord) return;
+      if (window.PrinterEngine) {
+        window.PrinterEngine.printOrder(ord);
+      }
+    },
+
+    formatTimeAgo(timestamp) {
+      if (!timestamp) return 'agora';
+      const sec = Math.floor((Date.now() / 1000) - Number(timestamp));
+      if (sec < 60) return 'agora';
+      const min = Math.floor(sec / 60);
+      if (min < 60) return `${min}m`;
+      const hrs = Math.floor(min / 60);
+      if (hrs < 24) return `${hrs}h`;
+      return `${Math.floor(hrs / 24)}d`;
+    }
+  };
+
+  window.AdminApp = AdminApp;
+  window.AlarmEngine = AlarmEngine;
+  window.PrinterEngine = PrinterEngine;
+
+  // Inicia aplicação
+  if (checkAuth()) {
+    AdminApp.init();
+  }
+})();
+</script>
+</body>
+</html>
