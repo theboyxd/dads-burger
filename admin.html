@@ -2335,7 +2335,21 @@
               </button>
             </div>
 
-            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">🌐 Pagamento Online Integrado (Mercado Pago)</h4>
+            <div style="margin:16px 0;padding:12px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;display:flex;align-items:flex-start;gap:12px;color:#1E40AF;font-size:12.5px;line-height:1.5">
+              <span style="font-size:20px;line-height:1">🛵</span>
+              <div>
+                <b>Entrega Terceirizada (API 99):</b> Motoristas parceiros da 99 não recebem dinheiro e não transportam maquininha. Todos os pedidos com entrega a domicílio são 100% pré-pagos online via Mercado Pago (Pix ou Cartão). <u>Dinheiro em espécie na entrega foi totalmente desativado</u>.
+              </div>
+            </div>
+
+            <div style="margin:0 0 16px;padding:12px 16px;background:#FEFCE8;border:1px solid #FEF08A;border-radius:12px;display:flex;align-items:flex-start;gap:12px;color:#854D0E;font-size:12.5px;line-height:1.5">
+              <span style="font-size:20px;line-height:1">ℹ️</span>
+              <div>
+                <b>Vale-Refeição e Alimentação no Mercado Pago:</b> Devido à regulamentação do PAT no Brasil, o Mercado Pago aceita vouchers (Alelo, Ticket, Sodexo/Pluxee, VR) <u>exclusivamente nas maquininhas físicas Point</u> vinculadas ao CNPJ do restaurante. A API online do Mercado Pago não processa vales de terceiros na web. Por isso, pagamentos com VR ficam habilitados para Retirada no Balcão.
+              </div>
+            </div>
+
+            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">🌐 Pagamento Online Integrado (Mercado Pago - Entrega & Retirada)</h4>
             <div class="payments-cards-grid">
               <div class="payment-card-item enabled" id="payCard_pix_online">
                 <div class="payment-card-left">
@@ -2370,17 +2384,6 @@
                 <input type="checkbox" id="chkPay_cartao_debito_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_debito_online')">
               </div>
 
-              <div class="payment-card-item enabled" id="payCard_vr_online">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">🥗</div>
-                  <div>
-                    <div class="payment-card-title">Vale-Refeição Online (VR / Sodexo / Alelo / Ticket)</div>
-                    <div class="payment-card-type">Vouchers PAT alimentícios aceitos digitalmente via checkout integrado Mercado Pago</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_vr_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_vr_online')">
-              </div>
-
               <div class="payment-card-item enabled" id="payCard_mercadopago_saldo">
                 <div class="payment-card-left">
                   <div class="payment-card-icon">📱</div>
@@ -2393,72 +2396,28 @@
               </div>
             </div>
 
-            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">🛵 Pagamento na Entrega (ao Motoboy / Maquininha Point)</h4>
+            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">🏪 Retirada no Balcão (Maquininha Point na Loja)</h4>
             <div class="payments-cards-grid">
-              <div class="payment-card-item enabled" id="payCard_pix_entrega">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">📱</div>
-                  <div>
-                    <div class="payment-card-title">Pix na Entrega (Maquininha ou Chave)</div>
-                    <div class="payment-card-type">O entregador apresenta o QR Code da maquininha Point ou chave Pix do restaurante no ato da entrega</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_pix_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_entrega')">
-              </div>
-
-              <div class="payment-card-item enabled" id="payCard_cartao_credito_entrega">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">💳</div>
-                  <div>
-                    <div class="payment-card-title">Cartão de Crédito na Entrega (Maquininha)</div>
-                    <div class="payment-card-type">Maquininha Point levada pelo motoboy (Visa, Mastercard, Elo, Hipercard, Amex) por aproximação ou chip</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_cartao_credito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_credito_entrega')">
-              </div>
-
-              <div class="payment-card-item enabled" id="payCard_cartao_debito_entrega">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">💳</div>
-                  <div>
-                    <div class="payment-card-title">Cartão de Débito na Entrega (Maquininha)</div>
-                    <div class="payment-card-type">Maquininha Point levada pelo motoboy (Visa Débito, Mastercard Débito, Elo Débito)</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_cartao_debito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_debito_entrega')">
-              </div>
-
-              <div class="payment-card-item enabled" id="payCard_vr_entrega">
+              <div class="payment-card-item enabled" id="payCard_balcao_vr">
                 <div class="payment-card-left">
                   <div class="payment-card-icon">🥗</div>
                   <div>
-                    <div class="payment-card-title">Vale-Refeição na Entrega (VR / Sodexo / Alelo / Ticket)</div>
-                    <div class="payment-card-type">Maquininha Point habilitada para VR Refeição, Sodexo / Pluxee, Alelo Refeição, Ticket Restaurante e Ben Visa Vale</div>
+                    <div class="payment-card-title">Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)</div>
+                    <div class="payment-card-type">Cliente paga na maquininha Point física da loja (VR Refeição, Sodexo/Pluxee, Alelo e Ticket)</div>
                   </div>
                 </div>
-                <input type="checkbox" id="chkPay_vr_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_vr_entrega')">
+                <input type="checkbox" id="chkPay_balcao_vr" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_balcao_vr')">
               </div>
 
-              <div class="payment-card-item enabled" id="payCard_va_entrega">
+              <div class="payment-card-item enabled" id="payCard_balcao_cartao">
                 <div class="payment-card-left">
-                  <div class="payment-card-icon">🛒</div>
+                  <div class="payment-card-icon">💳</div>
                   <div>
-                    <div class="payment-card-title">Vale-Alimentação na Entrega (Alelo / Sodexo / Ticket / VR)</div>
-                    <div class="payment-card-type">Maquininha Point habilitada para Alelo Alimentação, Sodexo Alimentação, Ticket Alimentação e VR Alimentação</div>
+                    <div class="payment-card-title">Cartão Crédito/Débito no Balcão (Maquininha Point)</div>
+                    <div class="payment-card-type">Cliente paga por aproximação ou chip na maquininha Point do caixa na retirada</div>
                   </div>
                 </div>
-                <input type="checkbox" id="chkPay_va_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_va_entrega')">
-              </div>
-
-              <div class="payment-card-item enabled" id="payCard_dinheiro_entrega">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">💵</div>
-                  <div>
-                    <div class="payment-card-title">Dinheiro na Entrega (com Troco)</div>
-                    <div class="payment-card-type">Cliente paga em notas físicas na entrega e informa se precisa de troco no checkout</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_dinheiro_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_dinheiro_entrega')">
+                <input type="checkbox" id="chkPay_balcao_cartao" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_balcao_cartao')">
               </div>
             </div>
           </div>
@@ -4299,14 +4258,9 @@
       pix_online: { id: "pix_online", name: "Pix Online (Mercado Pago)", enabled: true, type: "online", icon: "⚡" },
       cartao_online: { id: "cartao_online", name: "Cartão de Crédito Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
       cartao_debito_online: { id: "cartao_debito_online", name: "Cartão de Débito Virtual / Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
-      vr_online: { id: "vr_online", name: "Vale-Refeição Online (VR / Sodexo / Alelo / Ticket)", enabled: true, type: "online", icon: "🥗" },
       mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo Mercado Pago / Mercado Crédito", enabled: true, type: "online", icon: "📱" },
-      pix_entrega: { id: "pix_entrega", name: "Pix na Entrega (Maquininha ou Chave)", enabled: true, type: "delivery", icon: "📱" },
-      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Cartão de Crédito na Entrega (Maquininha)", enabled: true, type: "delivery", icon: "💳" },
-      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Cartão de Débito na Entrega (Maquininha)", enabled: true, type: "delivery", icon: "💳" },
-      vr_entrega: { id: "vr_entrega", name: "Vale-Refeição na Entrega (VR / Sodexo / Alelo / Ticket)", enabled: true, type: "delivery", icon: "🥗" },
-      va_entrega: { id: "va_entrega", name: "Vale-Alimentação na Entrega (Alelo / Sodexo / Ticket / VR)", enabled: true, type: "delivery", icon: "🛒" },
-      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro na Entrega (com Troco)", enabled: true, type: "delivery", icon: "💵" }
+      balcao_vr: { id: "balcao_vr", name: "Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)", enabled: true, type: "pickup", icon: "🥗" },
+      balcao_cartao: { id: "balcao_cartao", name: "Cartão Crédito/Débito no Balcão (Maquininha Point)", enabled: true, type: "pickup", icon: "💳" }
     }
   };
 

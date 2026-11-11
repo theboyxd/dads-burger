@@ -1106,11 +1106,12 @@
       </div>
       <p class="hint" id="payHint">⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.</p>
 
-      <!-- CAMPO DE TROCO (DINHEIRO NA ENTREGA) -->
-      <label class="fld" id="trocoFld" style="display:none;margin-top:10px">
-        <span style="font-weight:700">Precisa de troco para quanto?</span>
-        <input id="trocoInput" placeholder="Ex: R$ 50,00 (ou deixe em branco se não precisar)" inputmode="numeric">
-      </label>
+      <!-- AVISO DE ENTREGA 99 (SEM DINHEIRO, 100% PRÉ-PAGO ONLINE) -->
+      <div id="delivery99Notice" style="margin-top:10px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:12px;color:#475569;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">🛵</span>
+        <span><b>Entrega Expressa via 99:</b> Pedido 100% pré-pago online. Motoristas da 99 não cobram em dinheiro nem levam maquininha.</span>
+      </div>
+      <input type="hidden" id="trocoInput" value="">
 
       <!-- BADGE DE ECONOMIA NO PEDIDO -->
       <div id="cartSavingsBanner" style="display:none;margin:12px 0;padding:11px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:16px;align-items:center;gap:10px;color:#166534;font-size:12.5px;font-weight:700;box-shadow:0 2px 10px rgba(22,101,52,.06)">
@@ -2095,12 +2096,22 @@ window.__CFG__ = {
   }
 
   // Pagamento: Dinâmico estilo iFood (Pix Online, Cartão Online e Pagamento na Entrega)
+  // Pagamento: Dinâmico estilo iFood (Online Mercado Pago para Entrega 99 / Opção de Balcão para Retirada)
   function paintPaymentMethods() {
     const payContainer = $('#pay');
     if (!payContainer) return;
 
+    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const payments = SETTINGS?.payments || DEFAULT_SETTINGS.payments;
-    const enabledList = Object.values(payments).filter((p) => p.enabled !== false);
+
+    // Para Entrega 99: apenas pagamentos online Mercado Pago (o motoboy não recebe valores)
+    // Para Retirada no Balcão: online + pagamento presencial na maquininha Point
+    const enabledList = Object.values(payments).filter((p) => {
+      if (p.enabled === false) return false;
+      if (!pickup && p.type === 'pickup') return false;
+      return true;
+    });
+
     if (!enabledList.length) {
       enabledList.push({ id: 'pix_online', name: 'Pix Online', enabled: true, icon: '⚡' });
     }
@@ -2117,9 +2128,6 @@ window.__CFG__ = {
           payContainer.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
           $('#payFld')?.classList.remove('miss');
           paintPay();
-          if (p.id === 'cartao_online' && typeof startMpCardCheckout === 'function') {
-            startMpCardCheckout();
-          }
         }
       }, el('span', { textContent: p.icon || '💳' }), el('span', { textContent: p.name }));
       btn.dataset.pay = p.id;
@@ -2133,9 +2141,8 @@ window.__CFG__ = {
     const on = $('#pay .on');
     const payMode = on ? on.dataset.pay : 'pix_online';
     const isPixOnline = payMode === 'pix_online' || payMode === 'pix';
-    const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'vr_online', 'mercadopago_saldo'].includes(payMode);
-    const isDeliveryPay = ['pix_entrega', 'cartao_credito_entrega', 'cartao_debito_entrega', 'vr_entrega', 'va_entrega', 'dinheiro_entrega'].includes(payMode);
-    const isDinheiro = payMode === 'dinheiro_entrega';
+    const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'mercadopago_saldo'].includes(payMode);
+    const isPickupPay = ['balcao_vr', 'balcao_cartao'].includes(payMode);
 
     if ($('#btnPayPix')) $('#btnPayPix').style.display = isPixOnline ? 'flex' : 'none';
     if ($('#btnPayCardMp')) {
@@ -2144,22 +2151,17 @@ window.__CFG__ = {
         cartao_online: '💳 Pagar com Cartão de Crédito Online',
         cartao: '💳 Pagar com Cartão de Crédito Online',
         cartao_debito_online: '💳 Pagar com Débito Online / Virtual',
-        vr_online: '🥗 Pagar com Vale-Refeição Online (VR/Sodexo/Alelo/Ticket)',
         mercadopago_saldo: '📱 Pagar com Saldo Mercado Pago / Crédito'
       };
       $('#btnPayCardMp').textContent = cardLabels[payMode] || '💳 Pagar com Mercado Pago Online';
     }
     if ($('#btnPayDelivery')) {
-      $('#btnPayDelivery').style.display = isDeliveryPay ? 'flex' : 'none';
+      $('#btnPayDelivery').style.display = isPickupPay ? 'flex' : 'none';
       const labelMap = {
-        pix_entrega: 'Confirmar Pedido (Pix na Entrega)',
-        cartao_credito_entrega: 'Confirmar Pedido (Crédito na Entrega)',
-        cartao_debito_entrega: 'Confirmar Pedido (Débito na Entrega)',
-        vr_entrega: 'Confirmar Pedido (Vale-Refeição na Entrega)',
-        va_entrega: 'Confirmar Pedido (Vale-Alimentação na Entrega)',
-        dinheiro_entrega: 'Confirmar Pedido (Dinheiro na Entrega)'
+        balcao_vr: 'Confirmar Pedido (Pagar com VR no Balcão)',
+        balcao_cartao: 'Confirmar Pedido (Pagar com Cartão no Balcão)'
       };
-      $('#btnPayDelivery').textContent = `✓ ${labelMap[payMode] || 'Confirmar Pedido (Pagar na Entrega)'}`;
+      $('#btnPayDelivery').textContent = `✓ ${labelMap[payMode] || 'Confirmar Pedido (Pagar na Retirada)'}`;
     }
 
     const hints = {
@@ -2168,14 +2170,9 @@ window.__CFG__ = {
       cartao_online: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
       cartao: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
       cartao_debito_online: '💳 Pague online com cartão de débito virtual (Caixa Tem, Elo Débito, Visa Débito) via Mercado Pago.',
-      vr_online: '🥗 Vales-Refeição aceitos online: Sodexo / Pluxee, VR Benefícios, Alelo e Ticket Restaurante via Mercado Pago.',
       mercadopago_saldo: '📱 Pague diretamente usando seu saldo em conta Mercado Pago ou parcelamento Mercado Crédito.',
-      pix_entrega: '📱 O entregador levará a chave Pix / QR Code da maquininha Point para você pagar no recebimento.',
-      cartao_credito_entrega: '💳 O entregador levará a maquininha Point com suporte a Cartão de Crédito (Visa, Master, Elo, Hiper, Amex).',
-      cartao_debito_entrega: '💳 O entregador levará a maquininha Point com suporte a Cartão de Débito (Visa Débito, Master Débito, Elo).',
-      vr_entrega: '🥗 O entregador levará a maquininha Point habilitada para Vale-Refeição (VR Refeição, Sodexo / Pluxee, Alelo, Ticket, Ben).',
-      va_entrega: '🛒 O entregador levará a maquininha Point habilitada para Vale-Alimentação (Alelo, Sodexo, Ticket, VR Alimentação).',
-      dinheiro_entrega: '💵 Pagamento em dinheiro físico na entrega. Se precisar de troco, informe o valor abaixo para o motoboy já levar.'
+      balcao_vr: '🥗 Pague na retirada no balcão da hamburgueria com seu Vale-Refeição na maquininha Point (VR, Sodexo/Pluxee, Alelo, Ticket).',
+      balcao_cartao: '💳 Pague na retirada no balcão da hamburgueria com cartão de crédito ou débito na maquininha Point.'
     };
     const hint = hints[payMode] || '';
 
@@ -2183,7 +2180,6 @@ window.__CFG__ = {
       $('#payHint').hidden = !hint;
       $('#payHint').textContent = hint;
     }
-    if ($('#trocoFld')) $('#trocoFld').style.display = isDinheiro ? 'block' : 'none';
     if ($('#custCpfFld')) $('#custCpfFld').style.display = isPixOnline ? 'block' : 'none';
     if (typeof updateDeliveryButtonsState === 'function') {
       updateDeliveryButtonsState(lastValidationResult ? lastValidationResult.allowed : true);
@@ -2460,6 +2456,8 @@ window.__CFG__ = {
       const pickup = t.dataset.mode === 'retirada';
       $('#addrBox').hidden = pickup;
       $('#modeLabel').textContent = pickup ? 'Retirada' : 'Entrega';
+      if ($('#delivery99Notice')) $('#delivery99Notice').style.display = pickup ? 'none' : 'flex';
+      paintPaymentMethods();
       paintCart();
       paintPay();
       if (typeof checkDeliveryRadius === 'function') checkDeliveryRadius(false);
@@ -2523,16 +2521,25 @@ window.__CFG__ = {
   }
 
   function updateDeliveryButtonsState(allowed) {
+    const isStoreOpen = isStoreOpenBySettings();
     const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const btnPix = $('#btnPayPix');
     const btnCardMp = $('#btnPayCardMp');
-    const enabled = pickup || allowed;
+    const btnDelivery = $('#btnPayDelivery');
+    const enabled = isStoreOpen && (pickup || allowed);
 
-    [btnPix, btnCardMp].forEach((btn) => {
+    [btnPix, btnCardMp, btnDelivery].forEach((btn) => {
       if (btn) {
         btn.disabled = !enabled;
         btn.style.opacity = enabled ? '1' : '0.45';
         btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+        if (!isStoreOpen) {
+          btn.title = 'Loja Fechada: ' + (SETTINGS?.store?.closedNotice || 'pedidos desativados no momento.');
+        } else if (!pickup && !allowed) {
+          btn.title = 'Endereço fora do raio de entrega de 15 km';
+        } else {
+          btn.title = '';
+        }
       }
     });
   }
@@ -3027,6 +3034,12 @@ window.__CFG__ = {
 
   // Validação unificada de dados do cliente e endereço (Raio <= 15 km)
   async function validateCheckoutCustomerAndAddress(forPix = false) {
+    if (typeof isStoreOpenBySettings === 'function' && !isStoreOpenBySettings()) {
+      const notice = (window.SETTINGS && window.SETTINGS.store && window.SETTINGS.store.closedNotice)
+        || 'A hamburgueria está fechada no momento. Novos pedidos desativados.';
+      toast('⚠️ ' + notice);
+      return null;
+    }
     if (!cart.size) {
       toast('Seu carrinho está vazio.');
       return null;
@@ -3169,24 +3182,16 @@ window.__CFG__ = {
     if (!val) return;
 
     const on = $('#pay .on');
-    const payMode = on ? on.dataset.pay : 'pix_entrega';
+    const payMode = on ? on.dataset.pay : 'balcao_cartao';
 
-    let trocoVal = '';
-    let paymentDesc = 'Pagar na Entrega';
+    let paymentDesc = 'Pagar no Balcão';
 
-    if (payMode === 'dinheiro_entrega') {
-      trocoVal = ($('#trocoInput')?.value || '').trim();
-      paymentDesc = trocoVal ? `Dinheiro na Entrega (Troco para ${trocoVal})` : 'Dinheiro na Entrega (Sem troco)';
-    } else if (payMode === 'cartao_credito_entrega') {
-      paymentDesc = 'Cartão de Crédito na Entrega (Maquininha)';
-    } else if (payMode === 'cartao_debito_entrega') {
-      paymentDesc = 'Cartão de Débito na Entrega (Maquininha)';
-    } else if (payMode === 'vr_entrega') {
-      paymentDesc = 'Vale-Refeição na Entrega (VR / Sodexo / Alelo / Ticket)';
-    } else if (payMode === 'va_entrega') {
-      paymentDesc = 'Vale-Alimentação na Entrega (Alelo / Sodexo / Ticket / VR)';
-    } else if (payMode === 'pix_entrega') {
-      paymentDesc = 'Pix na Entrega (Chave / Maquininha)';
+    if (payMode === 'balcao_vr') {
+      paymentDesc = 'Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)';
+    } else if (payMode === 'balcao_cartao') {
+      paymentDesc = 'Cartão Crédito/Débito no Balcão (Maquininha Point)';
+    } else {
+      paymentDesc = 'Pagar na Retirada no Balcão';
     }
 
     const orderId = `DAD-${Date.now().toString().slice(-4)}`;
