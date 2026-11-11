@@ -29,42 +29,88 @@
   "payments": {
     "pix_online": {
       "id": "pix_online",
-      "name": "Pix Online (Instantâneo sem comprovante)",
+      "name": "Pix Online (Mercado Pago)",
+      "description": "QR Code dinâmico instantâneo com aprovação em tempo real sem mandar comprovante",
       "enabled": true,
       "type": "online",
       "icon": "⚡"
     },
     "cartao_online": {
       "id": "cartao_online",
-      "name": "Cartão Online (Mercado Pago)",
+      "name": "Cartão de Crédito Online (Mercado Pago)",
+      "description": "Visa, Mastercard, Elo, Hipercard, Amex e Diners Club com parcelamento e split",
       "enabled": true,
       "type": "online",
       "icon": "💳"
     },
+    "cartao_debito_online": {
+      "id": "cartao_debito_online",
+      "name": "Cartão de Débito Virtual / Online (Mercado Pago)",
+      "description": "Débito Virtual Caixa (Elo/Visa) e cartões de débito autorizados para e-commerce",
+      "enabled": true,
+      "type": "online",
+      "icon": "💳"
+    },
+    "vr_online": {
+      "id": "vr_online",
+      "name": "Vale-Refeição Online (VR / Sodexo / Alelo / Ticket)",
+      "description": "Vouchers PAT de refeição aceitos digitalmente via checkout Mercado Pago",
+      "enabled": true,
+      "type": "online",
+      "icon": "🥗"
+    },
+    "mercadopago_saldo": {
+      "id": "mercadopago_saldo",
+      "name": "Saldo Mercado Pago / Mercado Crédito",
+      "description": "Pagamento usando o saldo direto em conta do Mercado Pago ou linha Mercado Crédito",
+      "enabled": true,
+      "type": "online",
+      "icon": "📱"
+    },
     "pix_entrega": {
       "id": "pix_entrega",
-      "name": "Pix na Entrega (Chave / Maquininha)",
+      "name": "Pix na Entrega (Maquininha ou Chave)",
+      "description": "Entregador leva QR Code na maquininha Point ou chave Pix do Dad's Burger",
       "enabled": true,
       "type": "delivery",
       "icon": "📱"
     },
     "cartao_credito_entrega": {
       "id": "cartao_credito_entrega",
-      "name": "Cartão de Crédito (Maquininha)",
+      "name": "Cartão de Crédito na Entrega (Maquininha)",
+      "description": "Maquininha Point levada pelo motoboy (Visa, Mastercard, Elo, Amex, Hipercard)",
       "enabled": true,
       "type": "delivery",
       "icon": "💳"
     },
     "cartao_debito_entrega": {
       "id": "cartao_debito_entrega",
-      "name": "Cartão de Débito (Maquininha)",
+      "name": "Cartão de Débito na Entrega (Maquininha)",
+      "description": "Maquininha Point levada pelo motoboy (Visa Débito, Mastercard Débito, Elo Débito)",
       "enabled": true,
       "type": "delivery",
       "icon": "💳"
     },
+    "vr_entrega": {
+      "id": "vr_entrega",
+      "name": "Vale-Refeição na Entrega (VR / Sodexo / Alelo / Ticket)",
+      "description": "Maquininha Point do motoboy habilitada para Sodexo/Pluxee, VR, Alelo, Ticket e Ben",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "🥗"
+    },
+    "va_entrega": {
+      "id": "va_entrega",
+      "name": "Vale-Alimentação na Entrega (Alelo / Sodexo / Ticket / VR)",
+      "description": "Maquininha Point do motoboy habilitada para Alelo, Sodexo, Ticket e VR Alimentação",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "🛒"
+    },
     "dinheiro_entrega": {
       "id": "dinheiro_entrega",
       "name": "Dinheiro na Entrega (com Troco)",
+      "description": "Pagamento em espécie na entrega com opção de troco informado pelo cliente",
       "enabled": true,
       "type": "delivery",
       "icon": "💵"

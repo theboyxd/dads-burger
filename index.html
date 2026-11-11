@@ -1636,12 +1636,17 @@ window.__CFG__ = {
       ]
     },
     payments: {
-      pix_online: { id: "pix_online", name: "Pix Online", enabled: true, icon: "⚡" },
-      cartao_online: { id: "cartao_online", name: "Cartão Online", enabled: true, icon: "💳" },
-      pix_entrega: { id: "pix_entrega", name: "Pix na Entrega", enabled: true, icon: "📱" },
-      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Crédito Entrega", enabled: true, icon: "💳" },
-      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Débito Entrega", enabled: true, icon: "💳" },
-      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro", enabled: true, icon: "💵" }
+      pix_online: { id: "pix_online", name: "Pix Online", enabled: true, icon: "⚡", type: "online" },
+      cartao_online: { id: "cartao_online", name: "Crédito Online", enabled: true, icon: "💳", type: "online" },
+      cartao_debito_online: { id: "cartao_debito_online", name: "Débito Online", enabled: true, icon: "💳", type: "online" },
+      vr_online: { id: "vr_online", name: "VR Online", enabled: true, icon: "🥗", type: "online" },
+      mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo MP", enabled: true, icon: "📱", type: "online" },
+      pix_entrega: { id: "pix_entrega", name: "Pix Entrega", enabled: true, icon: "📱", type: "delivery" },
+      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Crédito Entrega", enabled: true, icon: "💳", type: "delivery" },
+      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Débito Entrega", enabled: true, icon: "💳", type: "delivery" },
+      vr_entrega: { id: "vr_entrega", name: "VR Entrega", enabled: true, icon: "🥗", type: "delivery" },
+      va_entrega: { id: "va_entrega", name: "VA Entrega", enabled: true, icon: "🛒", type: "delivery" },
+      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro", enabled: true, icon: "💵", type: "delivery" }
     }
   };
   let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -2128,32 +2133,49 @@ window.__CFG__ = {
     const on = $('#pay .on');
     const payMode = on ? on.dataset.pay : 'pix_online';
     const isPixOnline = payMode === 'pix_online' || payMode === 'pix';
-    const isCardOnline = payMode === 'cartao_online' || payMode === 'cartao';
-    const isDeliveryPay = ['pix_entrega', 'cartao_credito_entrega', 'cartao_debito_entrega', 'dinheiro_entrega'].includes(payMode);
+    const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'vr_online', 'mercadopago_saldo'].includes(payMode);
+    const isDeliveryPay = ['pix_entrega', 'cartao_credito_entrega', 'cartao_debito_entrega', 'vr_entrega', 'va_entrega', 'dinheiro_entrega'].includes(payMode);
     const isDinheiro = payMode === 'dinheiro_entrega';
 
     if ($('#btnPayPix')) $('#btnPayPix').style.display = isPixOnline ? 'flex' : 'none';
-    if ($('#btnPayCardMp')) $('#btnPayCardMp').style.display = isCardOnline ? 'flex' : 'none';
+    if ($('#btnPayCardMp')) {
+      $('#btnPayCardMp').style.display = isCardOnline ? 'flex' : 'none';
+      const cardLabels = {
+        cartao_online: '💳 Pagar com Cartão de Crédito Online',
+        cartao: '💳 Pagar com Cartão de Crédito Online',
+        cartao_debito_online: '💳 Pagar com Débito Online / Virtual',
+        vr_online: '🥗 Pagar com Vale-Refeição Online (VR/Sodexo/Alelo/Ticket)',
+        mercadopago_saldo: '📱 Pagar com Saldo Mercado Pago / Crédito'
+      };
+      $('#btnPayCardMp').textContent = cardLabels[payMode] || '💳 Pagar com Mercado Pago Online';
+    }
     if ($('#btnPayDelivery')) {
       $('#btnPayDelivery').style.display = isDeliveryPay ? 'flex' : 'none';
       const labelMap = {
         pix_entrega: 'Confirmar Pedido (Pix na Entrega)',
         cartao_credito_entrega: 'Confirmar Pedido (Crédito na Entrega)',
         cartao_debito_entrega: 'Confirmar Pedido (Débito na Entrega)',
+        vr_entrega: 'Confirmar Pedido (Vale-Refeição na Entrega)',
+        va_entrega: 'Confirmar Pedido (Vale-Alimentação na Entrega)',
         dinheiro_entrega: 'Confirmar Pedido (Dinheiro na Entrega)'
       };
       $('#btnPayDelivery').textContent = `✓ ${labelMap[payMode] || 'Confirmar Pedido (Pagar na Entrega)'}`;
     }
 
     const hints = {
-      pix_online: '⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
-      pix: '⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
-      cartao_online: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.',
-      cartao: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.',
-      pix_entrega: '📱 O entregador levará a chave Pix / QR Code da maquininha para você pagar no recebimento.',
-      cartao_credito_entrega: '💳 O entregador levará a maquininha com suporte a Cartão de Crédito.',
-      cartao_debito_entrega: '💳 O entregador levará a maquininha com suporte a Cartão de Débito.',
-      dinheiro_entrega: '💵 Pagamento em dinheiro físico na entrega. Se precisar de troco, informe o valor abaixo.'
+      pix_online: '⚡ QR Code Pix gerado na hora pelo Mercado Pago com confirmação automática sem mandar comprovante.',
+      pix: '⚡ QR Code Pix gerado na hora pelo Mercado Pago com confirmação automática sem mandar comprovante.',
+      cartao_online: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
+      cartao: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
+      cartao_debito_online: '💳 Pague online com cartão de débito virtual (Caixa Tem, Elo Débito, Visa Débito) via Mercado Pago.',
+      vr_online: '🥗 Vales-Refeição aceitos online: Sodexo / Pluxee, VR Benefícios, Alelo e Ticket Restaurante via Mercado Pago.',
+      mercadopago_saldo: '📱 Pague diretamente usando seu saldo em conta Mercado Pago ou parcelamento Mercado Crédito.',
+      pix_entrega: '📱 O entregador levará a chave Pix / QR Code da maquininha Point para você pagar no recebimento.',
+      cartao_credito_entrega: '💳 O entregador levará a maquininha Point com suporte a Cartão de Crédito (Visa, Master, Elo, Hiper, Amex).',
+      cartao_debito_entrega: '💳 O entregador levará a maquininha Point com suporte a Cartão de Débito (Visa Débito, Master Débito, Elo).',
+      vr_entrega: '🥗 O entregador levará a maquininha Point habilitada para Vale-Refeição (VR Refeição, Sodexo / Pluxee, Alelo, Ticket, Ben).',
+      va_entrega: '🛒 O entregador levará a maquininha Point habilitada para Vale-Alimentação (Alelo, Sodexo, Ticket, VR Alimentação).',
+      dinheiro_entrega: '💵 Pagamento em dinheiro físico na entrega. Se precisar de troco, informe o valor abaixo para o motoboy já levar.'
     };
     const hint = hints[payMode] || '';
 
@@ -3159,6 +3181,10 @@ window.__CFG__ = {
       paymentDesc = 'Cartão de Crédito na Entrega (Maquininha)';
     } else if (payMode === 'cartao_debito_entrega') {
       paymentDesc = 'Cartão de Débito na Entrega (Maquininha)';
+    } else if (payMode === 'vr_entrega') {
+      paymentDesc = 'Vale-Refeição na Entrega (VR / Sodexo / Alelo / Ticket)';
+    } else if (payMode === 'va_entrega') {
+      paymentDesc = 'Vale-Alimentação na Entrega (Alelo / Sodexo / Ticket / VR)';
     } else if (payMode === 'pix_entrega') {
       paymentDesc = 'Pix na Entrega (Chave / Maquininha)';
     }
