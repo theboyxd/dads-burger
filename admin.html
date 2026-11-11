@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- Leaflet Maps para Gestão de Raio de Entrega -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<script src="vendor/leaflet/leaflet.js"></script>
 <style>
   :root {
     --brand: #C88A2E;
@@ -1246,6 +1249,479 @@
     color: var(--text-muted);
     margin-top: 3px;
   }
+
+  /* ESTILOS DO GESTOR DE LOJA ESTILO IFOOD */
+  .store-quick-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all .2s ease;
+    user-select: none;
+  }
+  .store-quick-pill.open {
+    background: rgba(34, 197, 94, 0.16);
+    color: #4ADE80;
+    border-color: rgba(74, 222, 128, 0.4);
+  }
+  .store-quick-pill.closed {
+    background: rgba(239, 68, 68, 0.16);
+    color: #F87171;
+    border-color: rgba(248, 113, 113, 0.4);
+  }
+  .store-quick-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .ifood-panel {
+    display: none;
+    max-width: 1280px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  .ifood-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .ifood-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 260px;
+  }
+  .ifood-search-box {
+    position: relative;
+    flex: 1;
+    max-width: 380px;
+    min-width: 200px;
+  }
+  .ifood-search-box input {
+    width: 100%;
+    padding: 10px 14px 10px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13.5px;
+    outline: none;
+    background: #FFF;
+  }
+  .ifood-search-box input:focus { border-color: var(--brand); }
+  .ifood-search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+
+  .ifood-filter-select {
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: #FFF;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .ifood-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    background: var(--brand);
+    color: #FFF;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(200, 138, 46, 0.35);
+    transition: transform .1s, background .15s;
+  }
+  .ifood-primary-btn:hover { background: var(--brand-hover); }
+  .ifood-primary-btn:active { transform: scale(0.98); }
+
+  .ifood-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+    margin-bottom: 24px;
+  }
+  .ifood-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+  }
+  .ifood-card-header h3 {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ifood-card-header p {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* GRID DE PRODUTOS */
+  .product-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .product-admin-card {
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all .2s ease;
+  }
+  .product-admin-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  }
+  .product-admin-card.paused {
+    opacity: 0.72;
+    background: #FAFAFB;
+    border-color: #E4E4E7;
+  }
+  .product-admin-top {
+    display: flex;
+    padding: 14px;
+    gap: 14px;
+  }
+  .product-admin-img {
+    width: 84px;
+    height: 84px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #F4F4F6;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+  }
+  .product-admin-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .product-admin-cat {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--brand);
+    letter-spacing: 0.5px;
+  }
+  .product-admin-name {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 2px 0 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .product-admin-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .product-admin-bottom {
+    padding: 10px 14px;
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .product-admin-price {
+    font-size: 16px;
+    font-weight: 800;
+    color: #15803D;
+  }
+  .product-admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .product-status-btn {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .product-status-btn.available {
+    background: #DCFCE7;
+    color: #15803D;
+    border-color: #86EFAC;
+  }
+  .product-status-btn.paused {
+    background: #FEE2E2;
+    color: #B91C1C;
+    border-color: #FCA5A5;
+  }
+  .btn-icon-action {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #FFF;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all .15s;
+  }
+  .btn-icon-action:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+  }
+  .btn-icon-action.danger:hover {
+    color: #DC2626;
+    border-color: #FCA5A5;
+    background: #FEF2F2;
+  }
+
+  /* MAPA DE RAIO DE ENTREGA */
+  #deliveryMap {
+    height: 420px;
+    width: 100%;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    z-index: 10;
+  }
+  .radius-control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .radius-display-badge {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0F172A;
+    background: #FFFFFF;
+    border: 2px solid var(--brand);
+    padding: 6px 18px;
+    border-radius: 99px;
+    box-shadow: 0 4px 12px rgba(200, 138, 46, 0.15);
+  }
+
+  /* TABELA DE FAIXAS DE ENTREGA */
+  .tiers-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 14px;
+  }
+  .tiers-table th {
+    background: var(--surface-subtle);
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .tiers-table td {
+    padding: 12px 14px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tier-input {
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    width: 110px;
+    outline: none;
+  }
+  .tier-input:focus { border-color: var(--brand); }
+
+  /* GRADE DE HORÁRIOS */
+  .schedule-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .schedule-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: #FFFFFF;
+    flex-wrap: wrap;
+  }
+  .schedule-row.inactive {
+    background: #FAFAFA;
+    opacity: 0.65;
+  }
+  .schedule-day-label {
+    width: 140px;
+    font-size: 13.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .schedule-times {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .schedule-time-input {
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    outline: none;
+  }
+
+  /* CARDS DE FORMAS DE PAGAMENTO */
+  .payments-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-top: 14px;
+  }
+  .payment-card-item {
+    background: #FFFFFF;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    transition: all .15s;
+  }
+  .payment-card-item.enabled {
+    border-color: #86EFAC;
+    background: #F0FDF4;
+  }
+  .payment-card-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .payment-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .payment-card-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+  .payment-card-type {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* MODAL DE PRODUTO */
+  .admin-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: none;
+    place-items: center;
+    padding: 20px;
+  }
+  .admin-modal-card {
+    background: #FFFFFF;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+  }
+  .admin-modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .admin-modal-subtitle {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+  .admin-form-group {
+    margin-bottom: 14px;
+  }
+  .admin-form-group label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+  .admin-form-input, .admin-form-textarea, .admin-form-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-family: inherit;
+    outline: none;
+  }
+  .admin-form-input:focus, .admin-form-textarea:focus { border-color: var(--brand); }
 </style>
 </head>
 <body>
@@ -1278,24 +1754,41 @@
     </div>
   </div>
 
-  <!-- VISÃO: KANBAN vs CONCLUÍDOS vs CANCELADOS -->
-  <div class="view-switcher">
+  <!-- VISÃO: KANBAN vs CONCLUÍDOS vs CANCELADOS vs GESTOR IFOOD -->
+  <div class="view-switcher" style="overflow-x:auto;max-width:65vw">
     <button type="button" class="view-btn active" id="btnViewKanban">
-      Fluxo de Produção
+      📋 Pedidos (Cozinha)
       <span class="badge" id="badgeActiveCount">0</span>
     </button>
     <button type="button" class="view-btn" id="btnViewHistory">
-      Pedidos Concluídos
+      ✅ Concluídos
       <span class="badge" id="badgeDoneCount">0</span>
     </button>
     <button type="button" class="view-btn" id="btnViewCanceled">
-      Cancelados
+      ❌ Cancelados
       <span class="badge" id="badgeCanceledCount">0</span>
+    </button>
+    <button type="button" class="view-btn" id="btnViewCatalog">
+      🍔 Cardápio & Produtos
+    </button>
+    <button type="button" class="view-btn" id="btnViewHours">
+      ⏰ Horários & Loja
+    </button>
+    <button type="button" class="view-btn" id="btnViewDelivery">
+      🛵 Entrega & Raio no Mapa
+    </button>
+    <button type="button" class="view-btn" id="btnViewPayments">
+      💳 Formas de Pagamento
     </button>
   </div>
 
   <!-- CONTROLES RÁPIDOS & MENU DE CONTA -->
   <div class="header-controls">
+    <!-- STATUS RÁPIDO DA LOJA (ESTILO IFOOD) -->
+    <div class="store-quick-pill open" id="storeQuickToggle" onclick="window.SettingsEngine.toggleStoreOpenQuick()" title="Clique para alternar Loja Aberta / Loja Fechada">
+      <span class="store-quick-dot"></span>
+      <span id="storeQuickText">Loja Aberta</span>
+    </div>
     <select class="unit-select" id="unitSelectFilter" aria-label="Filtrar por unidade">
       <option value="todas">Todas as Unidades</option>
       <option value="passo-dareia">Passo d'Areia (Zona Norte)</option>
@@ -1665,6 +2158,309 @@
       </div>
     </div>
   </section>
+
+  <!-- SEÇÃO 5: GESTOR DE CARDÁPIO & PRODUTOS ESTILO IFOOD -->
+  <section class="ifood-panel" id="catalogView">
+    <div class="ifood-toolbar">
+      <div class="ifood-toolbar-left">
+        <div class="ifood-search-box">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="catalogSearchInput" placeholder="Buscar produtos pelo nome ou ingrediente..." oninput="window.CatalogEngine.filter()">
+        </div>
+        <select class="ifood-filter-select" id="catalogCatFilter" onchange="window.CatalogEngine.filter()">
+          <option value="todos">Todas as Categorias</option>
+          <option value="Combos na Caixa">Combos na Caixa</option>
+          <option value="Burgers Artesanais">Burgers Artesanais</option>
+          <option value="Porções">Porções</option>
+          <option value="Bebidas">Bebidas</option>
+        </select>
+        <span style="font-size:12.5px;font-weight:700;color:var(--text-muted)" id="catalogCountBadge">0 produtos</span>
+      </div>
+      <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.openCreateModal()">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>+ Novo Produto</span>
+      </button>
+    </div>
+
+    <div class="product-admin-grid" id="catalogGrid">
+      <!-- Injetado dinamicamente via CatalogEngine -->
+    </div>
+  </section>
+
+  <!-- SEÇÃO 6: GESTOR DE HORÁRIOS & STATUS DA LOJA -->
+  <section class="ifood-panel" id="hoursView">
+    <div class="ifood-card">
+      <div class="ifood-card-header">
+        <div>
+          <h3>⏰ Status Operacional da Loja</h3>
+          <p>Controle se sua loja está recebendo pedidos agora e configure horários programados</p>
+        </div>
+        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveHours()">
+          Salvar Horários
+        </button>
+      </div>
+
+      <!-- Switch Geral de Loja Aberta/Fechada -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:var(--text-primary)" id="storeStatusLabel">Loja Aberta para Pedidos</div>
+          <div style="font-size:12px;color:var(--text-muted)">Ao desativar, o cardápio exibe o aviso de loja fechada e bloqueia novos pedidos</div>
+        </div>
+        <label class="switch-ui" style="display:inline-flex;align-items:center;cursor:pointer">
+          <input type="checkbox" id="chkStoreOpenManual" onchange="window.SettingsEngine.onManualOpenChange(this.checked)" style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer">
+          <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkStoreOpenText">Aberta Agora</span>
+        </label>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:20px">
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Tempo de Preparo Estimado (minutos)</label>
+          <div style="display:flex;align-items:center;gap:10px">
+            <input type="number" id="cfgPrepMin" class="tier-input" style="width:80px" value="25" min="5" max="120">
+            <span>até</span>
+            <input type="number" id="cfgPrepMax" class="tier-input" style="width:80px" value="45" min="10" max="180">
+            <span style="font-size:12.5px;color:var(--text-muted)">minutos</span>
+          </div>
+        </div>
+        <div>
+          <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Aviso quando a Loja estiver Fechada</label>
+          <input type="text" id="cfgClosedNotice" class="admin-form-input" placeholder="Ex: Estamos preparando a cozinha! Reabrimos às 18h." value="Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.">
+        </div>
+      </div>
+
+      <!-- Tabela Semanal de Horários -->
+      <h4 style="font-size:14px;font-weight:800;margin:20px 0 10px">Grade de Horários Semanais</h4>
+      <div class="schedule-grid" id="scheduleGrid">
+        <!-- Renderizado dinamicamente -->
+      </div>
+    </div>
+  </section>
+
+  <!-- SEÇÃO 7: GESTOR DE ENTREGA & RAIO NO MAPA (LEAFLET) -->
+  <section class="ifood-panel" id="deliveryView">
+    <div class="ifood-card">
+      <div class="ifood-card-header">
+        <div>
+          <h3>🛵 Área de Entrega e Raio de Atendimento</h3>
+          <p>Visualize e ajuste o raio de entrega no mapa interativo e defina as faixas de taxa por km</p>
+        </div>
+        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveDelivery()">
+          Salvar Configurações de Entrega
+        </button>
+      </div>
+
+      <!-- Barra de Controle do Raio com Slider -->
+      <div class="radius-control-bar">
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--text-primary)">Raio Máximo de Cobertura</div>
+          <div style="font-size:12px;color:var(--text-muted)">Clientes fora deste raio serão bloqueados no checkout com aviso de limite</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;flex:1;max-width:440px;min-width:240px">
+          <input type="range" id="radiusSlider" min="1" max="30" step="0.5" value="15" style="flex:1;accent-color:var(--brand);cursor:pointer" oninput="window.MapEngine.setRadius(this.value)">
+          <div class="radius-display-badge" id="radiusBadge">15 km</div>
+        </div>
+      </div>
+
+      <!-- Seletor de Loja para Visualizar no Mapa -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <label style="font-size:12.5px;font-weight:700">Centralizar mapa na unidade:</label>
+        <select class="ifood-filter-select" id="mapUnitSelect" onchange="window.MapEngine.switchUnit(this.value)">
+          <option value="passo-dareia">Passo d'Areia (Zona Norte - POA)</option>
+          <option value="moinhos">Moinhos / Rio Branco (POA)</option>
+          <option value="partenon">Partenon (Zona Leste - POA)</option>
+          <option value="canoas-gracas">Nossa Sra. das Graças (Canoas)</option>
+          <option value="canoas-guajuviras">Guajuviras (Canoas)</option>
+          <option value="cachoeirinha">Vila Vista Alegre (Cachoeirinha)</option>
+        </select>
+        <span style="font-size:11.5px;color:var(--text-muted)">Arraste o slider para ver o círculo de cobertura expandir em tempo real</span>
+      </div>
+
+      <!-- MAPA INTERATIVO LEAFLET -->
+      <div id="deliveryMap"></div>
+
+      <!-- Tabela de Faixas de Entrega -->
+      <h4 style="font-size:14px;font-weight:800;margin:24px 0 6px">Tabela de Taxas de Entrega por Distância</h4>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Configure o valor cobrado do cliente em cada faixa de distância da loja</p>
+      
+      <table class="tiers-table">
+        <thead>
+          <tr>
+            <th>Faixa</th>
+            <th>Distância Máxima</th>
+            <th>Taxa Cobrada do Cliente</th>
+            <th>Descrição Exibida</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Faixa 1</strong> (Proximidades)</td>
+            <td>Até <input type="number" id="tier1Km" class="tier-input" style="width:70px" value="3.0" step="0.5"> km</td>
+            <td>R$ <input type="number" id="tier1Fee" class="tier-input" value="7.50" step="0.50"></td>
+            <td><input type="text" id="tier1Label" class="admin-form-input" value="Até 3 km"></td>
+          </tr>
+          <tr>
+            <td><strong>Faixa 2</strong> (Intermediária)</td>
+            <td>Até <input type="number" id="tier2Km" class="tier-input" style="width:70px" value="6.0" step="0.5"> km</td>
+            <td>R$ <input type="number" id="tier2Fee" class="tier-input" value="11.50" step="0.50"></td>
+            <td><input type="text" id="tier2Label" class="admin-form-input" value="De 3 a 6 km"></td>
+          </tr>
+          <tr>
+            <td><strong>Faixa 3</strong> (Longa Distância)</td>
+            <td>Até o raio máximo (<span id="tier3MaxKmDisplay">15</span> km)</td>
+            <td>R$ <input type="number" id="tier3Fee" class="tier-input" value="15.50" step="0.50"></td>
+            <td><input type="text" id="tier3Label" class="admin-form-input" value="Acima de 6 km"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:16px;padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:700">Entrega Grátis para pedidos acima de:</label>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-weight:700">R$</span>
+          <input type="number" id="cfgFreeDelivery" class="tier-input" value="0.00" step="5.00" style="width:100px" placeholder="0.00">
+          <small style="color:var(--text-muted)">(Deixe 0 para desativar)</small>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEÇÃO 8: GESTOR DE FORMAS DE PAGAMENTO -->
+  <section class="ifood-panel" id="paymentsView">
+    <div class="ifood-card">
+      <div class="ifood-card-header">
+        <div>
+          <h3>💳 Formas de Pagamento Aceitas</h3>
+          <p>Habilite ou desabilite os métodos que seus clientes poderão selecionar no checkout</p>
+        </div>
+        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.savePayments()">
+          Salvar Meios de Pagamento
+        </button>
+      </div>
+
+      <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">Pagamento Online Integrado (Mercado Pago)</h4>
+      <div class="payments-cards-grid">
+        <div class="payment-card-item enabled" id="payCard_pix_online">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">⚡</div>
+            <div>
+              <div class="payment-card-title">Pix Online Instantâneo</div>
+              <div class="payment-card-type">QR Code gerado na hora com aprovação imediata sem mandar comprovante</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_pix_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_online')">
+        </div>
+
+        <div class="payment-card-item enabled" id="payCard_cartao_online">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">💳</div>
+            <div>
+              <div class="payment-card-title">Cartão de Crédito Online</div>
+              <div class="payment-card-type">Mercado Pago transparente com tokenização segura e split automático</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_cartao_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_online')">
+        </div>
+      </div>
+
+      <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">Pagamento na Entrega (ao Motoboy)</h4>
+      <div class="payments-cards-grid">
+        <div class="payment-card-item enabled" id="payCard_pix_entrega">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">📱</div>
+            <div>
+              <div class="payment-card-title">Pix na Entrega</div>
+              <div class="payment-card-type">Cliente paga por Pix na maquininha ou chave Pix do entregador</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_pix_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_entrega')">
+        </div>
+
+        <div class="payment-card-item enabled" id="payCard_cartao_credito_entrega">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">💳</div>
+            <div>
+              <div class="payment-card-title">Cartão de Crédito na Entrega</div>
+              <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_cartao_credito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_credito_entrega')">
+        </div>
+
+        <div class="payment-card-item enabled" id="payCard_cartao_debito_entrega">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">💳</div>
+            <div>
+              <div class="payment-card-title">Cartão de Débito na Entrega</div>
+              <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_cartao_debito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_debito_entrega')">
+        </div>
+
+        <div class="payment-card-item enabled" id="payCard_dinheiro_entrega">
+          <div class="payment-card-left">
+            <div class="payment-card-icon">💵</div>
+            <div>
+              <div class="payment-card-title">Dinheiro na Entrega</div>
+              <div class="payment-card-type">Cliente seleciona dinheiro e informa se precisa de troco no checkout</div>
+            </div>
+          </div>
+          <input type="checkbox" id="chkPay_dinheiro_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_dinheiro_entrega')">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL: CRIAR OU EDITAR PRODUTO -->
+  <div class="admin-modal-backdrop" id="productModalBackdrop">
+    <div class="admin-modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <h3 class="admin-modal-title" id="productModalTitle">Adicionar Novo Produto</h3>
+          <p class="admin-modal-subtitle">Preencha os dados do item para exibir no cardápio</p>
+        </div>
+        <button type="button" class="btn-icon-action" onclick="window.CatalogEngine.closeModal()">✕</button>
+      </div>
+
+      <input type="hidden" id="modalProdId">
+
+      <div class="admin-form-group">
+        <label>Nome do Produto</label>
+        <input type="text" id="modalProdName" class="admin-form-input" placeholder="Ex: Duplo Bacon Artesanal">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="admin-form-group">
+          <label>Categoria</label>
+          <select id="modalProdCategory" class="admin-form-select">
+            <option value="Combos na Caixa">Combos na Caixa</option>
+            <option value="Burgers Artesanais">Burgers Artesanais</option>
+            <option value="Porções">Porções</option>
+            <option value="Bebidas">Bebidas</option>
+          </select>
+        </div>
+        <div class="admin-form-group">
+          <label>Preço (R$)</label>
+          <input type="number" id="modalProdPrice" class="admin-form-input" placeholder="0.00" step="0.10" min="0">
+        </div>
+      </div>
+
+      <div class="admin-form-group">
+        <label>URL da Foto (ou Imagem)</label>
+        <input type="text" id="modalProdImage" class="admin-form-input" placeholder="https://... ou logo.png">
+      </div>
+
+      <div class="admin-form-group">
+        <label>Descrição dos Ingredientes</label>
+        <textarea id="modalProdDesc" class="admin-form-textarea" rows="3" placeholder="Blend artesanal, queijo cheddar, bacon crocante no brioche..."></textarea>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
+        <button type="button" class="btn-cancel-modal-back" onclick="window.CatalogEngine.closeModal()">Cancelar</button>
+        <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.saveProductFromModal()">Salvar Produto</button>
+      </div>
+    </div>
+  </div>
 
   <!-- PAINEL LATERAL DE COMANDA DETALHADA -->
   <aside class="side-ticket">
@@ -2368,10 +3164,20 @@
       const btnKanban = document.getElementById('btnViewKanban');
       const btnHistory = document.getElementById('btnViewHistory');
       const btnCanceled = document.getElementById('btnViewCanceled');
+      const btnCatalog = document.getElementById('btnViewCatalog');
+      const btnHours = document.getElementById('btnViewHours');
+      const btnDelivery = document.getElementById('btnViewDelivery');
+      const btnPayments = document.getElementById('btnViewPayments');
+
       const kanbanView = document.getElementById('kanbanView');
       const historyView = document.getElementById('historyView');
       const canceledView = document.getElementById('canceledView');
       const settingsView = document.getElementById('settingsView');
+      const catalogView = document.getElementById('catalogView');
+      const hoursView = document.getElementById('hoursView');
+      const deliveryView = document.getElementById('deliveryView');
+      const paymentsView = document.getElementById('paymentsView');
+
       const metricsStrip = document.querySelector('.metrics-strip');
       const sideTicket = document.querySelector('.side-ticket');
 
@@ -2379,15 +3185,24 @@
       if (btnKanban) btnKanban.classList.toggle('active', viewName === 'kanban');
       if (btnHistory) btnHistory.classList.toggle('active', viewName === 'history');
       if (btnCanceled) btnCanceled.classList.toggle('active', viewName === 'canceled');
+      if (btnCatalog) btnCatalog.classList.toggle('active', viewName === 'catalog');
+      if (btnHours) btnHours.classList.toggle('active', viewName === 'hours');
+      if (btnDelivery) btnDelivery.classList.toggle('active', viewName === 'delivery');
+      if (btnPayments) btnPayments.classList.toggle('active', viewName === 'payments');
 
       if (kanbanView) kanbanView.style.display = viewName === 'kanban' ? 'grid' : 'none';
       if (historyView) historyView.style.display = viewName === 'history' ? 'block' : 'none';
       if (canceledView) canceledView.style.display = viewName === 'canceled' ? 'block' : 'none';
       if (settingsView) settingsView.style.display = viewName === 'settings' ? 'block' : 'none';
+      if (catalogView) catalogView.style.display = viewName === 'catalog' ? 'block' : 'none';
+      if (hoursView) hoursView.style.display = viewName === 'hours' ? 'block' : 'none';
+      if (deliveryView) deliveryView.style.display = viewName === 'delivery' ? 'block' : 'none';
+      if (paymentsView) paymentsView.style.display = viewName === 'payments' ? 'block' : 'none';
 
-      // Na tela de configurações, oculta o resumo de KPIs e comanda lateral para foco total
-      if (metricsStrip) metricsStrip.style.display = viewName === 'settings' ? 'none' : 'grid';
-      if (sideTicket) sideTicket.style.display = viewName === 'settings' ? 'none' : 'flex';
+      // Nas abas de gestão e configurações, oculta o resumo de KPIs e comanda lateral para foco total
+      const isManagerTab = ['settings', 'catalog', 'hours', 'delivery', 'payments'].includes(viewName);
+      if (metricsStrip) metricsStrip.style.display = isManagerTab ? 'none' : 'grid';
+      if (sideTicket) sideTicket.style.display = isManagerTab ? 'none' : 'flex';
 
       if (viewName === 'kanban') this.render();
       else if (viewName === 'history') this.renderHistory();
@@ -2395,6 +3210,15 @@
       else if (viewName === 'settings') {
         if (window.PrinterEngine) window.PrinterEngine.loadConfig();
         this.updateSoundUi();
+      } else if (viewName === 'catalog') {
+        if (window.CatalogEngine) window.CatalogEngine.render();
+      } else if (viewName === 'hours') {
+        if (window.SettingsEngine) window.SettingsEngine.renderHours();
+      } else if (viewName === 'delivery') {
+        if (window.SettingsEngine) window.SettingsEngine.renderDelivery();
+        setTimeout(() => { if (window.MapEngine) window.MapEngine.initOrUpdate(); }, 120);
+      } else if (viewName === 'payments') {
+        if (window.SettingsEngine) window.SettingsEngine.renderPayments();
       }
     },
 
@@ -2441,14 +3265,22 @@
     },
 
     setupEventListeners() {
-      // Alternância de visão: Kanban vs Histórico vs Cancelados
+      // Alternância de visão: Kanban vs Histórico vs Cancelados vs Gestor iFood
       const btnKanban = document.getElementById('btnViewKanban');
       const btnHistory = document.getElementById('btnViewHistory');
       const btnCanceled = document.getElementById('btnViewCanceled');
+      const btnCatalog = document.getElementById('btnViewCatalog');
+      const btnHours = document.getElementById('btnViewHours');
+      const btnDelivery = document.getElementById('btnViewDelivery');
+      const btnPayments = document.getElementById('btnViewPayments');
 
       if (btnKanban) btnKanban.onclick = () => this.switchView('kanban');
       if (btnHistory) btnHistory.onclick = () => this.switchView('history');
       if (btnCanceled) btnCanceled.onclick = () => this.switchView('canceled');
+      if (btnCatalog) btnCatalog.onclick = () => this.switchView('catalog');
+      if (btnHours) btnHours.onclick = () => this.switchView('hours');
+      if (btnDelivery) btnDelivery.onclick = () => this.switchView('delivery');
+      if (btnPayments) btnPayments.onclick = () => this.switchView('payments');
 
       // Botão de retorno das configurações para os pedidos
       const btnBack = document.getElementById('btnBackToKanban');
@@ -3157,12 +3989,574 @@
     }
   };
 
+  // =========================================================================
+  // GESTOR DE CONFIGURAÇÕES, HORÁRIOS E PAGAMENTOS (ESTILO IFOOD)
+  // =========================================================================
+  const DEFAULT_SETTINGS = {
+    store: {
+      name: "Dad's Burger",
+      isOpenManual: true,
+      autoSchedule: true,
+      preparationTimeMin: 25,
+      preparationTimeMax: 45,
+      closedNotice: "Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.",
+      schedule: {
+        seg: { label: "Segunda-feira", active: true, open: "18:00", close: "23:45" },
+        ter: { label: "Terça-feira", active: true, open: "18:00", close: "23:45" },
+        qua: { label: "Quarta-feira", active: true, open: "18:00", close: "23:45" },
+        qui: { label: "Quinta-feira", active: true, open: "18:00", close: "23:45" },
+        sex: { label: "Sexta-feira", active: true, open: "18:00", close: "00:30" },
+        sab: { label: "Sábado", active: true, open: "18:00", close: "00:30" },
+        dom: { label: "Domingo", active: true, open: "18:00", close: "23:45" }
+      }
+    },
+    delivery: {
+      maxRadiusKm: 15.0,
+      freeDeliveryThreshold: 0,
+      defaultUnitId: "passo-dareia",
+      tiers: [
+        { maxKm: 3.0, fee: 7.50, label: "Até 3 km" },
+        { maxKm: 6.0, fee: 11.50, label: "De 3 a 6 km" },
+        { maxKm: 15.0, fee: 15.50, label: "De 6 a 15 km" }
+      ]
+    },
+    payments: {
+      pix_online: { id: "pix_online", name: "Pix Online (Instantâneo sem comprovante)", enabled: true, type: "online", icon: "⚡" },
+      cartao_online: { id: "cartao_online", name: "Cartão Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
+      pix_entrega: { id: "pix_entrega", name: "Pix na Entrega (Chave / Maquininha)", enabled: true, type: "delivery", icon: "📱" },
+      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Cartão de Crédito (Maquininha)", enabled: true, type: "delivery", icon: "💳" },
+      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Cartão de Débito (Maquininha)", enabled: true, type: "delivery", icon: "💳" },
+      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro na Entrega (com Troco)", enabled: true, type: "delivery", icon: "💵" }
+    }
+  };
+
+  const SettingsEngine = {
+    settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
+
+    async load() {
+      // Tenta buscar do backend primeiro
+      try {
+        const res = await fetch('/api/admin/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.store) {
+            this.settings = { ...this.settings, ...data };
+            localStorage.setItem('dads_settings', JSON.stringify(this.settings));
+            this.updateStorePill();
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // Fallback para localStorage
+      const cached = localStorage.getItem('dads_settings');
+      if (cached) {
+        try {
+          this.settings = { ...this.settings, ...JSON.parse(cached) };
+        } catch (e) {}
+      }
+      this.updateStorePill();
+    },
+
+    async save() {
+      localStorage.setItem('dads_settings', JSON.stringify(this.settings));
+      try {
+        const bc = new BroadcastChannel('dads_restaurant_channel');
+        bc.postMessage({ type: 'SETTINGS_UPDATED', settings: this.settings });
+      } catch (e) {}
+      try {
+        await fetch('/api/admin/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.settings)
+        });
+      } catch (e) {}
+      this.updateStorePill();
+    },
+
+    updateStorePill() {
+      const pill = document.getElementById('storeQuickToggle');
+      const text = document.getElementById('storeQuickText');
+      const isOpen = Boolean(this.settings.store?.isOpenManual);
+      if (pill) {
+        pill.classList.toggle('open', isOpen);
+        pill.classList.toggle('closed', !isOpen);
+      }
+      if (text) {
+        text.textContent = isOpen ? 'Loja Aberta' : 'Loja Fechada';
+      }
+      const chk = document.getElementById('chkStoreOpenManual');
+      if (chk) chk.checked = isOpen;
+      const chkTxt = document.getElementById('chkStoreOpenText');
+      if (chkTxt) chkTxt.textContent = isOpen ? 'Aberta Agora' : 'Fechada Agora';
+      const statusLabel = document.getElementById('storeStatusLabel');
+      if (statusLabel) {
+        statusLabel.textContent = isOpen ? 'Loja Aberta para Pedidos (Recebendo)' : 'Loja Fechada Temporariamente (Pausada)';
+      }
+    },
+
+    toggleStoreOpenQuick() {
+      const current = Boolean(this.settings.store?.isOpenManual);
+      this.settings.store.isOpenManual = !current;
+      this.save();
+      showToast(!current ? '🟢 Loja aberta para receber pedidos!' : '🔴 Loja fechada. Clientes verão o aviso.');
+    },
+
+    onManualOpenChange(checked) {
+      this.settings.store.isOpenManual = checked;
+      this.save();
+      showToast(checked ? '🟢 Loja aberta!' : '🔴 Loja fechada!');
+    },
+
+    renderHours() {
+      this.updateStorePill();
+      const st = this.settings.store || {};
+      const prepMin = document.getElementById('cfgPrepMin');
+      const prepMax = document.getElementById('cfgPrepMax');
+      const closedNotice = document.getElementById('cfgClosedNotice');
+      if (prepMin) prepMin.value = st.preparationTimeMin || 25;
+      if (prepMax) prepMax.value = st.preparationTimeMax || 45;
+      if (closedNotice) closedNotice.value = st.closedNotice || '';
+
+      const grid = document.getElementById('scheduleGrid');
+      if (!grid) return;
+      const sched = st.schedule || DEFAULT_SETTINGS.store.schedule;
+      grid.innerHTML = Object.entries(sched).map(([k, d]) => {
+        return `
+          <div class="schedule-row ${d.active ? '' : 'inactive'}" id="schedRow_${k}">
+            <div class="schedule-day-label">
+              <input type="checkbox" id="chkDay_${k}" ${d.active ? 'checked' : ''} onchange="window.SettingsEngine.toggleDay('${k}', this.checked)" style="width:18px;height:18px;accent-color:var(--brand);cursor:pointer">
+              <span>${d.label}</span>
+            </div>
+            <div class="schedule-times">
+              <span>Abre às:</span>
+              <input type="time" id="open_${k}" class="schedule-time-input" value="${d.open || '18:00'}">
+              <span style="margin:0 4px">até</span>
+              <input type="time" id="close_${k}" class="schedule-time-input" value="${d.close || '23:45'}">
+            </div>
+          </div>
+        `;
+      }).join('');
+    },
+
+    toggleDay(dayKey, active) {
+      const row = document.getElementById(`schedRow_${dayKey}`);
+      if (row) row.classList.toggle('inactive', !active);
+    },
+
+    saveHours() {
+      const prepMin = parseInt(document.getElementById('cfgPrepMin')?.value || '25', 10);
+      const prepMax = parseInt(document.getElementById('cfgPrepMax')?.value || '45', 10);
+      const closedNotice = document.getElementById('cfgClosedNotice')?.value || '';
+
+      this.settings.store.preparationTimeMin = prepMin;
+      this.settings.store.preparationTimeMax = prepMax;
+      this.settings.store.closedNotice = closedNotice;
+
+      const sched = this.settings.store.schedule || {};
+      for (const k of Object.keys(sched)) {
+        const chk = document.getElementById(`chkDay_${k}`);
+        const openInp = document.getElementById(`open_${k}`);
+        const closeInp = document.getElementById(`close_${k}`);
+        if (chk) sched[k].active = chk.checked;
+        if (openInp) sched[k].open = openInp.value;
+        if (closeInp) sched[k].close = closeInp.value;
+      }
+
+      this.save();
+      showToast('Horários de funcionamento salvos com sucesso!');
+    },
+
+    renderDelivery() {
+      const d = this.settings.delivery || DEFAULT_SETTINGS.delivery;
+      const radSlider = document.getElementById('radiusSlider');
+      const radBadge = document.getElementById('radiusBadge');
+      const tier3Max = document.getElementById('tier3MaxKmDisplay');
+      if (radSlider) radSlider.value = d.maxRadiusKm || 15;
+      if (radBadge) radBadge.textContent = `${d.maxRadiusKm || 15} km`;
+      if (tier3Max) tier3Max.textContent = `${d.maxRadiusKm || 15}`;
+
+      const tiers = d.tiers || DEFAULT_SETTINGS.delivery.tiers;
+      if (tiers[0]) {
+        document.getElementById('tier1Km').value = tiers[0].maxKm;
+        document.getElementById('tier1Fee').value = tiers[0].fee.toFixed(2);
+        document.getElementById('tier1Label').value = tiers[0].label;
+      }
+      if (tiers[1]) {
+        document.getElementById('tier2Km').value = tiers[1].maxKm;
+        document.getElementById('tier2Fee').value = tiers[1].fee.toFixed(2);
+        document.getElementById('tier2Label').value = tiers[1].label;
+      }
+      if (tiers[2]) {
+        document.getElementById('tier3Fee').value = tiers[2].fee.toFixed(2);
+        document.getElementById('tier3Label').value = tiers[2].label;
+      }
+      const freeDel = document.getElementById('cfgFreeDelivery');
+      if (freeDel) freeDel.value = (d.freeDeliveryThreshold || 0).toFixed(2);
+    },
+
+    saveDelivery() {
+      const radius = parseFloat(document.getElementById('radiusSlider')?.value || '15');
+      const freeDelivery = parseFloat(document.getElementById('cfgFreeDelivery')?.value || '0');
+
+      const t1Km = parseFloat(document.getElementById('tier1Km')?.value || '3.0');
+      const t1Fee = parseFloat(document.getElementById('tier1Fee')?.value || '7.50');
+      const t1Label = document.getElementById('tier1Label')?.value || 'Até 3 km';
+
+      const t2Km = parseFloat(document.getElementById('tier2Km')?.value || '6.0');
+      const t2Fee = parseFloat(document.getElementById('tier2Fee')?.value || '11.50');
+      const t2Label = document.getElementById('tier2Label')?.value || 'De 3 a 6 km';
+
+      const t3Fee = parseFloat(document.getElementById('tier3Fee')?.value || '15.50');
+      const t3Label = document.getElementById('tier3Label')?.value || 'Acima de 6 km';
+
+      this.settings.delivery = {
+        maxRadiusKm: radius,
+        freeDeliveryThreshold: freeDelivery,
+        defaultUnitId: document.getElementById('mapUnitSelect')?.value || 'passo-dareia',
+        tiers: [
+          { maxKm: t1Km, fee: t1Fee, label: t1Label },
+          { maxKm: t2Km, fee: t2Fee, label: t2Label },
+          { maxKm: radius, fee: t3Fee, label: t3Label }
+        ]
+      };
+
+      this.save();
+      showToast(`Raio de entrega (${radius} km) e taxas salvas com sucesso!`);
+    },
+
+    renderPayments() {
+      const pay = this.settings.payments || DEFAULT_SETTINGS.payments;
+      for (const [key, p] of Object.entries(pay)) {
+        const chk = document.getElementById(`chkPay_${key}`);
+        const card = document.getElementById(`payCard_${key}`);
+        if (chk) chk.checked = Boolean(p.enabled);
+        if (card) card.classList.toggle('enabled', Boolean(p.enabled));
+      }
+    },
+
+    togglePaymentCard(checkbox, cardId) {
+      const card = document.getElementById(cardId);
+      if (card) card.classList.toggle('enabled', checkbox.checked);
+    },
+
+    savePayments() {
+      const pay = this.settings.payments || DEFAULT_SETTINGS.payments;
+      for (const key of Object.keys(pay)) {
+        const chk = document.getElementById(`chkPay_${key}`);
+        if (chk) pay[key].enabled = chk.checked;
+      }
+      this.save();
+      showToast('Formas de pagamento do checkout salvas com sucesso!');
+    }
+  };
+
+  // =========================================================================
+  // MOTOR DE MAPA INTERATIVO LEAFLET (RAIO DE ENTREGA)
+  // =========================================================================
+  const STORE_COORDINATES = {
+    'passo-dareia': { name: "Passo d'Areia (Zona Norte)", lat: -30.01758, lon: -51.15570 },
+    'moinhos': { name: "Moinhos / Rio Branco", lat: -30.02987, lon: -51.20428 },
+    'partenon': { name: "Partenon (Zona Leste)", lat: -30.06190, lon: -51.17140 },
+    'canoas-gracas': { name: "Nossa Sra. das Graças (Canoas)", lat: -29.91920, lon: -51.17420 },
+    'canoas-guajuviras': { name: "Guajuviras (Canoas)", lat: -29.90150, lon: -51.14910 },
+    'cachoeirinha': { name: "Vila Vista Alegre (Cachoeirinha)", lat: -29.94820, lon: -51.09210 }
+  };
+
+  const MapEngine = {
+    map: null,
+    circle: null,
+    marker: null,
+    currentUnitId: 'passo-dareia',
+
+    initOrUpdate() {
+      const container = document.getElementById('deliveryMap');
+      if (!container || typeof L === 'undefined') return;
+
+      const unit = STORE_COORDINATES[this.currentUnitId] || STORE_COORDINATES['passo-dareia'];
+      const radiusKm = parseFloat(SettingsEngine.settings.delivery?.maxRadiusKm || 15);
+
+      if (!this.map) {
+        this.map = L.map('deliveryMap', {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView([unit.lat, unit.lon], 11);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(this.map);
+
+        this.marker = L.marker([unit.lat, unit.lon])
+          .addTo(this.map)
+          .bindPopup(`<b>Dad's Burger</b><br>${unit.name}`)
+          .openPopup();
+
+        this.circle = L.circle([unit.lat, unit.lon], {
+          radius: radiusKm * 1000,
+          color: '#C88A2E',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.18,
+          weight: 2.5
+        }).addTo(this.map);
+
+        this.map.fitBounds(this.circle.getBounds().pad(0.12));
+      } else {
+        this.map.invalidateSize();
+        this.setRadius(radiusKm, false);
+      }
+    },
+
+    setRadius(km, updateSlider = true) {
+      const val = parseFloat(km) || 15;
+      const badge = document.getElementById('radiusBadge');
+      const slider = document.getElementById('radiusSlider');
+      const tier3Max = document.getElementById('tier3MaxKmDisplay');
+      if (badge) badge.textContent = `${val} km`;
+      if (slider && updateSlider) slider.value = val;
+      if (tier3Max) tier3Max.textContent = `${val}`;
+
+      if (SettingsEngine.settings.delivery) {
+        SettingsEngine.settings.delivery.maxRadiusKm = val;
+      }
+
+      if (this.circle && this.map) {
+        this.circle.setRadius(val * 1000);
+        this.map.fitBounds(this.circle.getBounds().pad(0.12), { animate: true });
+      }
+    },
+
+    switchUnit(unitId) {
+      this.currentUnitId = unitId;
+      const unit = STORE_COORDINATES[unitId];
+      if (!unit || !this.map) return;
+
+      this.marker.setLatLng([unit.lat, unit.lon]).setPopupContent(`<b>Dad's Burger</b><br>${unit.name}`).openPopup();
+      this.circle.setLatLng([unit.lat, unit.lon]);
+      this.map.fitBounds(this.circle.getBounds().pad(0.12), { animate: true });
+    }
+  };
+
+  // =========================================================================
+  // GESTOR DE CARDÁPIO & PRODUTOS ESTILO IFOOD
+  // =========================================================================
+  const CatalogEngine = {
+    products: [],
+
+    async load() {
+      try {
+        const res = await fetch('/api/admin/products');
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0) {
+            this.products = list;
+            localStorage.setItem('dads_products', JSON.stringify(this.products));
+            return;
+          }
+        }
+      } catch (e) {}
+
+      const cached = localStorage.getItem('dads_products');
+      if (cached) {
+        try {
+          this.products = JSON.parse(cached);
+          if (this.products.length > 0) return;
+        } catch (e) {}
+      }
+
+      // Se vazio, carrega catálogo padrão
+      this.products = [];
+    },
+
+    async save() {
+      localStorage.setItem('dads_products', JSON.stringify(this.products));
+      try {
+        const bc = new BroadcastChannel('dads_restaurant_channel');
+        bc.postMessage({ type: 'PRODUCTS_UPDATED', products: this.products });
+      } catch (e) {}
+      try {
+        await fetch('/api/admin/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.products)
+        });
+      } catch (e) {}
+    },
+
+    render() {
+      const grid = document.getElementById('catalogGrid');
+      const search = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
+      const cat = document.getElementById('catalogCatFilter')?.value || 'todos';
+      if (!grid) return;
+
+      const list = this.products.filter(p => {
+        const matchesCat = cat === 'todos' || p.category === cat;
+        const matchesSearch = !search || 
+                              p.name.toLowerCase().includes(search) || 
+                              (p.description || '').toLowerCase().includes(search);
+        return matchesCat && matchesSearch;
+      });
+
+      const countBadge = document.getElementById('catalogCountBadge');
+      if (countBadge) countBadge.textContent = `${list.length} de ${this.products.length} produtos`;
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted);background:#FFF;border-radius:14px;border:1.5px dashed var(--border)">
+            Nenhum produto encontrado com os filtros atuais.
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = list.map(p => {
+        const isPaused = Boolean(p.paused);
+        const imgSrc = p.image || 'logo.png';
+        return `
+          <div class="product-admin-card ${isPaused ? 'paused' : ''}" id="pCard_${p.id}">
+            <div class="product-admin-top">
+              <img src="${imgSrc}" class="product-admin-img" alt="${p.name}" onerror="this.src='logo.png'">
+              <div class="product-admin-info">
+                <span class="product-admin-cat">${p.category}</span>
+                <div class="product-admin-name" title="${p.name}">${p.name}</div>
+                <div class="product-admin-desc">${p.description || 'Sem descrição cadastrada'}</div>
+              </div>
+            </div>
+            <div class="product-admin-bottom">
+              <div class="product-admin-price">${brl(p.price)}</div>
+              <div class="product-admin-actions">
+                <button type="button" class="product-status-btn ${isPaused ? 'paused' : 'available'}" onclick="window.CatalogEngine.togglePause('${p.id}')">
+                  ${isPaused ? '🔴 Pausado (Esgotado)' : '🟢 Disponível'}
+                </button>
+                <button type="button" class="btn-icon-action" title="Editar Produto" onclick="window.CatalogEngine.openEditModal('${p.id}')">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button type="button" class="btn-icon-action danger" title="Excluir Produto" onclick="window.CatalogEngine.deleteProduct('${p.id}')">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    },
+
+    filter() {
+      this.render();
+    },
+
+    togglePause(prodId) {
+      const p = this.products.find(x => x.id === prodId);
+      if (!p) return;
+      p.paused = !p.paused;
+      this.save();
+      this.render();
+      showToast(p.paused ? `"${p.name}" pausado (Esgotado hoje)` : `"${p.name}" reativado no cardápio!`);
+    },
+
+    openCreateModal() {
+      document.getElementById('productModalTitle').textContent = 'Adicionar Novo Produto';
+      document.getElementById('modalProdId').value = '';
+      document.getElementById('modalProdName').value = '';
+      document.getElementById('modalProdCategory').value = 'Burgers Artesanais';
+      document.getElementById('modalProdPrice').value = '';
+      document.getElementById('modalProdImage').value = '';
+      document.getElementById('modalProdDesc').value = '';
+      document.getElementById('productModalBackdrop').style.display = 'grid';
+    },
+
+    openEditModal(prodId) {
+      const p = this.products.find(x => x.id === prodId);
+      if (!p) return;
+      document.getElementById('productModalTitle').textContent = 'Editar Produto';
+      document.getElementById('modalProdId').value = p.id;
+      document.getElementById('modalProdName').value = p.name;
+      document.getElementById('modalProdCategory').value = p.category;
+      document.getElementById('modalProdPrice').value = p.price;
+      document.getElementById('modalProdImage').value = p.image || '';
+      document.getElementById('modalProdDesc').value = p.description || '';
+      document.getElementById('productModalBackdrop').style.display = 'grid';
+    },
+
+    closeModal() {
+      const m = document.getElementById('productModalBackdrop');
+      if (m) m.style.display = 'none';
+    },
+
+    saveProductFromModal() {
+      const id = document.getElementById('modalProdId').value;
+      const name = document.getElementById('modalProdName').value.trim();
+      const category = document.getElementById('modalProdCategory').value;
+      const price = parseFloat(document.getElementById('modalProdPrice').value || '0');
+      const image = document.getElementById('modalProdImage').value.trim();
+      const description = document.getElementById('modalProdDesc').value.trim();
+
+      if (!name) {
+        showToast('Informe o nome do produto.');
+        return;
+      }
+      if (isNaN(price) || price <= 0) {
+        showToast('Informe um preço válido.');
+        return;
+      }
+
+      if (id) {
+        // Editando existente
+        const idx = this.products.findIndex(x => x.id === id);
+        if (idx !== -1) {
+          this.products[idx] = {
+            ...this.products[idx],
+            name,
+            category,
+            price,
+            image: image || 'logo.png',
+            description
+          };
+          showToast(`"${name}" atualizado com sucesso!`);
+        }
+      } else {
+        // Novo
+        const newProd = {
+          id: 'prod_' + Date.now(),
+          name,
+          category,
+          price,
+          image: image || 'logo.png',
+          description,
+          paused: false
+        };
+        this.products.unshift(newProd);
+        showToast(`"${name}" adicionado ao cardápio!`);
+      }
+
+      this.save();
+      this.closeModal();
+      this.render();
+    },
+
+    deleteProduct(prodId) {
+      const p = this.products.find(x => x.id === prodId);
+      if (!p) return;
+      if (confirm(`Tem certeza que deseja remover o produto "${p.name}" do cardápio?`)) {
+        this.products = this.products.filter(x => x.id !== prodId);
+        this.save();
+        this.render();
+        showToast(`"${p.name}" foi removido do cardápio.`);
+      }
+    }
+  };
+
   window.AdminApp = AdminApp;
   window.AlarmEngine = AlarmEngine;
   window.PrinterEngine = PrinterEngine;
+  window.SettingsEngine = SettingsEngine;
+  window.MapEngine = MapEngine;
+  window.CatalogEngine = CatalogEngine;
 
   // Inicia aplicação
   if (checkAuth()) {
+    SettingsEngine.load();
+    CatalogEngine.load();
     AdminApp.init();
   }
 })();

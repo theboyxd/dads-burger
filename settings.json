@@ -1,0 +1,73 @@
+{
+  "store": {
+    "name": "Dad's Burger",
+    "isOpenManual": true,
+    "autoSchedule": true,
+    "preparationTimeMin": 25,
+    "preparationTimeMax": 45,
+    "closedNotice": "Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.",
+    "schedule": {
+      "seg": { "label": "Segunda-feira", "active": true, "open": "18:00", "close": "23:45" },
+      "ter": { "label": "Terça-feira", "active": true, "open": "18:00", "close": "23:45" },
+      "qua": { "label": "Quarta-feira", "active": true, "open": "18:00", "close": "23:45" },
+      "qui": { "label": "Quinta-feira", "active": true, "open": "18:00", "close": "23:45" },
+      "sex": { "label": "Sexta-feira", "active": true, "open": "18:00", "close": "00:30" },
+      "sab": { "label": "Sábado", "active": true, "open": "18:00", "close": "00:30" },
+      "dom": { "label": "Domingo", "active": true, "open": "18:00", "close": "23:45" }
+    }
+  },
+  "delivery": {
+    "maxRadiusKm": 15.0,
+    "freeDeliveryThreshold": 0,
+    "defaultUnitId": "passo-dareia",
+    "tiers": [
+      { "maxKm": 3.0, "fee": 7.50, "label": "Até 3 km" },
+      { "maxKm": 6.0, "fee": 11.50, "label": "De 3 a 6 km" },
+      { "maxKm": 15.0, "fee": 15.50, "label": "De 6 a 15 km" }
+    ]
+  },
+  "payments": {
+    "pix_online": {
+      "id": "pix_online",
+      "name": "Pix Online (Instantâneo sem comprovante)",
+      "enabled": true,
+      "type": "online",
+      "icon": "⚡"
+    },
+    "cartao_online": {
+      "id": "cartao_online",
+      "name": "Cartão Online (Mercado Pago)",
+      "enabled": true,
+      "type": "online",
+      "icon": "💳"
+    },
+    "pix_entrega": {
+      "id": "pix_entrega",
+      "name": "Pix na Entrega (Chave / Maquininha)",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "📱"
+    },
+    "cartao_credito_entrega": {
+      "id": "cartao_credito_entrega",
+      "name": "Cartão de Crédito (Maquininha)",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "💳"
+    },
+    "cartao_debito_entrega": {
+      "id": "cartao_debito_entrega",
+      "name": "Cartão de Débito (Maquininha)",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "💳"
+    },
+    "dinheiro_entrega": {
+      "id": "dinheiro_entrega",
+      "name": "Dinheiro na Entrega (com Troco)",
+      "enabled": true,
+      "type": "delivery",
+      "icon": "💵"
+    }
+  }
+}

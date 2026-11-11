@@ -16,6 +16,8 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const ORDERS_FILE = path.join(__dirname, 'orders.json');
+const SETTINGS_FILE = path.join(__dirname, 'settings.json');
+const PRODUCTS_FILE = path.join(__dirname, 'products.json');
 
 let ORDERS = {};
 if (fs.existsSync(ORDERS_FILE)) {
@@ -29,6 +31,42 @@ if (fs.existsSync(ORDERS_FILE)) {
 function saveOrders() {
   try {
     fs.writeFileSync(ORDERS_FILE, JSON.stringify(ORDERS, null, 2), 'utf-8');
+  } catch {}
+}
+
+let SETTINGS = {};
+function loadSettings() {
+  if (fs.existsSync(SETTINGS_FILE)) {
+    try {
+      SETTINGS = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+    } catch {
+      SETTINGS = {};
+    }
+  }
+}
+loadSettings();
+
+function saveSettings() {
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(SETTINGS, null, 2), 'utf-8');
+  } catch {}
+}
+
+let PRODUCTS = [];
+function loadProducts() {
+  if (fs.existsSync(PRODUCTS_FILE)) {
+    try {
+      PRODUCTS = JSON.parse(fs.readFileSync(PRODUCTS_FILE, 'utf-8'));
+    } catch {
+      PRODUCTS = [];
+    }
+  }
+}
+loadProducts();
+
+function saveProducts() {
+  try {
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(PRODUCTS, null, 2), 'utf-8');
   } catch {}
 }
 
@@ -195,7 +233,27 @@ function calculateDeliveryAndSplit(distanceKm = 0, mode = 'entrega', subtotal = 
   let deliveryLeftover = 1.00;
   let tierLabel = 'Acima de 6 km';
 
-  if (dist <= 3.0) {
+  const freeThreshold = Number(SETTINGS.delivery?.freeDeliveryThreshold) || 0;
+  if (freeThreshold > 0 && sub >= freeThreshold) {
+    deliveryFee = 0;
+    restaurantDeliveryFee = 0;
+    deliveryLeftover = 0;
+    tierLabel = 'Entrega Grátis';
+  } else if (Array.isArray(SETTINGS.delivery?.tiers) && SETTINGS.delivery.tiers.length > 0) {
+    const sortedTiers = [...SETTINGS.delivery.tiers].sort((a, b) => a.maxKm - b.maxKm);
+    let matched = null;
+    for (const t of sortedTiers) {
+      if (dist <= t.maxKm) {
+        matched = t;
+        break;
+      }
+    }
+    if (!matched) matched = sortedTiers[sortedTiers.length - 1];
+    deliveryFee = Number(matched.fee) || 7.50;
+    restaurantDeliveryFee = Math.max(0, deliveryFee - 1.00);
+    deliveryLeftover = Math.round((deliveryFee - restaurantDeliveryFee) * 100) / 100;
+    tierLabel = matched.label || `Até ${matched.maxKm} km`;
+  } else if (dist <= 3.0) {
     deliveryFee = 7.50;
     restaurantDeliveryFee = 6.50;
     deliveryLeftover = 1.00; // 7,50 - 6,50
@@ -305,7 +363,8 @@ app.post('/api/delivery/validate', (req, res) => {
     }
   }
 
-  const allowed = isPoaOrMetro && distanceKm <= 15.0;
+  const maxRadius = Number(SETTINGS.delivery?.maxRadiusKm) || 15.0;
+  const allowed = isPoaOrMetro && distanceKm <= maxRadius;
   const split = calculateDeliveryAndSplit(distanceKm, 'entrega', subtotal || 0);
 
   // Calcula unidade mais próxima se a atual estiver distante
@@ -330,7 +389,7 @@ app.post('/api/delivery/validate', (req, res) => {
       id: bestStore.id,
       name: bestStore.name,
       distanceKm: minD < 0.8 ? 0.8 : minD,
-      allowed: minD <= 15.0
+      allowed: minD <= maxRadius
     };
   }
 
@@ -349,6 +408,38 @@ app.post('/api/delivery/validate', (req, res) => {
     unitName: store.name,
     closestUnit
   });
+});
+
+// -------------------------------------------------------------
+// GESTOR DE RESTAURANTE ESTILO IFOOD (SETTINGS, CARDÁPIO, HORÁRIOS, RAIO, PAGAMENTOS)
+// -------------------------------------------------------------
+app.get('/api/admin/settings', (req, res) => {
+  loadSettings();
+  res.json(SETTINGS);
+});
+
+app.post('/api/admin/settings', (req, res) => {
+  loadSettings();
+  SETTINGS = {
+    ...SETTINGS,
+    ...(req.body || {})
+  };
+  saveSettings();
+  res.json({ success: true, settings: SETTINGS });
+});
+
+app.get('/api/admin/products', (req, res) => {
+  loadProducts();
+  res.json(PRODUCTS);
+});
+
+app.post('/api/admin/products', (req, res) => {
+  if (Array.isArray(req.body)) {
+    PRODUCTS = req.body;
+    saveProducts();
+    return res.json({ success: true, count: PRODUCTS.length });
+  }
+  res.status(400).json({ success: false, error: 'Esperado array de produtos' });
 });
 
 // Configuração Mercado Pago

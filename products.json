@@ -1,0 +1,380 @@
+[
+  {
+    "id": "prod_1",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: 2x Big Bacon",
+    "description": "2 Deliciosos Hambúrgueres Big Bacon, nuggets de frango, onion rings, calabresa e batata...",
+    "price": 94.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303112347_J55T_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_2",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: 3x Cheesburger",
+    "description": "3 Deliciosos Hambúrgueres Cheesburger, nuggets de frango, onion rings, calabresa e batata...",
+    "price": 93.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303120006_A4F6_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_3",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: 2x Magnífico",
+    "description": "2 Deliciosos Hambúrgueres Magnífico, acompanhados de nuggets de frango, onion rings e calabresa...",
+    "price": 99.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303112347_J55T_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_4",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: 4x Cheddar Duplo",
+    "description": "4 Deliciosos Hambúrgueres Cheddar Duplo, acompanhados de nuggets, onion rings e batata frita...",
+    "price": 138.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303120019_ONI5_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_5",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: Cheddar Duplo",
+    "description": "1x Delicioso Hambúrguer Cheddar Duplo, acompanhado de nuggets de frango, onion rings e fritas...",
+    "price": 71.91,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202211082221_VD03_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_6",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: Serve 6 Pessoas + Fritas",
+    "description": "6 hambúrgueres artesanais com carne suculenta e molho especial + porção generosa de fritas...",
+    "price": 135.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303120039_XLY5_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_7",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: Serve 10 Pessoas Insano",
+    "description": "10 burgers Db Carne ou Frango, 10 onion rings, 10 nuggets, batata com cheddar e bacon...",
+    "price": 203,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202212170055_16O5_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_8",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: Serve 7 Pessoas",
+    "description": "7 burgers Db Carne ou Frango, 7 onion rings, 7 nuggets, batata com cheddar e bacon e calabresa...",
+    "price": 199.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202112150011_QTS0_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_9",
+    "category": "Combos na Caixa",
+    "name": "Combo: Big Bacon 1 Pessoa",
+    "description": "1x Delicioso Hambúrguer Big Bacon, acompanhado de nuggets, onion rings e batata frita...",
+    "price": 71.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202211082221_VD03_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_10",
+    "category": "Combos na Caixa",
+    "name": "Combo na Caixa: 4x Cheddar Jr",
+    "description": "4 Hambúrgueres Cheddar Jr, acompanhados de nuggets de frango, calabresa e onion rings...",
+    "price": 169.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202211082329_3V46_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_11",
+    "category": "Burgers Artesanais",
+    "name": "Cheese Salada Db",
+    "description": "Blend artesanal 100g, alface e tomate frescos, maionese e molho especial no pão brioche...",
+    "price": 32.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302325_1SEJ_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_12",
+    "category": "Burgers Artesanais",
+    "name": "Big Bacon",
+    "description": "Blend artesanal 100g, bacon crocante, onion rings, muçarela, alface e molho no pão brioche...",
+    "price": 49.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202108280340_C42R_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_13",
+    "category": "Burgers Artesanais",
+    "name": "Cheeseburguer Cheddar",
+    "description": "Suculento hambúrguer artesanal 100g com muito queijo cheddar cremoso no pão brioche tostado...",
+    "price": 29.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302314_X2E8_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_14",
+    "category": "Burgers Artesanais",
+    "name": "Duplo Calabresa",
+    "description": "2 blends artesanais de 100g cada, calabresa fatiada, molho barbecue e queijo derretido...",
+    "price": 45.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202207031919_82C3_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_15",
+    "category": "Burgers Artesanais",
+    "name": "Big Mom Chicken",
+    "description": "2 carnes de frango crocante de 100g cada, queijo muçarela, alface fresca e maionese especial...",
+    "price": 40.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202408100303_0IJ0_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_16",
+    "category": "Burgers Artesanais",
+    "name": "Db Chicken Bacon",
+    "description": "Frango empanado crocante com maionese suave de queijo e fatias de bacon defumado crocante...",
+    "price": 38.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202211240120_2V2T_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_17",
+    "category": "Burgers Artesanais",
+    "name": "Db Cheddar Duplo",
+    "description": "2 carnes artesanais de 100g, cheddar fatiado e cheddar cremoso com cebola caramelizada...",
+    "price": 49.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302252_ID22_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_18",
+    "category": "Burgers Artesanais",
+    "name": "Db Cowboy",
+    "description": "Blend artesanal 100g, queijo muçarela, tomate fresco, onion rings empanadas e molho barbecue...",
+    "price": 49.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202108190130_3GTY_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_19",
+    "category": "Burgers Artesanais",
+    "name": "Magnífico",
+    "description": "Hambúrguer artesanal 100g, queijo cheddar, alface, tomate fresco e nosso molho da casa...",
+    "price": 47.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302258_7P32_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_20",
+    "category": "Burgers Artesanais",
+    "name": "Triplo Bacon",
+    "description": "3 blends artesanais de 100g cada, triplo bacon crocante e triplo queijo cheddar derretido...",
+    "price": 64.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202303120237_ROT6_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_21",
+    "category": "Burgers Artesanais",
+    "name": "Db Furioso",
+    "description": "Blend artesanal 100g, muçarela, iscas de bacon defumado, onion rings e molho levemente picante...",
+    "price": 49.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202108190102_FW0H_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_22",
+    "category": "Burgers Artesanais",
+    "name": "Cheddar Duplo Salada",
+    "description": "2 carnes artesanais de 100g cada, queijo cheddar, alface, tomate e maionese especial no brioche...",
+    "price": 59.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302316_A551_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_23",
+    "category": "Burgers Artesanais",
+    "name": "Triplo Magnífico",
+    "description": "3 carnes artesanais de 100g cada, cheddar cremoso, alface crocante e tomate fresco no brioche...",
+    "price": 56.01,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202103042151_1J19_blob",
+    "paused": false
+  },
+  {
+    "id": "prod_24",
+    "category": "Burgers Artesanais",
+    "name": "Chicken Burger",
+    "description": "Hambúrguer artesanal de frango empanado, alface fresca e maionese especial no pão brioche...",
+    "price": 35.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202310302256_4S70_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_25",
+    "category": "Porções",
+    "name": "Onions Rings",
+    "description": "Aproximadamente 150g de anéis de cebola dourados e super crocantes com molho...",
+    "price": 22.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202509302141_2260_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_26",
+    "category": "Porções",
+    "name": "Trio Magnífico",
+    "description": "Batata frita crocante coberta com molho cheddar e bacon + onion rings + nuggets dourados...",
+    "price": 44.92,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/201706231921_35183172blob",
+    "paused": false
+  },
+  {
+    "id": "prod_27",
+    "category": "Porções",
+    "name": "Batata Frita",
+    "description": "Aproximadamente 150g de batatas fritas sequinhas, crocantes e bem temperadas...",
+    "price": 22.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202509302134_SG75_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_28",
+    "category": "Porções",
+    "name": "Combo Onion Rings",
+    "description": "350g de onion rings empanadas (20 a 25 unidades) com molho barbecue e maionese...",
+    "price": 49.62,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202109032057_15LV_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_29",
+    "category": "Porções",
+    "name": "Mega Dad´s Batata + Guaraná 2L",
+    "description": "Combinação perfeita: batata frita com calabresa fatiada, bacon e cheddar cremoso + Guaraná 2L...",
+    "price": 95.92,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202211232123_N2HV_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_30",
+    "category": "Porções",
+    "name": "Combo Nuggets",
+    "description": "650g de nuggets dourados crocantes (20 a 25 unidades) com 50ml barbecue e maionese...",
+    "price": 63.92,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202109032101_4UI1_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_31",
+    "category": "Bebidas",
+    "name": "Coca-Cola 350ml",
+    "description": "Lata 350 ml, bem gelada",
+    "price": 9.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190022_LMO1_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_32",
+    "category": "Bebidas",
+    "name": "Sprite Lata",
+    "description": "Lata 350 ml, refrescante e gelada",
+    "price": 9.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190025_4E7Y_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_33",
+    "category": "Bebidas",
+    "name": "Coca-Cola Original 2L",
+    "description": "Garrafa 2 Litros para dividir com a galera",
+    "price": 23.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190051_1Q77_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_34",
+    "category": "Bebidas",
+    "name": "Coca-Cola Zero 2L",
+    "description": "Garrafa 2 Litros Zero Açúcar bem gelada",
+    "price": 22.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190017_0ARL_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_35",
+    "category": "Bebidas",
+    "name": "Fanta Laranja Lata 350ml",
+    "description": "Lata 350 ml, bem gelada",
+    "price": 12.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202210211307_zym9dpas7inblob",
+    "paused": false
+  },
+  {
+    "id": "prod_36",
+    "category": "Bebidas",
+    "name": "Refrigerante Guaraná Fruki Lata 350ml",
+    "description": "O guaraná tradicional do RS, bem gelado",
+    "price": 12.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202210180253_9cjw6ek1ic7blob",
+    "paused": false
+  },
+  {
+    "id": "prod_37",
+    "category": "Bebidas",
+    "name": "Refrigerante Fruki Guaraná 200ml",
+    "description": "Garrafinha 200 ml geladinha",
+    "price": 5.9,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202210192223_hq8hi7dcoplblob",
+    "paused": false
+  },
+  {
+    "id": "prod_38",
+    "category": "Bebidas",
+    "name": "Refrigerante Coca-Cola Garrafa 200ml",
+    "description": "Garrafa 200 ml perfeita para o lanche",
+    "price": 6.5,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202210180755_jbj81jt1flnblob",
+    "paused": false
+  },
+  {
+    "id": "prod_39",
+    "category": "Bebidas",
+    "name": "Cerveja Amstel Latão 473ml",
+    "description": "Latão 473 ml puro malte geladíssimo",
+    "price": 13.5,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190019_RA0P_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_40",
+    "category": "Bebidas",
+    "name": "Cerveja Heineken 330ml",
+    "description": "Long neck 330 ml trincando de gelada",
+    "price": 13.5,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202210200022_3etbaqlcl88blob",
+    "paused": false
+  },
+  {
+    "id": "prod_41",
+    "category": "Bebidas",
+    "name": "Cerveja Heineken 600ml",
+    "description": "Garrafa 600 ml puro malte bem gelada",
+    "price": 19,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111192252_263I_iblob",
+    "paused": false
+  },
+  {
+    "id": "prod_42",
+    "category": "Bebidas",
+    "name": "Cerveja Polar 473ml",
+    "description": "A cerveja do Rio Grande, latão 473 ml gelada",
+    "price": 12.5,
+    "image": "https://client-assets.anota.ai/produtos/68dd67c43503c81262369b16/202111190018_21Y5_iblob",
+    "paused": false
+  }
+]

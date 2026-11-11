@@ -885,6 +885,64 @@
     white-space: nowrap;
   }
 
+  /* Integração Gestor iFood */
+  .payment-methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .payment-methods-grid button {
+    padding: 10px 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    border-radius: 12px;
+    border: 1.5px solid #E5DDD6;
+    background: #FFF;
+    color: #3F3F46;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all .15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .payment-methods-grid button:hover {
+    border-color: #C88A2E;
+    background: #FFFBF5;
+  }
+  .payment-methods-grid button.on {
+    background: #C88A2E;
+    color: #FFF;
+    border-color: #C88A2E;
+    box-shadow: 0 4px 12px rgba(200,138,46,0.28);
+  }
+  .badge-paused {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #EF4444;
+    color: #FFF;
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(239,68,68,0.4);
+    z-index: 2;
+  }
+  .paused-item {
+    position: relative;
+    opacity: 0.72;
+    filter: grayscale(0.25);
+  }
+  .add.disabled {
+    pointer-events: none;
+    background: #A8A29E !important;
+    color: #F5F5F4 !important;
+    opacity: 0.5;
+  }
   </style>
 </head>
 <body>
@@ -917,6 +975,14 @@
   <h1 data-name></h1>
   <p class="lead" id="tagline"></p>
   <span class="status" id="status" hidden><i></i><span id="statusText"></span></span>
+
+  <!-- BANNER LOJA FECHADA -->
+  <div id="storeClosedBanner" style="display:none;margin:10px 0 14px;padding:12px 16px;background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:14px;color:#991B1B;font-size:13px;line-height:1.45;box-shadow:0 2px 8px rgba(185,28,28,0.06)">
+    <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:13.5px;margin-bottom:3px">
+      <span>🔴</span> <span>Loja Fechada no Momento</span>
+    </div>
+    <div id="storeClosedNoticeText">Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.</div>
+  </div>
 
   <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="q" placeholder="Buscar no cardápio" autocomplete="off"></label>
@@ -1018,6 +1084,11 @@
         <div id="distanceStatus" style="display:none;margin-top:10px;padding:12px 14px;border-radius:14px;font-size:13px;line-height:1.45;transition:all .2s ease;"></div>
       </div>
 
+      <div id="cartStoreClosedNotice" style="display:none;margin-bottom:12px;padding:12px 14px;background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:14px;color:#991B1B;font-size:12.5px;line-height:1.4">
+        <strong>🔴 Loja fechada para novos pedidos no momento.</strong><br>
+        <span id="cartStoreClosedNoticeText">O restaurante não está aceitando novos pedidos agora.</span>
+      </div>
+
       <div class="panel" style="margin-top:12px;padding:12px 14px;background:#fff;border:1px solid #E5DDD6;border-radius:18px">
         <label class="fld" id="custNameFld" style="margin-top:0">Seu Nome Completo<input id="custName" placeholder="Ex: João Silva" autocomplete="name"></label>
         <div class="two">
@@ -1026,9 +1097,20 @@
         </div>
       </div>
 
-      <div class="fld" id="payFld">Forma de pagamento
-        <div class="seg" id="pay"><button type="button" class="on" data-pay="pix">Pix</button><button type="button" data-pay="cartao">Cartão</button></div></div>
+      <div class="fld" id="payFld">
+        <span style="font-weight:700">Forma de pagamento</span>
+        <div class="payment-methods-grid" id="pay">
+          <button type="button" class="on" data-pay="pix_online">⚡ Pix Online</button>
+          <button type="button" data-pay="cartao_online">💳 Cartão Online</button>
+        </div>
+      </div>
       <p class="hint" id="payHint">⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.</p>
+
+      <!-- CAMPO DE TROCO (DINHEIRO NA ENTREGA) -->
+      <label class="fld" id="trocoFld" style="display:none;margin-top:10px">
+        <span style="font-weight:700">Precisa de troco para quanto?</span>
+        <input id="trocoInput" placeholder="Ex: R$ 50,00 (ou deixe em branco se não precisar)" inputmode="numeric">
+      </label>
 
       <!-- BADGE DE ECONOMIA NO PEDIDO -->
       <div id="cartSavingsBanner" style="display:none;margin:12px 0;padding:11px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:16px;align-items:center;gap:10px;color:#166534;font-size:12.5px;font-weight:700;box-shadow:0 2px 10px rgba(22,101,52,.06)">
@@ -1087,6 +1169,7 @@
 
       <button class="pill brand wide" id="btnPayPix" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(215,156,69,.4);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Pix</button>
       <button class="pill brand wide" id="btnPayCardMp" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(0,158,227,.35);background:#009EE3;color:#fff;display:none;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Cartão Online</button>
+      <button class="pill brand wide" id="btnPayDelivery" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(22,163,74,.35);background:#16A34A;color:#fff;display:none;align-items:center;justify-content:center;gap:8px;font-weight:700">✓ Confirmar Pedido (Pagar na Entrega)</button>
       <button class="pill light wide" data-clear>Limpar pedido</button>
     </div>
   </div>
@@ -1523,7 +1606,47 @@ window.__CFG__ = {
   const reqNome = P.get('nome') || '';
   const isDads = reqTipo === 'dads' || /dad'?s/i.test(reqNome);
   const T = isDads ? TEMPLATES.dads : (TEMPLATES[reqTipo] || TEMPLATES.restaurante);
-  const MENU = T.items;
+  let MENU = [...T.items];
+
+  const DEFAULT_SETTINGS = {
+    store: {
+      name: "Dad's Burger",
+      isOpenManual: true,
+      autoSchedule: true,
+      preparationTimeMin: 25,
+      preparationTimeMax: 45,
+      closedNotice: "Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.",
+      schedule: {
+        seg: { label: "Segunda-feira", active: true, open: "18:00", close: "23:45" },
+        ter: { label: "Terça-feira", active: true, open: "18:00", close: "23:45" },
+        qua: { label: "Quarta-feira", active: true, open: "18:00", close: "23:45" },
+        qui: { label: "Quinta-feira", active: true, open: "18:00", close: "23:45" },
+        sex: { label: "Sexta-feira", active: true, open: "18:00", close: "00:30" },
+        sab: { label: "Sábado", active: true, open: "18:00", close: "00:30" },
+        dom: { label: "Domingo", active: true, open: "18:00", close: "23:45" }
+      }
+    },
+    delivery: {
+      maxRadiusKm: 15.0,
+      freeDeliveryThreshold: 0,
+      tiers: [
+        { maxKm: 3.0, fee: 7.50, label: "Até 3 km" },
+        { maxKm: 6.0, fee: 11.50, label: "De 3 a 6 km" },
+        { maxKm: 15.0, fee: 15.50, label: "De 6 a 15 km" }
+      ]
+    },
+    payments: {
+      pix_online: { id: "pix_online", name: "Pix Online", enabled: true, icon: "⚡" },
+      cartao_online: { id: "cartao_online", name: "Cartão Online", enabled: true, icon: "💳" },
+      pix_entrega: { id: "pix_entrega", name: "Pix na Entrega", enabled: true, icon: "📱" },
+      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Crédito Entrega", enabled: true, icon: "💳" },
+      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Débito Entrega", enabled: true, icon: "💳" },
+      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro", enabled: true, icon: "💵" }
+    }
+  };
+  let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  window.SETTINGS = SETTINGS;
+
   const brl = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const $ = (s) => document.querySelector(s);
   const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); Object.assign(e, attrs); e.append(...kids); return e; };
@@ -1773,11 +1896,45 @@ window.__CFG__ = {
 
   function getDeliveryFeeByDistance(distKm) {
     const d = Number(distKm) || 0;
+    const subtotal = [...cart.entries()].reduce((s, [i, q]) => s + MENU[i].price * q, 0);
+
+    const deliveryConfig = SETTINGS?.delivery;
+    if (deliveryConfig?.freeDeliveryThreshold > 0 && subtotal >= deliveryConfig.freeDeliveryThreshold) {
+      return 0;
+    }
+
+    if (deliveryConfig?.tiers && Array.isArray(deliveryConfig.tiers) && deliveryConfig.tiers.length > 0) {
+      const sortedTiers = [...deliveryConfig.tiers].sort((a, b) => a.maxKm - b.maxKm);
+      for (const t of sortedTiers) {
+        if (d <= t.maxKm) return Number(t.fee);
+      }
+      return Number(sortedTiers[sortedTiers.length - 1].fee);
+    }
+
     if (d <= 3.0) return 7.50;
     if (d <= 6.0) return 11.50;
     return 15.50;
   }
   window.getDeliveryFeeByDistance = getDeliveryFeeByDistance;
+
+  function updateDeliveryTiersHint() {
+    const hintEl = $('#deliveryFeeTiersHint');
+    if (!hintEl) return;
+    const tiers = SETTINGS?.delivery?.tiers || [
+      { maxKm: 3.0, fee: 7.50, label: 'Até 3 km' },
+      { maxKm: 6.0, fee: 11.50, label: 'De 3 a 6 km' },
+      { maxKm: 15.0, fee: 15.50, label: 'De 6 a 15 km' }
+    ];
+    const parts = tiers.map((t) => `${t.label || `Até ${t.maxKm} km`} <strong>${brl(t.fee)}</strong>`);
+    let html = `<strong>Tabela por distância:</strong> ${parts.join(' · ')}`;
+    if (SETTINGS?.delivery?.freeDeliveryThreshold > 0) {
+      html += ` · <span style="color:#15803D;font-weight:700">Grátis acima de ${brl(SETTINGS.delivery.freeDeliveryThreshold)}</span>`;
+    }
+    hintEl.innerHTML = `
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;color:#8C827A"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div>${html}</div>
+    `;
+  }
 
   function paintCart() {
     const items = [...cart.entries()];
@@ -1801,7 +1958,20 @@ window.__CFG__ = {
     } else {
       if ($('#modeLabel')) $('#modeLabel').textContent = 'Taxa de entrega';
       if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'flex';
-      if (lastValidationResult && typeof lastValidationResult.deliveryFee === 'number') {
+      updateDeliveryTiersHint();
+
+      const isFreeDelivery = subtotal > 0 && SETTINGS?.delivery?.freeDeliveryThreshold > 0 && subtotal >= SETTINGS.delivery.freeDeliveryThreshold;
+
+      if (isFreeDelivery) {
+        deliveryFee = 0;
+        if ($('#modeFee')) $('#modeFee').textContent = 'Grátis';
+        if ($('#modeFeeBadge')) {
+          $('#modeFeeBadge').textContent = 'Frete Grátis!';
+          $('#modeFeeBadge').style.background = '#DCFCE7';
+          $('#modeFeeBadge').style.color = '#15803D';
+          $('#modeFeeBadge').style.display = 'inline-block';
+        }
+      } else if (lastValidationResult && typeof lastValidationResult.deliveryFee === 'number') {
         deliveryFee = lastValidationResult.deliveryFee;
         const dStr = lastValidationResult.distanceKm ? `${lastValidationResult.distanceKm} km` : 'Calculado';
         if ($('#modeFee')) $('#modeFee').textContent = brl(deliveryFee);
@@ -1812,8 +1982,9 @@ window.__CFG__ = {
           $('#modeFeeBadge').style.display = 'inline-block';
         }
       } else {
-        deliveryFee = 7.50;
-        if ($('#modeFee')) $('#modeFee').textContent = 'A partir de R$ 7,50';
+        const baseFee = (SETTINGS?.delivery?.tiers && SETTINGS.delivery.tiers[0]) ? SETTINGS.delivery.tiers[0].fee : 7.50;
+        deliveryFee = baseFee;
+        if ($('#modeFee')) $('#modeFee').textContent = `A partir de ${brl(baseFee)}`;
         if ($('#modeFeeBadge')) {
           $('#modeFeeBadge').textContent = 'Por distância';
           $('#modeFeeBadge').style.background = '#FEF3C7';
@@ -1918,28 +2089,80 @@ window.__CFG__ = {
     }));
   }
 
-  // Pagamento: Pix ou Cartão Online (Mercado Pago Transparente)
-  const PAY = { pix: 'Pix', cartao: 'Cartão' };
+  // Pagamento: Dinâmico estilo iFood (Pix Online, Cartão Online e Pagamento na Entrega)
+  function paintPaymentMethods() {
+    const payContainer = $('#pay');
+    if (!payContainer) return;
+
+    const payments = SETTINGS?.payments || DEFAULT_SETTINGS.payments;
+    const enabledList = Object.values(payments).filter((p) => p.enabled !== false);
+    if (!enabledList.length) {
+      enabledList.push({ id: 'pix_online', name: 'Pix Online', enabled: true, icon: '⚡' });
+    }
+
+    const currentOn = payContainer.querySelector('.on')?.dataset.pay;
+    const activePay = enabledList.some((p) => p.id === currentOn) ? currentOn : enabledList[0].id;
+
+    payContainer.replaceChildren(...enabledList.map((p) => {
+      const btn = el('button', {
+        type: 'button',
+        className: p.id === activePay ? 'on' : '',
+        onclick: (e) => {
+          e.preventDefault();
+          payContainer.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
+          $('#payFld')?.classList.remove('miss');
+          paintPay();
+          if (p.id === 'cartao_online' && typeof startMpCardCheckout === 'function') {
+            startMpCardCheckout();
+          }
+        }
+      }, el('span', { textContent: p.icon || '💳' }), el('span', { textContent: p.name }));
+      btn.dataset.pay = p.id;
+      return btn;
+    }));
+
+    paintPay();
+  }
+
   function paintPay() {
     const on = $('#pay .on');
-    const payMode = on ? on.dataset.pay : 'pix';
-    const pickup = $('#addrBox').hidden;
-    const isPix = payMode === 'pix';
-    const isCartao = payMode === 'cartao';
+    const payMode = on ? on.dataset.pay : 'pix_online';
+    const isPixOnline = payMode === 'pix_online' || payMode === 'pix';
+    const isCardOnline = payMode === 'cartao_online' || payMode === 'cartao';
+    const isDeliveryPay = ['pix_entrega', 'cartao_credito_entrega', 'cartao_debito_entrega', 'dinheiro_entrega'].includes(payMode);
+    const isDinheiro = payMode === 'dinheiro_entrega';
 
-    if ($('#btnPayPix')) $('#btnPayPix').style.display = isPix ? 'flex' : 'none';
-    if ($('#btnPayCardMp')) $('#btnPayCardMp').style.display = isCartao ? 'flex' : 'none';
-    if ($('#btnSendWa')) $('#btnSendWa').style.display = 'none';
+    if ($('#btnPayPix')) $('#btnPayPix').style.display = isPixOnline ? 'flex' : 'none';
+    if ($('#btnPayCardMp')) $('#btnPayCardMp').style.display = isCardOnline ? 'flex' : 'none';
+    if ($('#btnPayDelivery')) {
+      $('#btnPayDelivery').style.display = isDeliveryPay ? 'flex' : 'none';
+      const labelMap = {
+        pix_entrega: 'Confirmar Pedido (Pix na Entrega)',
+        cartao_credito_entrega: 'Confirmar Pedido (Crédito na Entrega)',
+        cartao_debito_entrega: 'Confirmar Pedido (Débito na Entrega)',
+        dinheiro_entrega: 'Confirmar Pedido (Dinheiro na Entrega)'
+      };
+      $('#btnPayDelivery').textContent = `✓ ${labelMap[payMode] || 'Confirmar Pedido (Pagar na Entrega)'}`;
+    }
 
-    const hint = {
+    const hints = {
+      pix_online: '⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
       pix: '⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.',
-      cartao: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.'
-    }[payMode] || '';
+      cartao_online: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.',
+      cartao: '💳 Pague online com cartão de crédito ou débito em ambiente seguro Mercado Pago.',
+      pix_entrega: '📱 O entregador levará a chave Pix / QR Code da maquininha para você pagar no recebimento.',
+      cartao_credito_entrega: '💳 O entregador levará a maquininha com suporte a Cartão de Crédito.',
+      cartao_debito_entrega: '💳 O entregador levará a maquininha com suporte a Cartão de Débito.',
+      dinheiro_entrega: '💵 Pagamento em dinheiro físico na entrega. Se precisar de troco, informe o valor abaixo.'
+    };
+    const hint = hints[payMode] || '';
 
-    $('#payHint').hidden = !hint;
-    $('#payHint').textContent = hint;
-    if ($('#trocoFld')) $('#trocoFld').hidden = true;
-    if ($('#custCpfFld')) $('#custCpfFld').style.display = isPix ? 'block' : 'none';
+    if ($('#payHint')) {
+      $('#payHint').hidden = !hint;
+      $('#payHint').textContent = hint;
+    }
+    if ($('#trocoFld')) $('#trocoFld').style.display = isDinheiro ? 'block' : 'none';
+    if ($('#custCpfFld')) $('#custCpfFld').style.display = isPixOnline ? 'block' : 'none';
     if (typeof updateDeliveryButtonsState === 'function') {
       updateDeliveryButtonsState(lastValidationResult ? lastValidationResult.allowed : true);
     }
@@ -2001,13 +2224,88 @@ window.__CFG__ = {
     return groups.map(({ t, days }) => `${days.length > 2 ? `${short[days[0]]} a ${short[days[days.length - 1]].toLowerCase()}`
       : days.map((d, k) => (k ? short[d].toLowerCase() : short[d])).join(' e ')} ${t}`).join(' · ');
   }
+  function isStoreOpenBySettings() {
+    if (!SETTINGS || !SETTINGS.store) return true;
+    const store = SETTINGS.store;
+    if (store.isOpenManual === false) return false;
+    if (store.autoSchedule === false) return store.isOpenManual !== false;
+
+    const sched = store.schedule;
+    if (!sched) return true;
+
+    const now = new Date();
+    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    const todayKey = dayMap[now.getDay()];
+    const todaySched = sched[todayKey];
+    if (!todaySched || todaySched.active === false) return false;
+
+    const curMin = now.getHours() * 60 + now.getMinutes();
+    const [oh, om] = (todaySched.open || '18:00').split(':').map(Number);
+    const [ch, cm] = (todaySched.close || '23:45').split(':').map(Number);
+    const openMin = oh * 60 + om;
+    let closeMin = ch * 60 + cm;
+    if (closeMin < openMin) {
+      if (curMin >= openMin || curMin < closeMin) return true;
+      return false;
+    }
+    return curMin >= openMin && curMin <= closeMin;
+  }
+
   function paintHours() {
-    const text = HOURS ? openNow(new Date()) : '';
-    $('#status').hidden = !text;
-    $('#status').classList.toggle('off', text.startsWith('Fechado'));
-    $('#statusText').textContent = text;
-    $('#hoursRow').hidden = !HOURS;
-    $('#hoursText').textContent = HOURS ? weekText() : '';
+    const isOpen = isStoreOpenBySettings();
+    const store = SETTINGS?.store;
+    const now = new Date();
+    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    const todayKey = dayMap[now.getDay()];
+    const todaySched = store?.schedule?.[todayKey];
+
+    const prepMin = store?.preparationTimeMin || 25;
+    const prepMax = store?.preparationTimeMax || 45;
+
+    let text = '';
+    if (isOpen) {
+      const closeTime = todaySched?.close || '23:45';
+      text = `Aberto agora · fecha às ${closeTime} · Preparo: ${prepMin}-${prepMax} min`;
+    } else {
+      const openTime = todaySched?.open || '18:00';
+      text = store?.isOpenManual === false
+        ? 'Fechado temporariamente pelo restaurante'
+        : `Fechado agora · abre às ${openTime}`;
+    }
+
+    const banner = $('#storeClosedBanner');
+    if (banner) {
+      banner.style.display = isOpen ? 'none' : 'block';
+      const noticeText = $('#storeClosedNoticeText');
+      if (noticeText) {
+        noticeText.textContent = store?.closedNotice || 'Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.';
+      }
+    }
+
+    const cartNotice = $('#cartStoreClosedNotice');
+    if (cartNotice) {
+      cartNotice.style.display = isOpen ? 'none' : 'block';
+      const cartNoticeText = $('#cartStoreClosedNoticeText');
+      if (cartNoticeText) {
+        cartNoticeText.textContent = store?.closedNotice || 'Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.';
+      }
+    }
+
+    if ($('#status')) {
+      $('#status').hidden = false;
+      $('#status').classList.toggle('off', !isOpen);
+      if ($('#statusText')) $('#statusText').textContent = text;
+    }
+
+    if ($('#hoursRow') && $('#hoursText')) {
+      const weekSched = store?.schedule ? Object.values(store.schedule).map(s => `${s.label.slice(0,3)} ${s.active ? `${s.open}–${s.close}` : 'fechado'}`).join(' · ') : '';
+      $('#hoursRow').hidden = !weekSched;
+      $('#hoursText').textContent = weekSched;
+    }
+
+    if (typeof updateDeliveryButtonsState === 'function') {
+      updateDeliveryButtonsState(lastValidationResult ? lastValidationResult.allowed : true);
+    }
   }
 
   // Abas da barra de baixo: início (com o cardápio), carrinho, reserva e localização
@@ -2042,7 +2340,9 @@ window.__CFG__ = {
     $('#count').textContent = `${list.length} ${list.length === 1 ? 'opção' : 'opções'}`;
     $('#grid').replaceChildren(...list.map(([m, i]) => {
       const orig = getOrigPrice(m.price);
-      return el('div', { className: 'item' },
+      const isPaused = m.paused === true;
+      const card = el('div', { className: `item${isPaused ? ' paused-item' : ''}` },
+        ...(isPaused ? [el('span', { className: 'badge-paused', textContent: 'ESGOTADO HOJE' })] : []),
         el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }),
         el('b', { textContent: m.name }),
         el('p', { textContent: m.desc }),
@@ -2051,28 +2351,39 @@ window.__CFG__ = {
             el('span', { className: 'old-price', textContent: `De ${brl(orig)}` }),
             el('span', { className: 'price', textContent: brl(m.price) })
           ),
-          addBtn(i)
+          isPaused
+            ? el('button', { className: 'add disabled', innerHTML: '✕', title: 'Produto esgotado hoje', disabled: true })
+            : addBtn(i)
         ),
-        ...(qtyOf(i) ? [el('span', { className: 'qty', textContent: qtyOf(i) })] : [])
+        ...((!isPaused && qtyOf(i)) ? [el('span', { className: 'qty', textContent: qtyOf(i) })] : [])
       );
+      return card;
     }));
     const cats = ['Todos', ...new Set(MENU.map((m) => m.cat))];
     $('#chips').replaceChildren(...cats.map((c) => el('button', { className: `chip${c === cat ? ' on' : ''}`, onclick: () => { cat = c; paintMenu(); } },
       el('img', { src: img((MENU.find((m) => m.cat === c) || MENU[0]).img, 80), alt: '' }), c)));
   }
   function paintTrend() {
-    $('#trend').replaceChildren(...T.trend.map((i) => {
+    const trendList = (T.trend || []).filter(idx => MENU[idx]);
+    $('#trend').replaceChildren(...trendList.map((i) => {
       const m = MENU[i];
       const orig = getOrigPrice(m.price);
-      return el('div', { className: 'tcard' },
-        el('div', { className: 'row' }, el('b', { textContent: m.name }), addBtn(i)),
+      const isPaused = m.paused === true;
+      return el('div', { className: `tcard${isPaused ? ' paused-item' : ''}` },
+        ...(isPaused ? [el('span', { className: 'badge-paused', textContent: 'ESGOTADO' })] : []),
+        el('div', { className: 'row' },
+          el('b', { textContent: m.name }),
+          isPaused
+            ? el('button', { className: 'add disabled', innerHTML: '✕', disabled: true, title: 'Esgotado' })
+            : addBtn(i)
+        ),
         el('div', { className: 'meta' }, el('span', { className: 'star', textContent: '★' }), `5,0 · ${m.cat}`),
         el('div', { className: 'tcard-price-row' },
           el('span', { className: 'old-price', textContent: brl(orig) }),
           el('span', { className: 'price', textContent: brl(m.price) })
         ),
         el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }),
-        ...(qtyOf(i) ? [el('span', {
+        ...((!isPaused && qtyOf(i)) ? [el('span', {
           className: 'qty',
           textContent: qtyOf(i),
           title: 'Adicionar mais uma unidade',
@@ -2730,6 +3041,7 @@ window.__CFG__ = {
       }
     }
 
+    let radCheck = null;
     if (!pickup) {
       const s = getStructuredAddress();
       const cleanCep = s.cep.replace(/\D/g, '');
@@ -2777,14 +3089,15 @@ window.__CFG__ = {
         return null;
       }
 
-      const radCheck = await checkDeliveryRadius(true);
+      radCheck = await checkDeliveryRadius(true);
       if (!radCheck || !radCheck.valid) {
         toast(radCheck?.error || 'Endereço não localizado no mapa.');
         return null;
       }
       if (!radCheck.allowed) {
         const d = (radCheck && radCheck.distanceKm) ? ` (${radCheck.distanceKm} km)` : '';
-        toast(`Entrega não permitida${d}: o limite máximo é de 15 km.`);
+        const maxKm = parseFloat(SETTINGS?.delivery?.maxRadiusKm || 15.0);
+        toast(`Entrega não permitida${d}: o limite máximo é de ${maxKm} km.`);
         return null;
       }
     }
@@ -2821,6 +3134,166 @@ window.__CFG__ = {
       total,
       items
     };
+  }
+
+  // Finalização de Pedido com Pagamento na Entrega (Dinheiro, Maquininha Cartão, Pix na entrega)
+  async function startDeliveryCheckout() {
+    if (!isStoreOpenBySettings()) {
+      toast('Loja fechada no momento: ' + (SETTINGS?.store?.closedNotice || 'Não estamos aceitando novos pedidos agora.'));
+      return;
+    }
+
+    const val = await validateCheckoutCustomerAndAddress(false);
+    if (!val) return;
+
+    const on = $('#pay .on');
+    const payMode = on ? on.dataset.pay : 'pix_entrega';
+
+    let trocoVal = '';
+    let paymentDesc = 'Pagar na Entrega';
+
+    if (payMode === 'dinheiro_entrega') {
+      trocoVal = ($('#trocoInput')?.value || '').trim();
+      paymentDesc = trocoVal ? `Dinheiro na Entrega (Troco para ${trocoVal})` : 'Dinheiro na Entrega (Sem troco)';
+    } else if (payMode === 'cartao_credito_entrega') {
+      paymentDesc = 'Cartão de Crédito na Entrega (Maquininha)';
+    } else if (payMode === 'cartao_debito_entrega') {
+      paymentDesc = 'Cartão de Débito na Entrega (Maquininha)';
+    } else if (payMode === 'pix_entrega') {
+      paymentDesc = 'Pix na Entrega (Chave / Maquininha)';
+    }
+
+    const orderId = `DAD-${Date.now().toString().slice(-4)}`;
+    const fullOrder = {
+      orderId,
+      id: orderId,
+      paymentId: 'ENTREGA-' + Date.now().toString().slice(-6),
+      mpOrderId: 'ENTREGA-' + Date.now().toString().slice(-6),
+      status: 'novo',
+      total: val.total,
+      customer: {
+        name: val.name,
+        phone: val.phone,
+        address: val.address || 'Retirada no balcão'
+      },
+      order: {
+        items: val.items,
+        subtotal: val.subtotal,
+        deliveryFee: val.deliveryFee,
+        distanceKm: val.distanceKm,
+        total: val.total,
+        mode: val.pickup ? 'retirada' : 'entrega',
+        address: val.address,
+        addressDetails: val.addressDetails,
+        ref: val.ref
+      },
+      unitId: currentUnit ? currentUnit.id : 'passo-dareia',
+      unitName: currentUnit ? currentUnit.fullName : "Dad's Burger",
+      paymentMethod: paymentDesc,
+      troco: trocoVal,
+      created_at: Date.now() / 1000,
+      isNew: true
+    };
+
+    registerOrderAndNotify(fullOrder);
+    openDeliverySuccessModal(fullOrder);
+  }
+  window.startDeliveryCheckout = startDeliveryCheckout;
+
+  function openDeliverySuccessModal(order) {
+    const modal = $('#pixModal');
+    if (!modal) return;
+
+    if (pixPollInterval) { clearInterval(pixPollInterval); pixPollInterval = null; }
+    if (pixTimerInterval) { clearInterval(pixTimerInterval); pixTimerInterval = null; }
+
+    $('#pixStepWait').hidden = true;
+    $('#pixStepSuccess').hidden = false;
+
+    const badge = $('#pixSuccessOrderBadge');
+    if (badge) {
+      badge.innerHTML = `
+        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${order.orderId} · RECEBIDO</div>
+        <div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#166534">
+          💳 Forma de Pagamento: <u>${order.paymentMethod}</u>
+        </div>
+      `;
+    }
+
+    const itemsSummary = (order.order.items || []).map((it) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
+        <span style="color:#27272A"><b>${it.q}x</b> ${it.name}</span>
+        <span style="font-weight:700;color:#18181B;white-space:nowrap;margin-left:12px">${brl(it.price * it.q)}</span>
+      </div>
+    `).join('');
+    const where = order.order.mode === 'retirada' ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${order.order.address}${order.order.ref ? ` (${order.order.ref})` : ''}`;
+
+    const details = $('#pixSuccessDetails');
+    if (details) {
+      details.innerHTML = `
+        <div style="font-size:11px;font-weight:800;color:#71717A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Resumo do Pedido</div>
+        <div style="border-bottom:1px dashed #E4DED7;padding-bottom:8px;margin-bottom:10px">
+          ${itemsSummary}
+        </div>
+        ${order.order.mode !== 'retirada' ? `
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#52525B;margin-bottom:6px">
+          <span>Taxa de Entrega (${order.order.distanceKm ? `${order.order.distanceKm} km` : 'distância'})</span>
+          <span>${order.order.deliveryFee ? brl(order.order.deliveryFee) : 'Grátis'}</span>
+        </div>` : ''}
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:900;color:#121212">
+          <span>Total a Pagar na Entrega</span>
+          <span style="color:#16A34A">${brl(order.total)}</span>
+        </div>
+        <div style="margin-top:10px;padding-top:8px;border-top:1px solid #ECE7E1;color:#71717A;font-size:12px;display:flex;align-items:center;gap:6px">
+          <span>📍</span><span>${where}</span>
+        </div>
+      `;
+    }
+
+    const autoWaEl = $('#pixAutoWaStore');
+    const unit = currentUnit || DADS_UNITS[0];
+    if (autoWaEl) {
+      autoWaEl.textContent = `Registrado na cozinha da unidade ${unit.zoneTitle} (${unit.cleanAddress}). O pagamento será feito no momento da entrega!`;
+    }
+
+    const linesTxt = (order.order.items || []).map((it) => `• ${it.q}x ${it.name} - ${brl(it.price * it.q)}`).join('\n');
+    const waMsg = `🍔 *NOVO PEDIDO #${order.orderId} - DAD'S BURGER*\n` +
+      `👤 *Cliente:* ${order.customer.name} (${order.customer.phone})\n` +
+      `📍 *Destino:* ${where}\n\n` +
+      `📋 *Itens:*\n${linesTxt}\n\n` +
+      (order.order.deliveryFee ? `🛵 *Taxa de Entrega:* ${brl(order.order.deliveryFee)}\n` : '') +
+      `💰 *Total:* ${brl(order.total)}\n` +
+      `💳 *Pagamento:* ${order.paymentMethod}\n\n` +
+      `_Pedido transmitido para a cozinha pelo cardápio digital!_`;
+
+    const targetPhone = (unit && unit.whats) ? unit.whats.replace(/\D/g, '') : '5551993248655';
+    const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(waMsg)}`;
+
+    let waWrap = $('#deliveryWaBtnWrap');
+    if (!waWrap) {
+      waWrap = el('div', { id: 'deliveryWaBtnWrap', style: 'margin-bottom:10px' });
+      const actions = $('#pixStepSuccess .pix-success-actions');
+      if (actions) actions.parentNode.insertBefore(waWrap, actions);
+    }
+    waWrap.innerHTML = `
+      <a href="${waUrl}" target="_blank" rel="noopener" class="pill brand wide" style="background:#25D366;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;padding:12px 16px;border-radius:12px;font-size:14px;box-shadow:0 4px 14px rgba(37,211,102,0.3);margin-bottom:10px">
+        <span>📱 Abrir WhatsApp com o Restaurante</span>
+      </a>
+    `;
+
+    const doneBtn = $('#btnDoneOrder');
+    if (doneBtn) {
+      doneBtn.onclick = () => {
+        cart.clear();
+        paintCart();
+        paintMenu();
+        closePixModal();
+        go('home');
+        toast('Pedido confirmado! Acompanhe o preparo.');
+      };
+    }
+
+    modal.hidden = false;
   }
 
   // Disparo do Checkout Pix com Mercado Pago (Transparente via API)
@@ -3398,6 +3871,81 @@ window.__CFG__ = {
   const btnPayCardMpEl = $('#btnPayCardMp');
   if (btnPayCardMpEl) btnPayCardMpEl.addEventListener('click', startMpCardCheckout);
 
+  const btnPayDeliveryEl = $('#btnPayDelivery');
+  if (btnPayDeliveryEl) btnPayDeliveryEl.addEventListener('click', startDeliveryCheckout);
+
+  async function loadSettingsAndProducts() {
+    // 1. Settings
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.store) {
+          SETTINGS = data;
+          localStorage.setItem('dads_settings', JSON.stringify(data));
+        }
+      }
+    } catch (e) {}
+
+    if (!SETTINGS || !SETTINGS.store) {
+      try {
+        const cached = localStorage.getItem('dads_settings');
+        if (cached) SETTINGS = JSON.parse(cached);
+      } catch (e) {}
+    }
+    if (!SETTINGS || !SETTINGS.store) {
+      SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    }
+    window.SETTINGS = SETTINGS;
+
+    // 2. Products
+    try {
+      const resP = await fetch('/api/admin/products');
+      if (resP.ok) {
+        const list = await resP.json();
+        if (Array.isArray(list) && list.length > 0) {
+          MENU = list;
+          localStorage.setItem('dads_products', JSON.stringify(list));
+        }
+      }
+    } catch (e) {}
+
+    if (!MENU || !MENU.length || MENU === T.items) {
+      try {
+        const cachedP = localStorage.getItem('dads_products');
+        if (cachedP) {
+          const list = JSON.parse(cachedP);
+          if (Array.isArray(list) && list.length > 0) MENU = list;
+        }
+      } catch (e) {}
+    }
+    window.PRODUCTS = MENU;
+
+    updateDeliveryTiersHint();
+    paintHours();
+    paintPaymentMethods();
+    paintMenu();
+    if (typeof paintTrend === 'function') paintTrend();
+    paintCart();
+  }
+  window.loadSettingsAndProducts = loadSettingsAndProducts;
+
+  // Sincronia cross-tab em tempo real via BroadcastChannel e Storage
+  try {
+    const bc = new BroadcastChannel('dads_restaurant_channel');
+    bc.onmessage = (ev) => {
+      if (ev.data && (ev.data.type === 'SETTINGS_UPDATED' || ev.data.type === 'PRODUCTS_UPDATED')) {
+        loadSettingsAndProducts();
+      }
+    };
+  } catch (e) {}
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'dads_settings' || e.key === 'dads_products') {
+      loadSettingsAndProducts();
+    }
+  });
+
   window.openPixModal = openPixModal;
   window.closePixModal = closePixModal;
   window.showPaymentSuccess = showPaymentSuccess;
@@ -3464,10 +4012,12 @@ window.__CFG__ = {
       toast('Link copiado');
     };
   }
+  paintPaymentMethods();
   paintMenu();
   paintCart();
   paintHours();
-  setInterval(paintHours, 60000); // o selo muda sozinho quando abre ou fecha
+  loadSettingsAndProducts();
+  setInterval(paintHours, 30000); // o selo muda sozinho quando abre ou fecha
   arrows();
 
   // Decisão de Unidade ao entrar no site
