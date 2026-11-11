@@ -1208,14 +1208,155 @@
     margin: 4px 0;
   }
 
-  /* PÁGINA SEPARADA DE CONFIGURAÇÕES */
+  /* PÁGINA DE CONFIGURAÇÕES COM LEFT SIDEBAR */
   .settings-view {
     display: none;
     flex: 1;
     overflow-y: auto;
-    background: #F4F4F5;
-    padding: 24px 32px;
+    background: #0B0705;
+    padding: 0;
   }
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 64px);
+    background: #0B0705;
+  }
+  @media (max-width: 900px) {
+    .settings-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .settings-sidebar {
+    background: #140E0A;
+    border-right: 1px solid #271E18;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .settings-sidebar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #271E18;
+  }
+  .btn-sidebar-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #1F1712;
+    color: #E2D9D0;
+    border: 1px solid #382A20;
+    border-radius: 10px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .btn-sidebar-back:hover {
+    background: #2D2118;
+    color: #FFF;
+    border-color: var(--brand);
+  }
+  .settings-sidebar-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #FFF;
+    letter-spacing: -0.3px;
+  }
+
+  .settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: transparent;
+    border: 1.5px solid transparent;
+    color: #B5A89E;
+    text-align: left;
+    cursor: pointer;
+    transition: all .18s ease;
+    width: 100%;
+  }
+  .settings-nav-item:hover {
+    background: #1F1712;
+    color: #FFF;
+    border-color: #382A20;
+  }
+  .settings-nav-item.active {
+    background: rgba(200, 138, 46, 0.15);
+    border-color: var(--brand);
+    color: #FFF;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  }
+  .settings-nav-item .nav-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .settings-nav-item .nav-title {
+    display: block;
+    font-weight: 800;
+    font-size: 13px;
+    color: inherit;
+  }
+  .settings-nav-item .nav-sub {
+    display: block;
+    font-size: 11px;
+    color: #7E7166;
+    margin-top: 1px;
+  }
+  .settings-nav-item.active .nav-sub {
+    color: #D9A04B;
+  }
+
+  .settings-content-area {
+    padding: 24px 32px 80px;
+    overflow-y: auto;
+    max-height: calc(100vh - 64px);
+    background: #0B0705;
+  }
+
+  .settings-tab-panel {
+    display: none;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .settings-tab-panel.active {
+    display: block;
+    animation: fadeInTab .2s ease;
+  }
+  @keyframes fadeInTab {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Metric boxes interativos */
+  .metric-box.clickable {
+    cursor: pointer;
+    transition: all .2s ease;
+    user-select: none;
+  }
+  .metric-box.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    border-color: var(--brand);
+  }
+  .metric-box.clickable.active {
+    border-color: var(--brand);
+    background: #1C140F;
+    box-shadow: 0 0 0 2px var(--brand);
+  }
+
   .settings-container {
     max-width: 820px;
     margin: 0 auto;
@@ -1754,34 +1895,6 @@
     </div>
   </div>
 
-  <!-- VISÃO: KANBAN vs CONCLUÍDOS vs CANCELADOS vs GESTOR IFOOD -->
-  <div class="view-switcher" style="overflow-x:auto;max-width:65vw">
-    <button type="button" class="view-btn active" id="btnViewKanban">
-      📋 Pedidos (Cozinha)
-      <span class="badge" id="badgeActiveCount">0</span>
-    </button>
-    <button type="button" class="view-btn" id="btnViewHistory">
-      ✅ Concluídos
-      <span class="badge" id="badgeDoneCount">0</span>
-    </button>
-    <button type="button" class="view-btn" id="btnViewCanceled">
-      ❌ Cancelados
-      <span class="badge" id="badgeCanceledCount">0</span>
-    </button>
-    <button type="button" class="view-btn" id="btnViewCatalog">
-      🍔 Cardápio & Produtos
-    </button>
-    <button type="button" class="view-btn" id="btnViewHours">
-      ⏰ Horários & Loja
-    </button>
-    <button type="button" class="view-btn" id="btnViewDelivery">
-      🛵 Entrega & Raio no Mapa
-    </button>
-    <button type="button" class="view-btn" id="btnViewPayments">
-      💳 Formas de Pagamento
-    </button>
-  </div>
-
   <!-- CONTROLES RÁPIDOS & MENU DE CONTA -->
   <div class="header-controls">
     <!-- STATUS RÁPIDO DA LOJA (ESTILO IFOOD) -->
@@ -1815,7 +1928,12 @@
 
         <button type="button" class="account-menu-item" id="menuItemSettings">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Configurações da Impressora</span>
+          <span>⚙️ Configurações da Loja</span>
+        </button>
+
+        <button type="button" class="account-menu-item" id="menuItemPrinter">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>🖨️ Configurações da Comandeira</span>
         </button>
 
         <div class="account-menu-divider"></div>
@@ -1841,29 +1959,29 @@
   </div>
 </header>
 
-<!-- FAIXA DE RESUMO / KPIS -->
+<!-- FAIXA DE RESUMO / KPIS INTERATIVOS -->
 <section class="metrics-strip">
-  <div class="metric-box">
+  <div class="metric-box clickable active" id="metricBoxNovos" onclick="AdminApp.switchView('kanban')" title="Ver Pedidos na Cozinha">
     <div class="metric-label">Novos Pedidos</div>
     <div class="metric-val alert" id="metricValNovos">0</div>
   </div>
-  <div class="metric-box">
+  <div class="metric-box clickable" id="metricBoxPrep" onclick="AdminApp.switchView('kanban')" title="Ver Pedidos em Preparo">
     <div class="metric-label">Em Preparo</div>
     <div class="metric-val prep" id="metricValPrep">0</div>
   </div>
-  <div class="metric-box">
+  <div class="metric-box clickable" id="metricBoxRota" onclick="AdminApp.switchView('kanban')" title="Ver Pedidos em Rota">
     <div class="metric-label">Em Rota</div>
     <div class="metric-val rota" id="metricValRota">0</div>
   </div>
-  <div class="metric-box">
+  <div class="metric-box clickable" id="metricBoxDone" onclick="AdminApp.switchView('history')" title="Ver Pedidos Concluídos Hoje">
     <div class="metric-label">Concluídos Hoje</div>
     <div class="metric-val done" id="metricValDone">0</div>
   </div>
-  <div class="metric-box">
+  <div class="metric-box clickable" id="metricBoxCancel" onclick="AdminApp.switchView('canceled')" title="Ver Pedidos Cancelados">
     <div class="metric-label">Cancelados</div>
     <div class="metric-val cancel" id="metricValCanceled">0</div>
   </div>
-  <div class="metric-box">
+  <div class="metric-box" id="metricBoxRevenue">
     <div class="metric-label">Total Faturado</div>
     <div class="metric-val" id="metricValRevenue">R$ 0,00</div>
   </div>
@@ -1981,433 +2099,481 @@
     </table>
   </section>
 
-  <!-- SEÇÃO 4: PÁGINA SEPARADA DE CONFIGURAÇÕES DA IMPRESSORA -->
+  <!-- SEÇÃO 4: PÁGINA DE CONFIGURAÇÕES COM LEFT SIDEBAR -->
   <section class="settings-view" id="settingsView">
-    <div class="settings-container">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-        <div>
-          <h2 style="font-size:20px;font-weight:900;color:var(--text-primary);margin:0">Configurações da Impressora</h2>
-          <small style="color:var(--text-muted);font-size:12px">Instale a inicialização direta do caixa e ajuste o padrão das comandas térmicas</small>
-        </div>
-        <button type="button" class="btn-cancel-modal-back" id="btnBackToKanban" style="display:flex;align-items:center;gap:6px">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          Voltar aos Pedidos
-        </button>
-      </div>
-
-      <!-- PASSO 1: INSTALAÇÃO DO ARQUIVO DE INICIALIZAÇÃO / ATALHO DO CAIXA (PRIMEIRO ITEM) -->
-      <div class="settings-card" style="border: 2px solid var(--brand); background: #FFFDF9;">
-        <div class="settings-card-head" style="border-bottom-color: #FDE68A;">
-          <div>
-            <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--brand);letter-spacing:0.5px">Etapa Obrigatória para Impressão Direta</span>
-            <h3 class="settings-card-title" style="margin-top:2px">1. Instalação do Caixa no Computador</h3>
-            <div class="settings-card-subtitle">Execute uma única vez no computador do restaurante para a comanda imprimir sem confirmação de tela</div>
-          </div>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:12px">
-          <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5">
-            Baixe e execute o instalador para que o painel do Dad's Burger abra automaticamente ao ligar o computador pela manhã, já com a impressora térmica conectada e pronta para imprimir:
-          </p>
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <button type="button" class="btn-cancel-modal-back" style="background:#16A34A;color:#FFF;border-color:#16A34A;padding:10px 18px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.installAutoStartup()">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Instalar: Abrir Sozinho ao Ligar o Computador (.bat)
-            </button>
-            <button type="button" class="btn-cancel-modal-back" style="background:#0F172A;color:#FFF;border-color:#0F172A;padding:10px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.downloadDirectPrintShortcut()">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="16" y2="12"/><line x1="12" y1="16" x2="16" y2="12"/></svg>
-              Criar Ícone na Área de Trabalho
-            </button>
-          </div>
-          <small style="color:var(--text-muted);font-size:11.5px">
-            Instalação 100% autônoma. O arquivo cria o atalho oficial do Chrome/Edge configurado para disparo automático.
-          </small>
-        </div>
-      </div>
-
-      <!-- PASSO 2: PARÂMETROS E FORMATAÇÃO DA COMANDA -->
-      <div class="settings-card">
-        <div class="settings-card-head">
-          <div>
-            <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px">Formatação do Papel</span>
-            <h3 class="settings-card-title" style="margin-top:2px">2. Parâmetros da Bobina e Layout</h3>
-            <div class="settings-card-subtitle">Compatível com bobinas de 80mm e 58mm (Epson, Bematech, Elgin, Daruma e genéricas)</div>
-          </div>
-          <button type="button" class="btn-cancel-modal-back" onclick="window.PrinterEngine.printCalibrationTest()" style="font-size:12px">
-            Imprimir Teste de Calibração
+    <div class="settings-layout">
+      <!-- LEFT SIDEBAR DE CONFIGURAÇÕES -->
+      <aside class="settings-sidebar">
+        <div class="settings-sidebar-header">
+          <button type="button" class="btn-sidebar-back" id="btnBackToKanban" onclick="AdminApp.switchView('kanban')">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Voltar aos Pedidos
           </button>
+          <div class="settings-sidebar-title">Painel de Configurações</div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <!-- Largura da Bobina -->
-          <div class="cfg-group">
-            <label class="cfg-label">Largura da Bobina / Papel</label>
-            <div class="cfg-seg" id="segPaperWidth">
-              <button type="button" class="cfg-seg-btn active" data-val="80mm" onclick="window.PrinterEngine.setField('paperWidth', '80mm')">
-                80mm (Padrão Balcão / 72mm útil)
-              </button>
-              <button type="button" class="cfg-seg-btn" data-val="58mm" onclick="window.PrinterEngine.setField('paperWidth', '58mm')">
-                58mm (Bobina Estreita / 48mm útil)
-              </button>
+        <nav class="settings-nav">
+          <button type="button" class="settings-nav-item active" id="tabBtnCatalog" data-tab="catalog" onclick="AdminApp.switchSettingsTab('catalog')">
+            <span class="nav-icon">🍔</span>
+            <div>
+              <span class="nav-title">Cardápio & Estoque</span>
+              <span class="nav-sub">47 produtos e pausas</span>
             </div>
-            <small style="color:var(--text-muted);font-size:11.5px">Use 80mm para Epson TM-T20, Bematech MP-4200, Elgin i9/i7. Use 58mm para mini-impressoras e terminais móveis.</small>
-          </div>
+          </button>
 
-          <!-- Tamanho da Fonte -->
-          <div class="cfg-group">
-            <label class="cfg-label">Tamanho do Texto na Comanda</label>
-            <div class="cfg-seg" id="segFontSize">
-              <button type="button" class="cfg-seg-btn" data-val="compact" onclick="window.PrinterEngine.setField('fontSize', 'compact')">
-                Compacto (9.5px)
-              </button>
-              <button type="button" class="cfg-seg-btn active" data-val="normal" onclick="window.PrinterEngine.setField('fontSize', 'normal')">
-                Normal (11px)
-              </button>
-              <button type="button" class="cfg-seg-btn" data-val="large" onclick="window.PrinterEngine.setField('fontSize', 'large')">
-                Grande Cozinha (13px)
-              </button>
+          <button type="button" class="settings-nav-item" id="tabBtnHours" data-tab="hours" onclick="AdminApp.switchSettingsTab('hours')">
+            <span class="nav-icon">⏰</span>
+            <div>
+              <span class="nav-title">Horários & Loja</span>
+              <span class="nav-sub">Abertura e funcionamento</span>
             </div>
-          </div>
+          </button>
 
-          <!-- Vias por Pedido -->
-          <div class="cfg-group">
-            <label class="cfg-label">Vias por Pedido</label>
-            <div class="cfg-seg" id="segCopies">
-              <button type="button" class="cfg-seg-btn active" data-val="1" onclick="window.PrinterEngine.setField('copies', 1)">
-                1 Via Única (Cozinha)
-              </button>
-              <button type="button" class="cfg-seg-btn" data-val="2" onclick="window.PrinterEngine.setField('copies', 2)">
-                2 Vias (1ª Cozinha + 2ª Entrega/Caixa)
-              </button>
+          <button type="button" class="settings-nav-item" id="tabBtnDelivery" data-tab="delivery" onclick="AdminApp.switchSettingsTab('delivery')">
+            <span class="nav-icon">🛵</span>
+            <div>
+              <span class="nav-title">Entrega & Raio no Mapa</span>
+              <span class="nav-sub">Raio em km e taxas</span>
             </div>
-          </div>
+          </button>
 
-          <!-- Automação: Impressão Automática -->
-          <div class="cfg-toggle-row">
-            <div class="cfg-toggle-info">
-              <b>Impressão Automática ao Receber Pedido</b>
-              <small>Dispara a impressão automaticamente assim que um novo pedido chegar no painel.</small>
+          <button type="button" class="settings-nav-item" id="tabBtnPayments" data-tab="payments" onclick="AdminApp.switchSettingsTab('payments')">
+            <span class="nav-icon">💳</span>
+            <div>
+              <span class="nav-title">Formas de Pagamento</span>
+              <span class="nav-sub">Pix, cartões e dinheiro</span>
             </div>
-            <input type="checkbox" id="cfgAutoPrint" class="cfg-checkbox" onchange="window.PrinterEngine.setField('autoPrint', this.checked)">
-          </div>
+          </button>
 
-          <!-- Campos da Comanda -->
-          <div class="cfg-group">
-            <label class="cfg-label">Campos Exibidos na Comanda</label>
-            <div style="display:flex;flex-direction:column;gap:8px">
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
-                <input type="checkbox" id="cfgShowUnitHeader" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showUnitHeader', this.checked)">
-                <span>Cabeçalho com nome e endereço da unidade</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
-                <input type="checkbox" id="cfgShowCustomerDetails" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showCustomerDetails', this.checked)">
-                <span>Dados completos do cliente (Nome, Telefone, Modalidade e Endereço)</span>
-              </label>
-              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
-                <input type="checkbox" id="cfgShowMercadoPagoId" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showMercadoPagoId', this.checked)">
-                <span>Código de transação Mercado Pago</span>
-              </label>
+          <button type="button" class="settings-nav-item" id="tabBtnPrinter" data-tab="printer" onclick="AdminApp.switchSettingsTab('printer')">
+            <span class="nav-icon">🖨️</span>
+            <div>
+              <span class="nav-title">Comandeira & Impressão</span>
+              <span class="nav-sub">Bobina 80/58mm e alertas</span>
             </div>
-          </div>
+          </button>
+        </nav>
+      </aside>
 
-          <!-- Avanço de Papel / Guilhotina -->
-          <div class="cfg-group">
-            <label class="cfg-label">Alimentação Final de Papel (Corte de Guilhotina)</label>
-            <select id="cfgFeedLines" class="cfg-input" onchange="window.PrinterEngine.setField('feedLines', Number(this.value))">
-              <option value="3">3 linhas (Mínimo)</option>
-              <option value="5" selected>5 linhas (Recomendado para guilhotina)</option>
-              <option value="8">8 linhas (Para serrilha manual)</option>
-            </select>
-          </div>
-
-          <!-- Mensagem de Rodapé -->
-          <div class="cfg-group">
-            <label class="cfg-label">Mensagem de Rodapé</label>
-            <input type="text" id="cfgFooterMessage" class="cfg-input" placeholder="Ex: Dad's Burger - Bom apetite!" onchange="window.PrinterEngine.setField('footerMessage', this.value)">
-          </div>
-
-          <div style="display:flex;justify-content:flex-end;margin-top:6px">
-            <button type="button" class="btn-cancel-modal-confirm" style="background:#16A34A" onclick="window.PrinterEngine.saveAndApply()">
-              Salvar Alterações de Impressão
+      <!-- CONTEÚDO PRINCIPAL DAS CONFIGURAÇÕES -->
+      <main class="settings-content-area">
+        <!-- ABA 1: CARDÁPIO & PRODUTOS ESTILO IFOOD -->
+        <div class="settings-tab-panel active" id="tabPanelCatalog">
+          <div class="ifood-toolbar" style="margin-top:0">
+            <div class="ifood-toolbar-left">
+              <div class="ifood-search-box">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="catalogSearchInput" placeholder="Buscar produtos pelo nome ou ingrediente..." oninput="window.CatalogEngine.filter()">
+              </div>
+              <select class="ifood-filter-select" id="catalogCatFilter" onchange="window.CatalogEngine.filter()">
+                <option value="todos">Todas as Categorias</option>
+                <option value="Combos na Caixa">Combos na Caixa</option>
+                <option value="Burgers Artesanais">Burgers Artesanais</option>
+                <option value="Porções">Porções</option>
+                <option value="Bebidas">Bebidas</option>
+              </select>
+              <span style="font-size:12.5px;font-weight:700;color:var(--text-muted)" id="catalogCountBadge">0 produtos</span>
+            </div>
+            <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.openCreateModal()">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>+ Novo Produto</span>
             </button>
           </div>
-        </div>
-      </div>
 
-      <!-- CARD 3: SINALIZAÇÃO SONORA DA COZINHA -->
-      <div class="settings-card">
-        <div class="settings-card-head">
-          <div>
-            <h3 class="settings-card-title">Alarme Sonoro de Novos Pedidos</h3>
-            <div class="settings-card-subtitle">Aviso sonoro em tempo real para a cozinha e montadores</div>
-          </div>
-          <button type="button" class="btn-cancel-modal-back" onclick="AlarmEngine.testTone()" style="font-size:12px">
-            Testar Alarme Sonoro
-          </button>
-        </div>
-
-        <div class="cfg-toggle-row">
-          <div class="cfg-toggle-info">
-            <b>Campainha / Sino Ativo</b>
-            <small>Toca repetidamente a cada novo pedido aprovado até ser aceito ou enviado para preparo.</small>
-          </div>
-          <button type="button" class="btn-cancel-modal-back" id="btnSettingsToggleSound" style="font-size:12px;font-weight:700" onclick="AlarmEngine.toggleMute(); window.AdminApp.updateSoundUi();">
-            Alarme: Ativo
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SEÇÃO 5: GESTOR DE CARDÁPIO & PRODUTOS ESTILO IFOOD -->
-  <section class="ifood-panel" id="catalogView">
-    <div class="ifood-toolbar">
-      <div class="ifood-toolbar-left">
-        <div class="ifood-search-box">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="catalogSearchInput" placeholder="Buscar produtos pelo nome ou ingrediente..." oninput="window.CatalogEngine.filter()">
-        </div>
-        <select class="ifood-filter-select" id="catalogCatFilter" onchange="window.CatalogEngine.filter()">
-          <option value="todos">Todas as Categorias</option>
-          <option value="Combos na Caixa">Combos na Caixa</option>
-          <option value="Burgers Artesanais">Burgers Artesanais</option>
-          <option value="Porções">Porções</option>
-          <option value="Bebidas">Bebidas</option>
-        </select>
-        <span style="font-size:12.5px;font-weight:700;color:var(--text-muted)" id="catalogCountBadge">0 produtos</span>
-      </div>
-      <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.openCreateModal()">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        <span>+ Novo Produto</span>
-      </button>
-    </div>
-
-    <div class="product-admin-grid" id="catalogGrid">
-      <!-- Injetado dinamicamente via CatalogEngine -->
-    </div>
-  </section>
-
-  <!-- SEÇÃO 6: GESTOR DE HORÁRIOS & STATUS DA LOJA -->
-  <section class="ifood-panel" id="hoursView">
-    <div class="ifood-card">
-      <div class="ifood-card-header">
-        <div>
-          <h3>⏰ Status Operacional da Loja</h3>
-          <p>Controle se sua loja está recebendo pedidos agora e configure horários programados</p>
-        </div>
-        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveHours()">
-          Salvar Horários
-        </button>
-      </div>
-
-      <!-- Switch Geral de Loja Aberta/Fechada -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--text-primary)" id="storeStatusLabel">Loja Aberta para Pedidos</div>
-          <div style="font-size:12px;color:var(--text-muted)">Ao desativar, o cardápio exibe o aviso de loja fechada e bloqueia novos pedidos</div>
-        </div>
-        <label class="switch-ui" style="display:inline-flex;align-items:center;cursor:pointer">
-          <input type="checkbox" id="chkStoreOpenManual" onchange="window.SettingsEngine.onManualOpenChange(this.checked)" style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer">
-          <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkStoreOpenText">Aberta Agora</span>
-        </label>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:20px">
-        <div>
-          <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Tempo de Preparo Estimado (minutos)</label>
-          <div style="display:flex;align-items:center;gap:10px">
-            <input type="number" id="cfgPrepMin" class="tier-input" style="width:80px" value="25" min="5" max="120">
-            <span>até</span>
-            <input type="number" id="cfgPrepMax" class="tier-input" style="width:80px" value="45" min="10" max="180">
-            <span style="font-size:12.5px;color:var(--text-muted)">minutos</span>
+          <div class="product-admin-grid" id="catalogGrid">
+            <!-- Injetado dinamicamente via CatalogEngine -->
           </div>
         </div>
-        <div>
-          <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Aviso quando a Loja estiver Fechada</label>
-          <input type="text" id="cfgClosedNotice" class="admin-form-input" placeholder="Ex: Estamos preparando a cozinha! Reabrimos às 18h." value="Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.">
-        </div>
-      </div>
 
-      <!-- Tabela Semanal de Horários -->
-      <h4 style="font-size:14px;font-weight:800;margin:20px 0 10px">Grade de Horários Semanais</h4>
-      <div class="schedule-grid" id="scheduleGrid">
-        <!-- Renderizado dinamicamente -->
-      </div>
-    </div>
-  </section>
+        <!-- ABA 2: GESTOR DE HORÁRIOS & STATUS DA LOJA -->
+        <div class="settings-tab-panel" id="tabPanelHours">
+          <div class="ifood-card">
+            <div class="ifood-card-header">
+              <div>
+                <h3>⏰ Status Operacional da Loja</h3>
+                <p>Controle se sua loja está recebendo pedidos agora e configure horários programados</p>
+              </div>
+              <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveHours()">
+                Salvar Horários
+              </button>
+            </div>
 
-  <!-- SEÇÃO 7: GESTOR DE ENTREGA & RAIO NO MAPA (LEAFLET) -->
-  <section class="ifood-panel" id="deliveryView">
-    <div class="ifood-card">
-      <div class="ifood-card-header">
-        <div>
-          <h3>🛵 Área de Entrega e Raio de Atendimento</h3>
-          <p>Visualize e ajuste o raio de entrega no mapa interativo e defina as faixas de taxa por km</p>
-        </div>
-        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveDelivery()">
-          Salvar Configurações de Entrega
-        </button>
-      </div>
+            <!-- Switch Geral de Loja Aberta/Fechada -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-size:15px;font-weight:800;color:var(--text-primary)" id="storeStatusLabel">Loja Aberta para Pedidos</div>
+                <div style="font-size:12px;color:var(--text-muted)">Ao desativar, o cardápio exibe o aviso de loja fechada e bloqueia novos pedidos</div>
+              </div>
+              <label class="switch-ui" style="display:inline-flex;align-items:center;cursor:pointer">
+                <input type="checkbox" id="chkStoreOpenManual" onchange="window.SettingsEngine.onManualOpenChange(this.checked)" style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer">
+                <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkStoreOpenText">Aberta Agora</span>
+              </label>
+            </div>
 
-      <!-- Barra de Controle do Raio com Slider -->
-      <div class="radius-control-bar">
-        <div>
-          <div style="font-size:14px;font-weight:800;color:var(--text-primary)">Raio Máximo de Cobertura</div>
-          <div style="font-size:12px;color:var(--text-muted)">Clientes fora deste raio serão bloqueados no checkout com aviso de limite</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:16px;flex:1;max-width:440px;min-width:240px">
-          <input type="range" id="radiusSlider" min="1" max="30" step="0.5" value="15" style="flex:1;accent-color:var(--brand);cursor:pointer" oninput="window.MapEngine.setRadius(this.value)">
-          <div class="radius-display-badge" id="radiusBadge">15 km</div>
-        </div>
-      </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:16px;margin-bottom:20px">
+              <div>
+                <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Tempo de Preparo Estimado (minutos)</label>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="number" id="cfgPrepMin" class="tier-input" style="width:80px" value="25" min="5" max="120">
+                  <span>até</span>
+                  <input type="number" id="cfgPrepMax" class="tier-input" style="width:80px" value="45" min="10" max="180">
+                  <span style="font-size:12.5px;color:var(--text-muted)">minutos</span>
+                </div>
+              </div>
+              <div>
+                <label style="display:block;font-size:12.5px;font-weight:700;margin-bottom:6px">Aviso quando a Loja estiver Fechada</label>
+                <input type="text" id="cfgClosedNotice" class="admin-form-input" placeholder="Ex: Estamos preparando a cozinha! Reabrimos às 18h." value="Estamos preparando a cozinha! Nosso atendimento funciona a partir das 18:00.">
+              </div>
+            </div>
 
-      <!-- Seletor de Loja para Visualizar no Mapa -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-        <label style="font-size:12.5px;font-weight:700">Centralizar mapa na unidade:</label>
-        <select class="ifood-filter-select" id="mapUnitSelect" onchange="window.MapEngine.switchUnit(this.value)">
-          <option value="passo-dareia">Passo d'Areia (Zona Norte - POA)</option>
-          <option value="moinhos">Moinhos / Rio Branco (POA)</option>
-          <option value="partenon">Partenon (Zona Leste - POA)</option>
-          <option value="canoas-gracas">Nossa Sra. das Graças (Canoas)</option>
-          <option value="canoas-guajuviras">Guajuviras (Canoas)</option>
-          <option value="cachoeirinha">Vila Vista Alegre (Cachoeirinha)</option>
-        </select>
-        <span style="font-size:11.5px;color:var(--text-muted)">Arraste o slider para ver o círculo de cobertura expandir em tempo real</span>
-      </div>
-
-      <!-- MAPA INTERATIVO LEAFLET -->
-      <div id="deliveryMap"></div>
-
-      <!-- Tabela de Faixas de Entrega -->
-      <h4 style="font-size:14px;font-weight:800;margin:24px 0 6px">Tabela de Taxas de Entrega por Distância</h4>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Configure o valor cobrado do cliente em cada faixa de distância da loja</p>
-      
-      <table class="tiers-table">
-        <thead>
-          <tr>
-            <th>Faixa</th>
-            <th>Distância Máxima</th>
-            <th>Taxa Cobrada do Cliente</th>
-            <th>Descrição Exibida</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Faixa 1</strong> (Proximidades)</td>
-            <td>Até <input type="number" id="tier1Km" class="tier-input" style="width:70px" value="3.0" step="0.5"> km</td>
-            <td>R$ <input type="number" id="tier1Fee" class="tier-input" value="7.50" step="0.50"></td>
-            <td><input type="text" id="tier1Label" class="admin-form-input" value="Até 3 km"></td>
-          </tr>
-          <tr>
-            <td><strong>Faixa 2</strong> (Intermediária)</td>
-            <td>Até <input type="number" id="tier2Km" class="tier-input" style="width:70px" value="6.0" step="0.5"> km</td>
-            <td>R$ <input type="number" id="tier2Fee" class="tier-input" value="11.50" step="0.50"></td>
-            <td><input type="text" id="tier2Label" class="admin-form-input" value="De 3 a 6 km"></td>
-          </tr>
-          <tr>
-            <td><strong>Faixa 3</strong> (Longa Distância)</td>
-            <td>Até o raio máximo (<span id="tier3MaxKmDisplay">15</span> km)</td>
-            <td>R$ <input type="number" id="tier3Fee" class="tier-input" value="15.50" step="0.50"></td>
-            <td><input type="text" id="tier3Label" class="admin-form-input" value="Acima de 6 km"></td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div style="margin-top:16px;padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <label style="font-size:13px;font-weight:700">Entrega Grátis para pedidos acima de:</label>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-weight:700">R$</span>
-          <input type="number" id="cfgFreeDelivery" class="tier-input" value="0.00" step="5.00" style="width:100px" placeholder="0.00">
-          <small style="color:var(--text-muted)">(Deixe 0 para desativar)</small>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SEÇÃO 8: GESTOR DE FORMAS DE PAGAMENTO -->
-  <section class="ifood-panel" id="paymentsView">
-    <div class="ifood-card">
-      <div class="ifood-card-header">
-        <div>
-          <h3>💳 Formas de Pagamento Aceitas</h3>
-          <p>Habilite ou desabilite os métodos que seus clientes poderão selecionar no checkout</p>
-        </div>
-        <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.savePayments()">
-          Salvar Meios de Pagamento
-        </button>
-      </div>
-
-      <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">Pagamento Online Integrado (Mercado Pago)</h4>
-      <div class="payments-cards-grid">
-        <div class="payment-card-item enabled" id="payCard_pix_online">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">⚡</div>
-            <div>
-              <div class="payment-card-title">Pix Online Instantâneo</div>
-              <div class="payment-card-type">QR Code gerado na hora com aprovação imediata sem mandar comprovante</div>
+            <!-- Tabela Semanal de Horários -->
+            <h4 style="font-size:14px;font-weight:800;margin:20px 0 10px">Grade de Horários Semanais</h4>
+            <div class="schedule-grid" id="scheduleGrid">
+              <!-- Renderizado dinamicamente -->
             </div>
           </div>
-          <input type="checkbox" id="chkPay_pix_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_online')">
         </div>
 
-        <div class="payment-card-item enabled" id="payCard_cartao_online">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">💳</div>
-            <div>
-              <div class="payment-card-title">Cartão de Crédito Online</div>
-              <div class="payment-card-type">Mercado Pago transparente com tokenização segura e split automático</div>
+        <!-- ABA 3: GESTOR DE ENTREGA & RAIO NO MAPA (LEAFLET) -->
+        <div class="settings-tab-panel" id="tabPanelDelivery">
+          <div class="ifood-card">
+            <div class="ifood-card-header">
+              <div>
+                <h3>🛵 Área de Entrega e Raio de Atendimento</h3>
+                <p>Visualize e ajuste o raio de entrega no mapa interativo e defina as faixas de taxa por km</p>
+              </div>
+              <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.saveDelivery()">
+                Salvar Configurações de Entrega
+              </button>
             </div>
-          </div>
-          <input type="checkbox" id="chkPay_cartao_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_online')">
-        </div>
-      </div>
 
-      <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">Pagamento na Entrega (ao Motoboy)</h4>
-      <div class="payments-cards-grid">
-        <div class="payment-card-item enabled" id="payCard_pix_entrega">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">📱</div>
-            <div>
-              <div class="payment-card-title">Pix na Entrega</div>
-              <div class="payment-card-type">Cliente paga por Pix na maquininha ou chave Pix do entregador</div>
+            <!-- Barra de Controle do Raio com Slider -->
+            <div class="radius-control-bar">
+              <div>
+                <div style="font-size:14px;font-weight:800;color:var(--text-primary)">Raio Máximo de Cobertura</div>
+                <div style="font-size:12px;color:var(--text-muted)">Clientes fora deste raio serão bloqueados no checkout com aviso de limite</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;flex:1;max-width:440px;min-width:240px">
+                <input type="range" id="radiusSlider" min="1" max="30" step="0.5" value="15" style="flex:1;accent-color:var(--brand);cursor:pointer" oninput="window.MapEngine.setRadius(this.value)">
+                <div class="radius-display-badge" id="radiusBadge">15 km</div>
+              </div>
+            </div>
+
+            <!-- Seletor de Loja para Visualizar no Mapa -->
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+              <label style="font-size:12.5px;font-weight:700">Centralizar mapa na unidade:</label>
+              <select class="ifood-filter-select" id="mapUnitSelect" onchange="window.MapEngine.switchUnit(this.value)">
+                <option value="passo-dareia">Passo d'Areia (Zona Norte - POA)</option>
+                <option value="moinhos">Moinhos / Rio Branco (POA)</option>
+                <option value="partenon">Partenon (Zona Leste - POA)</option>
+                <option value="canoas-gracas">Nossa Sra. das Graças (Canoas)</option>
+                <option value="canoas-guajuviras">Guajuviras (Canoas)</option>
+                <option value="cachoeirinha">Vila Vista Alegre (Cachoeirinha)</option>
+              </select>
+              <span style="font-size:11.5px;color:var(--text-muted)">Arraste o slider para ver o círculo de cobertura expandir em tempo real</span>
+            </div>
+
+            <!-- MAPA INTERATIVO LEAFLET -->
+            <div id="deliveryMap"></div>
+
+            <!-- Tabela de Faixas de Entrega -->
+            <h4 style="font-size:14px;font-weight:800;margin:24px 0 6px">Tabela de Taxas de Entrega por Distância</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Configure o valor cobrado do cliente em cada faixa de distância da loja</p>
+            
+            <table class="tiers-table">
+              <thead>
+                <tr>
+                  <th>Faixa</th>
+                  <th>Distância Máxima</th>
+                  <th>Taxa Cobrada do Cliente</th>
+                  <th>Descrição Exibida</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Faixa 1</strong> (Proximidades)</td>
+                  <td>Até <input type="number" id="tier1Km" class="tier-input" style="width:70px" value="3.0" step="0.5"> km</td>
+                  <td>R$ <input type="number" id="tier1Fee" class="tier-input" value="7.50" step="0.50"></td>
+                  <td><input type="text" id="tier1Label" class="admin-form-input" value="Até 3 km"></td>
+                </tr>
+                <tr>
+                  <td><strong>Faixa 2</strong> (Intermediária)</td>
+                  <td>Até <input type="number" id="tier2Km" class="tier-input" style="width:70px" value="6.0" step="0.5"> km</td>
+                  <td>R$ <input type="number" id="tier2Fee" class="tier-input" value="11.50" step="0.50"></td>
+                  <td><input type="text" id="tier2Label" class="admin-form-input" value="De 3 a 6 km"></td>
+                </tr>
+                <tr>
+                  <td><strong>Faixa 3</strong> (Longa Distância)</td>
+                  <td>Até o raio máximo (<span id="tier3MaxKmDisplay">15</span> km)</td>
+                  <td>R$ <input type="number" id="tier3Fee" class="tier-input" value="15.50" step="0.50"></td>
+                  <td><input type="text" id="tier3Label" class="admin-form-input" value="Acima de 6 km"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top:16px;padding:12px 16px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <label style="font-size:13px;font-weight:700">Entrega Grátis para pedidos acima de:</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-weight:700">R$</span>
+                <input type="number" id="cfgFreeDelivery" class="tier-input" value="0.00" step="5.00" style="width:100px" placeholder="0.00">
+                <small style="color:var(--text-muted)">(Deixe 0 para desativar)</small>
+              </div>
             </div>
           </div>
-          <input type="checkbox" id="chkPay_pix_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_entrega')">
         </div>
 
-        <div class="payment-card-item enabled" id="payCard_cartao_credito_entrega">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">💳</div>
-            <div>
-              <div class="payment-card-title">Cartão de Crédito na Entrega</div>
-              <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+        <!-- ABA 4: GESTOR DE FORMAS DE PAGAMENTO -->
+        <div class="settings-tab-panel" id="tabPanelPayments">
+          <div class="ifood-card">
+            <div class="ifood-card-header">
+              <div>
+                <h3>💳 Formas de Pagamento Aceitas</h3>
+                <p>Habilite ou desabilite os métodos que seus clientes poderão selecionar no checkout</p>
+              </div>
+              <button type="button" class="ifood-primary-btn" onclick="window.SettingsEngine.savePayments()">
+                Salvar Meios de Pagamento
+              </button>
+            </div>
+
+            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">Pagamento Online Integrado (Mercado Pago)</h4>
+            <div class="payments-cards-grid">
+              <div class="payment-card-item enabled" id="payCard_pix_online">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">⚡</div>
+                  <div>
+                    <div class="payment-card-title">Pix Online Instantâneo</div>
+                    <div class="payment-card-type">QR Code gerado na hora com aprovação imediata sem mandar comprovante</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_pix_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_online')">
+              </div>
+
+              <div class="payment-card-item enabled" id="payCard_cartao_online">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">💳</div>
+                  <div>
+                    <div class="payment-card-title">Cartão de Crédito Online</div>
+                    <div class="payment-card-type">Mercado Pago transparente com tokenização segura e split automático</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_cartao_online" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_online')">
+              </div>
+            </div>
+
+            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">Pagamento na Entrega (ao Motoboy)</h4>
+            <div class="payments-cards-grid">
+              <div class="payment-card-item enabled" id="payCard_pix_entrega">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">📱</div>
+                  <div>
+                    <div class="payment-card-title">Pix na Entrega</div>
+                    <div class="payment-card-type">Cliente paga por Pix na maquininha ou chave Pix do entregador</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_pix_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_pix_entrega')">
+              </div>
+
+              <div class="payment-card-item enabled" id="payCard_cartao_credito_entrega">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">💳</div>
+                  <div>
+                    <div class="payment-card-title">Cartão de Crédito na Entrega</div>
+                    <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_cartao_credito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_credito_entrega')">
+              </div>
+
+              <div class="payment-card-item enabled" id="payCard_cartao_debito_entrega">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">💳</div>
+                  <div>
+                    <div class="payment-card-title">Cartão de Débito na Entrega</div>
+                    <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_cartao_debito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_debito_entrega')">
+              </div>
+
+              <div class="payment-card-item enabled" id="payCard_dinheiro_entrega">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">💵</div>
+                  <div>
+                    <div class="payment-card-title">Dinheiro na Entrega</div>
+                    <div class="payment-card-type">Cliente seleciona dinheiro e informa se precisa de troco no checkout</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_dinheiro_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_dinheiro_entrega')">
+              </div>
             </div>
           </div>
-          <input type="checkbox" id="chkPay_cartao_credito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_credito_entrega')">
         </div>
 
-        <div class="payment-card-item enabled" id="payCard_cartao_debito_entrega">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">💳</div>
-            <div>
-              <div class="payment-card-title">Cartão de Débito na Entrega</div>
-              <div class="payment-card-type">Maquininha de cartão levada pelo motoboy</div>
+        <!-- ABA 5: CONFIGURAÇÕES DA IMPRESSORA / COMANDEIRA -->
+        <div class="settings-tab-panel" id="tabPanelPrinter">
+          <!-- PASSO 1: INSTALAÇÃO DO ARQUIVO DE INICIALIZAÇÃO / ATALHO DO CAIXA -->
+          <div class="settings-card" style="border: 2px solid var(--brand); background: #FFFDF9; margin-bottom: 20px;">
+            <div class="settings-card-head" style="border-bottom-color: #FDE68A;">
+              <div>
+                <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--brand);letter-spacing:0.5px">Etapa Obrigatória para Impressão Direta</span>
+                <h3 class="settings-card-title" style="margin-top:2px">1. Instalação do Caixa no Computador</h3>
+                <div class="settings-card-subtitle">Execute uma única vez no computador do restaurante para a comanda imprimir sem confirmação de tela</div>
+              </div>
             </div>
-          </div>
-          <input type="checkbox" id="chkPay_cartao_debito_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_cartao_debito_entrega')">
-        </div>
 
-        <div class="payment-card-item enabled" id="payCard_dinheiro_entrega">
-          <div class="payment-card-left">
-            <div class="payment-card-icon">💵</div>
-            <div>
-              <div class="payment-card-title">Dinheiro na Entrega</div>
-              <div class="payment-card-type">Cliente seleciona dinheiro e informa se precisa de troco no checkout</div>
+            <div style="display:flex;flex-direction:column;gap:12px;padding:20px">
+              <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5">
+                Baixe e execute o instalador para que o painel do Dad's Burger abra automaticamente ao ligar o computador pela manhã, já com a impressora térmica conectada e pronta para imprimir:
+              </p>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+                <button type="button" class="btn-cancel-modal-back" style="background:#16A34A;color:#FFF;border-color:#16A34A;padding:10px 18px;font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.installAutoStartup()">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Instalar: Abrir Sozinho ao Ligar o Computador (.bat)
+                </button>
+                <button type="button" class="btn-cancel-modal-back" style="background:#0F172A;color:#FFF;border-color:#0F172A;padding:10px 18px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px" onclick="window.PrinterEngine.downloadDirectPrintShortcut()">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="16" y2="12"/><line x1="12" y1="16" x2="16" y2="12"/></svg>
+                  Criar Ícone na Área de Trabalho
+                </button>
+              </div>
+              <small style="color:var(--text-muted);font-size:11.5px">
+                Instalação 100% autônoma. O arquivo cria o atalho oficial do Chrome/Edge configurado para disparo automático.
+              </small>
             </div>
           </div>
-          <input type="checkbox" id="chkPay_dinheiro_entrega" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_dinheiro_entrega')">
+
+          <!-- PASSO 2: PARÂMETROS E FORMATAÇÃO DA COMANDA -->
+          <div class="settings-card" style="margin-bottom: 20px;">
+            <div class="settings-card-head">
+              <div>
+                <span style="font-size:11px;font-weight:900;text-transform:uppercase;color:var(--text-muted);letter-spacing:0.5px">Formatação do Papel</span>
+                <h3 class="settings-card-title" style="margin-top:2px">2. Parâmetros da Bobina e Layout</h3>
+                <div class="settings-card-subtitle">Compatível com bobinas de 80mm e 58mm (Epson, Bematech, Elgin, Daruma e genéricas)</div>
+              </div>
+              <button type="button" class="btn-cancel-modal-back" onclick="window.PrinterEngine.printCalibrationTest()" style="font-size:12px">
+                Imprimir Teste de Calibração
+              </button>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:16px;padding:20px">
+              <!-- Largura da Bobina -->
+              <div class="cfg-group">
+                <label class="cfg-label">Largura da Bobina / Papel</label>
+                <div class="cfg-seg" id="segPaperWidth">
+                  <button type="button" class="cfg-seg-btn active" data-val="80mm" onclick="window.PrinterEngine.setField('paperWidth', '80mm')">
+                    80mm (Padrão Balcão / 72mm útil)
+                  </button>
+                  <button type="button" class="cfg-seg-btn" data-val="58mm" onclick="window.PrinterEngine.setField('paperWidth', '58mm')">
+                    58mm (Bobina Estreita / 48mm útil)
+                  </button>
+                </div>
+                <small style="color:var(--text-muted);font-size:11.5px">Use 80mm para Epson TM-T20, Bematech MP-4200, Elgin i9/i7. Use 58mm para mini-impressoras e terminais móveis.</small>
+              </div>
+
+              <!-- Tamanho da Fonte -->
+              <div class="cfg-group">
+                <label class="cfg-label">Tamanho do Texto na Comanda</label>
+                <div class="cfg-seg" id="segFontSize">
+                  <button type="button" class="cfg-seg-btn" data-val="compact" onclick="window.PrinterEngine.setField('fontSize', 'compact')">
+                    Compacto (9.5px)
+                  </button>
+                  <button type="button" class="cfg-seg-btn active" data-val="normal" onclick="window.PrinterEngine.setField('fontSize', 'normal')">
+                    Normal (11px)
+                  </button>
+                  <button type="button" class="cfg-seg-btn" data-val="large" onclick="window.PrinterEngine.setField('fontSize', 'large')">
+                    Grande Cozinha (13px)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Vias por Pedido -->
+              <div class="cfg-group">
+                <label class="cfg-label">Vias por Pedido</label>
+                <div class="cfg-seg" id="segCopies">
+                  <button type="button" class="cfg-seg-btn active" data-val="1" onclick="window.PrinterEngine.setField('copies', 1)">
+                    1 Via Única (Cozinha)
+                  </button>
+                  <button type="button" class="cfg-seg-btn" data-val="2" onclick="window.PrinterEngine.setField('copies', 2)">
+                    2 Vias (1ª Cozinha + 2ª Entrega/Caixa)
+                  </button>
+                </div>
+              </div>
+
+              <!-- Automação: Impressão Automática -->
+              <div class="cfg-toggle-row">
+                <div class="cfg-toggle-info">
+                  <b>Impressão Automática ao Receber Pedido</b>
+                  <small>Dispara a impressão automaticamente assim que um novo pedido chegar no painel.</small>
+                </div>
+                <input type="checkbox" id="cfgAutoPrint" class="cfg-checkbox" onchange="window.PrinterEngine.setField('autoPrint', this.checked)">
+              </div>
+
+              <!-- Campos da Comanda -->
+              <div class="cfg-group">
+                <label class="cfg-label">Campos Exibidos na Comanda</label>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                    <input type="checkbox" id="cfgShowUnitHeader" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showUnitHeader', this.checked)">
+                    <span>Cabeçalho com nome e endereço da unidade</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                    <input type="checkbox" id="cfgShowCustomerDetails" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showCustomerDetails', this.checked)">
+                    <span>Dados completos do cliente (Nome, Telefone, Modalidade e Endereço)</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px">
+                    <input type="checkbox" id="cfgShowMercadoPagoId" class="cfg-checkbox" onchange="window.PrinterEngine.setField('showMercadoPagoId', this.checked)">
+                    <span>Código de transação Mercado Pago</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Avanço de Papel / Guilhotina -->
+              <div class="cfg-group">
+                <label class="cfg-label">Alimentação Final de Papel (Corte de Guilhotina)</label>
+                <select id="cfgFeedLines" class="cfg-input" onchange="window.PrinterEngine.setField('feedLines', Number(this.value))">
+                  <option value="3">3 linhas (Mínimo)</option>
+                  <option value="5" selected>5 linhas (Recomendado para guilhotina)</option>
+                  <option value="8">8 linhas (Para serrilha manual)</option>
+                </select>
+              </div>
+
+              <!-- Mensagem de Rodapé -->
+              <div class="cfg-group">
+                <label class="cfg-label">Mensagem de Rodapé</label>
+                <input type="text" id="cfgFooterMessage" class="cfg-input" placeholder="Ex: Dad's Burger - Bom apetite!" onchange="window.PrinterEngine.setField('footerMessage', this.value)">
+              </div>
+
+              <div style="display:flex;justify-content:flex-end;margin-top:6px">
+                <button type="button" class="btn-cancel-modal-confirm" style="background:#16A34A" onclick="window.PrinterEngine.saveAndApply()">
+                  Salvar Alterações de Impressão
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARD 3: SINALIZAÇÃO SONORA DA COZINHA -->
+          <div class="settings-card">
+            <div class="settings-card-head">
+              <div>
+                <h3 class="settings-card-title">Alarme Sonoro de Novos Pedidos</h3>
+                <div class="settings-card-subtitle">Aviso sonoro em tempo real para a cozinha e montadores</div>
+              </div>
+              <button type="button" class="btn-cancel-modal-back" onclick="AlarmEngine.testTone()" style="font-size:12px">
+                Testar Alarme Sonoro
+              </button>
+            </div>
+
+            <div class="cfg-toggle-row" style="padding:20px">
+              <div class="cfg-toggle-info">
+                <b>Campainha / Sino Ativo</b>
+                <small>Toca repetidamente a cada novo pedido aprovado até ser aceito ou enviado para preparo.</small>
+              </div>
+              <button type="button" class="btn-cancel-modal-back" id="btnSettingsToggleSound" style="font-size:12px;font-weight:700" onclick="AlarmEngine.toggleMute(); window.AdminApp.updateSoundUi();">
+                Alarme: Ativo
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   </section>
 
@@ -2832,8 +2998,12 @@
 
     openConfigModal() {
       this.loadConfig();
-      if (window.AdminApp && window.AdminApp.switchView) {
-        window.AdminApp.switchView('settings');
+      if (window.AdminApp) {
+        if (window.AdminApp.openPrinterSettings) {
+          window.AdminApp.openPrinterSettings();
+        } else if (window.AdminApp.switchView) {
+          window.AdminApp.switchView('settings');
+        }
       }
     },
 
@@ -3160,66 +3330,117 @@
       this.pollInterval = setInterval(() => this.poll(), 2500);
     },
 
+    currentSettingsTab: 'catalog',
+
     switchView(viewName) {
-      const btnKanban = document.getElementById('btnViewKanban');
-      const btnHistory = document.getElementById('btnViewHistory');
-      const btnCanceled = document.getElementById('btnViewCanceled');
-      const btnCatalog = document.getElementById('btnViewCatalog');
-      const btnHours = document.getElementById('btnViewHours');
-      const btnDelivery = document.getElementById('btnViewDelivery');
-      const btnPayments = document.getElementById('btnViewPayments');
+      // Aliases para abas internas de configurações
+      if (['catalog', 'hours', 'delivery', 'payments', 'printer'].includes(viewName)) {
+        this.switchView('settings');
+        this.switchSettingsTab(viewName);
+        return;
+      }
 
       const kanbanView = document.getElementById('kanbanView');
       const historyView = document.getElementById('historyView');
       const canceledView = document.getElementById('canceledView');
       const settingsView = document.getElementById('settingsView');
-      const catalogView = document.getElementById('catalogView');
-      const hoursView = document.getElementById('hoursView');
-      const deliveryView = document.getElementById('deliveryView');
-      const paymentsView = document.getElementById('paymentsView');
 
       const metricsStrip = document.querySelector('.metrics-strip');
       const sideTicket = document.querySelector('.side-ticket');
 
-      this.currentView = viewName;
-      if (btnKanban) btnKanban.classList.toggle('active', viewName === 'kanban');
-      if (btnHistory) btnHistory.classList.toggle('active', viewName === 'history');
-      if (btnCanceled) btnCanceled.classList.toggle('active', viewName === 'canceled');
-      if (btnCatalog) btnCatalog.classList.toggle('active', viewName === 'catalog');
-      if (btnHours) btnHours.classList.toggle('active', viewName === 'hours');
-      if (btnDelivery) btnDelivery.classList.toggle('active', viewName === 'delivery');
-      if (btnPayments) btnPayments.classList.toggle('active', viewName === 'payments');
+      const boxNovos = document.getElementById('metricBoxNovos');
+      const boxPrep = document.getElementById('metricBoxPrep');
+      const boxRota = document.getElementById('metricBoxRota');
+      const boxDone = document.getElementById('metricBoxDone');
+      const boxCancel = document.getElementById('metricBoxCancel');
 
+      this.currentView = viewName;
+
+      // Atualiza visual ativo dos cards de métricas (navegação principal do topo)
+      if (boxNovos) boxNovos.classList.toggle('active', viewName === 'kanban');
+      if (boxPrep) boxPrep.classList.toggle('active', false);
+      if (boxRota) boxRota.classList.toggle('active', false);
+      if (boxDone) boxDone.classList.toggle('active', viewName === 'history');
+      if (boxCancel) boxCancel.classList.toggle('active', viewName === 'canceled');
+
+      // Exibição dos painéis principais
       if (kanbanView) kanbanView.style.display = viewName === 'kanban' ? 'grid' : 'none';
       if (historyView) historyView.style.display = viewName === 'history' ? 'block' : 'none';
       if (canceledView) canceledView.style.display = viewName === 'canceled' ? 'block' : 'none';
       if (settingsView) settingsView.style.display = viewName === 'settings' ? 'block' : 'none';
-      if (catalogView) catalogView.style.display = viewName === 'catalog' ? 'block' : 'none';
-      if (hoursView) hoursView.style.display = viewName === 'hours' ? 'block' : 'none';
-      if (deliveryView) deliveryView.style.display = viewName === 'delivery' ? 'block' : 'none';
-      if (paymentsView) paymentsView.style.display = viewName === 'payments' ? 'block' : 'none';
 
-      // Nas abas de gestão e configurações, oculta o resumo de KPIs e comanda lateral para foco total
-      const isManagerTab = ['settings', 'catalog', 'hours', 'delivery', 'payments'].includes(viewName);
-      if (metricsStrip) metricsStrip.style.display = isManagerTab ? 'none' : 'grid';
-      if (sideTicket) sideTicket.style.display = isManagerTab ? 'none' : 'flex';
+      // Faixa de resumo e comanda lateral: ocultas na visão de configurações para foco total
+      const isSettings = (viewName === 'settings');
+      if (metricsStrip) metricsStrip.style.display = isSettings ? 'none' : 'grid';
+      if (sideTicket) sideTicket.style.display = isSettings ? 'none' : 'flex';
 
-      if (viewName === 'kanban') this.render();
-      else if (viewName === 'history') this.renderHistory();
-      else if (viewName === 'canceled') this.renderCanceled();
-      else if (viewName === 'settings') {
-        if (window.PrinterEngine) window.PrinterEngine.loadConfig();
-        this.updateSoundUi();
-      } else if (viewName === 'catalog') {
-        if (window.CatalogEngine) window.CatalogEngine.render();
-      } else if (viewName === 'hours') {
+      if (viewName === 'kanban') {
+        this.render();
+      } else if (viewName === 'history') {
+        this.renderHistory();
+      } else if (viewName === 'canceled') {
+        this.renderCanceled();
+      } else if (viewName === 'settings') {
+        this.switchSettingsTab(this.currentSettingsTab || 'catalog');
+      }
+    },
+
+    switchSettingsTab(tabName) {
+      this.currentSettingsTab = tabName || 'catalog';
+
+      // Certifica-se de que a tela de configurações esteja aberta
+      const settingsView = document.getElementById('settingsView');
+      if (settingsView && settingsView.style.display === 'none') {
+        this.switchView('settings');
+      }
+
+      // Atualiza visual ativo dos botões da Left Sidebar
+      const navButtons = document.querySelectorAll('.settings-nav-item');
+      navButtons.forEach(btn => {
+        const isCurrent = btn.dataset.tab === tabName || btn.id === `tabBtn${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`;
+        btn.classList.toggle('active', isCurrent);
+      });
+
+      // Mapeamento dos painéis de conteúdo
+      const tabMap = {
+        catalog: 'tabPanelCatalog',
+        hours: 'tabPanelHours',
+        delivery: 'tabPanelDelivery',
+        payments: 'tabPanelPayments',
+        printer: 'tabPanelPrinter'
+      };
+
+      Object.entries(tabMap).forEach(([tKey, panelId]) => {
+        const el = document.getElementById(panelId);
+        if (el) el.classList.toggle('active', tKey === tabName);
+      });
+
+      // Dispara renderizações específicas de cada aba
+      if (tabName === 'catalog') {
+        if (window.CatalogEngine) {
+          window.CatalogEngine.load().then(() => window.CatalogEngine.render());
+        }
+      } else if (tabName === 'hours') {
         if (window.SettingsEngine) window.SettingsEngine.renderHours();
-      } else if (viewName === 'delivery') {
+      } else if (tabName === 'delivery') {
         if (window.SettingsEngine) window.SettingsEngine.renderDelivery();
         setTimeout(() => { if (window.MapEngine) window.MapEngine.initOrUpdate(); }, 120);
-      } else if (viewName === 'payments') {
+      } else if (tabName === 'payments') {
         if (window.SettingsEngine) window.SettingsEngine.renderPayments();
+      } else if (tabName === 'printer') {
+        if (window.PrinterEngine) window.PrinterEngine.loadConfig();
+        this.updateSoundUi();
       }
+    },
+
+    openStoreSettings() {
+      this.switchView('settings');
+      this.switchSettingsTab('catalog');
+    },
+
+    openPrinterSettings() {
+      this.switchView('settings');
+      this.switchSettingsTab('printer');
     },
 
     updateSoundUi() {
@@ -3265,28 +3486,19 @@
     },
 
     setupEventListeners() {
-      // Alternância de visão: Kanban vs Histórico vs Cancelados vs Gestor iFood
-      const btnKanban = document.getElementById('btnViewKanban');
-      const btnHistory = document.getElementById('btnViewHistory');
-      const btnCanceled = document.getElementById('btnViewCanceled');
-      const btnCatalog = document.getElementById('btnViewCatalog');
-      const btnHours = document.getElementById('btnViewHours');
-      const btnDelivery = document.getElementById('btnViewDelivery');
-      const btnPayments = document.getElementById('btnViewPayments');
-
-      if (btnKanban) btnKanban.onclick = () => this.switchView('kanban');
-      if (btnHistory) btnHistory.onclick = () => this.switchView('history');
-      if (btnCanceled) btnCanceled.onclick = () => this.switchView('canceled');
-      if (btnCatalog) btnCatalog.onclick = () => this.switchView('catalog');
-      if (btnHours) btnHours.onclick = () => this.switchView('hours');
-      if (btnDelivery) btnDelivery.onclick = () => this.switchView('delivery');
-      if (btnPayments) btnPayments.onclick = () => this.switchView('payments');
-
       // Botão de retorno das configurações para os pedidos
       const btnBack = document.getElementById('btnBackToKanban');
       if (btnBack) btnBack.onclick = () => this.switchView('kanban');
 
-      // Menu Dropdown de Conta
+      // Botões de navegação da Left Sidebar de configurações
+      document.querySelectorAll('.settings-nav-item').forEach(btn => {
+        btn.onclick = () => {
+          const tab = btn.dataset.tab;
+          if (tab) this.switchSettingsTab(tab);
+        };
+      });
+
+      // Menu Dropdown de Conta (Perfil)
       const accountWrap = document.getElementById('accountDropdownWrap');
       const btnAccount = document.getElementById('btnAccountTrigger');
       const accountMenu = document.getElementById('accountMenuDropdown');
@@ -3311,7 +3523,15 @@
       if (menuSettings) {
         menuSettings.onclick = () => {
           if (accountMenu) accountMenu.classList.remove('open');
-          this.switchView('settings');
+          this.openStoreSettings();
+        };
+      }
+
+      const menuPrinter = document.getElementById('menuItemPrinter');
+      if (menuPrinter) {
+        menuPrinter.onclick = () => {
+          if (accountMenu) accountMenu.classList.remove('open');
+          this.openPrinterSettings();
         };
       }
 
@@ -4344,8 +4564,12 @@
     products: [],
 
     async load() {
+      // 1. Tenta API do servidor local
       try {
-        const res = await fetch('/api/admin/products');
+        let res = await fetch('/api/admin/products');
+        if (!res.ok) {
+          res = await fetch('products.json');
+        }
         if (res.ok) {
           const list = await res.json();
           if (Array.isArray(list) && list.length > 0) {
@@ -4356,15 +4580,41 @@
         }
       } catch (e) {}
 
+      // 2. Tenta cache do localStorage (e atualiza se faltar itens)
       const cached = localStorage.getItem('dads_products');
       if (cached) {
         try {
-          this.products = JSON.parse(cached);
-          if (this.products.length > 0) return;
+          const list = JSON.parse(cached);
+          if (Array.isArray(list) && list.length > 0) {
+            this.products = list;
+            // Se o cache tiver menos de 47 itens, tenta atualizar com products.json
+            if (list.length < 47) {
+              try {
+                const pjRes = await fetch('products.json');
+                if (pjRes.ok) {
+                  const pjList = await pjRes.json();
+                  if (Array.isArray(pjList) && pjList.length >= 47) {
+                    this.products = pjList;
+                    localStorage.setItem('dads_products', JSON.stringify(this.products));
+                  }
+                }
+              } catch (e2) {}
+            }
+            return;
+          }
         } catch (e) {}
       }
 
-      // Se vazio, carrega catálogo padrão
+      // 3. Fallback estático direto
+      try {
+        const pjRes = await fetch('products.json');
+        if (pjRes.ok) {
+          this.products = await pjRes.json();
+          localStorage.setItem('dads_products', JSON.stringify(this.products));
+          return;
+        }
+      } catch (e) {}
+
       this.products = [];
     },
 
