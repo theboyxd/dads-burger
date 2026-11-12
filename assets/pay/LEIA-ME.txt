@@ -1,0 +1,17 @@
+Logos das formas de pagamento mostradas no checkout (pasta usada por index.html).
+
+Origem dos arquivos (baixados em 11/11/2026):
+- visa.svg       Wikimedia Commons, "Visa Inc. logo (2021-present)"
+- mastercard.svg Wikimedia Commons, "Mastercard 2019 logo"
+- elo.png        Wikimedia Commons, "Elo logo" (reduzido para 128 px)
+- amex.svg       Wikimedia Commons, "American Express logo (2018)"
+- pix.svg        Wikimedia Commons, "Pix (Brazil) logo" (marca do Banco Central do Brasil)
+- mercadopago.svg site do Mercado Pago (cabecalho de mercadopago.com.br)
+- pluxee.svg     Wikimedia Commons, "Pluxee Logo 2023"
+- ticket.svg     site da Ticket (ticket.com.br)
+- alelo.png      site da Alelo (alelo.com.br), reduzido para 128 px
+- vr.png         simbolo da VR, recortado de uma imagem do site da VR (vr.com.br), 48 px
+
+Sao marcas registradas dos seus donos e aparecem so para indicar as formas de pagamento aceitas.
+Quando o restaurante for credenciado em cada uma, troque pelos arquivos do kit oficial que a empresa fornece
+(o simbolo da VR em especial tem so 48 px).

@@ -55,10 +55,21 @@
     "mercadopago_saldo": {
       "id": "mercadopago_saldo",
       "name": "Saldo Mercado Pago / Mercado Crédito",
-      "description": "Pagamento usando o saldo direto em conta do Mercado Pago ou linha Mercado Crédito",
+      "description": "Pagamento usando o saldo direto em conta do Mercado Pago ou linha Mercado Crédito. Ainda não disponível: exige o Checkout Pro do Mercado Pago (cliente entra na conta dele); com connected false aparece como em breve.",
       "enabled": true,
+      "connected": false,
       "type": "online",
       "icon": "📱"
+    },
+    "vr_online": {
+      "id": "vr_online",
+      "name": "Vale-Refeição Online (VR / Pluxee / Ticket)",
+      "description": "Pagamento online com cartão de vale-refeição. Só funciona depois de conectar um provedor: com connected false aparece como em breve no checkout e não cobra nada.",
+      "enabled": false,
+      "connected": false,
+      "provider": "",
+      "type": "online",
+      "icon": "🥗"
     },
     "balcao_vr": {
       "id": "balcao_vr",

@@ -4,15 +4,17 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
+    "dev": "vite --port=3000 --host=127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --port=3000 --host=0.0.0.0",
+    "preview": "vite preview --port=3000 --host=127.0.0.1",
     "start": "node server.js",
     "lint": "node -e 'console.log(\"No lint errors found\")'"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "mercadopago": "^3.6.2",
+    "sharp": "^0.35.5",
     "vite": "^6.2.0"
   }
 }

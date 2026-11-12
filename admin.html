@@ -1813,6 +1813,17 @@
     color: var(--text-muted);
     margin-top: 2px;
   }
+  .payment-soon {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: #FEF3C7;
+    color: #92400E;
+    font-size: 10.5px;
+    font-weight: 800;
+    vertical-align: 1px;
+  }
 
   /* MODAL DE PRODUTO */
   .admin-modal-backdrop {
@@ -1863,22 +1874,114 @@
     outline: none;
   }
   .admin-form-input:focus, .admin-form-textarea:focus { border-color: var(--brand); }
+
+  /* CARDÁPIO & ESTOQUE: lista simples, botões grandes (dá para usar com o polegar), tudo na mesma tela */
+  [hidden] { display: none !important; }
+  .cat-btn { min-height: 46px; padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: #FFF; color: var(--text-primary); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s, border-color .15s, transform .1s; }
+  .cat-btn:hover { border-color: var(--text-secondary); }
+  .cat-btn:active { transform: scale(.98); }
+  .cat-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .cat-btn.primary { background: var(--brand); border-color: var(--brand); color: #FFF; }
+  .cat-btn.primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .cat-btn.small { min-height: 44px; padding: 8px 12px; font-size: 13px; }
+  .cat-btn.good { background: #DCFCE7; border-color: #86EFAC; color: #15803D; }
+  .cat-btn.bad { background: #FEE2E2; border-color: #FCA5A5; color: #B91C1C; }
+  .cat-btn.danger { color: #B91C1C; border-color: #FCA5A5; }
+  .cat-btn.danger:hover { background: #FEF2F2; border-color: #F87171; }
+  .cat-icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: #FFF; color: var(--text-primary); font-size: 15px; font-weight: 800; cursor: pointer; display: grid; place-items: center; transition: background .15s, border-color .15s; }
+  .cat-icon-btn:hover:not(:disabled) { border-color: var(--text-secondary); background: var(--surface-subtle); }
+  .cat-icon-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .cat-btn:focus-visible, .cat-icon-btn:focus-visible { outline: 3px solid #2563EB; outline-offset: 2px; }
+  .cat-btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .cat-status { font-size: 13px; color: var(--text-secondary); min-height: 1.3em; margin-top: 8px; }
+  .cat-status.ok { color: #15803D; font-weight: 700; }
+  .cat-status.err { color: #B91C1C; font-weight: 700; }
+
+  .cat-logo-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .cat-logo-img { width: 88px; height: 88px; border-radius: 50%; object-fit: cover; background: #F4F4F6; border: 1px solid var(--border); flex: none; }
+  .cat-logo-text { flex: 1; min-width: 220px; }
+  .cat-logo-text h3 { font-size: 17px; font-weight: 800; }
+  .cat-logo-text p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .cat-hint { font-size: 13px; color: #D9CFC5; margin: -6px 2px 14px; line-height: 1.45; }
+  .cat-hint b { color: #FCD9A0; }
+  .cat-list { display: flex; flex-direction: column; gap: 10px; container-type: inline-size; }
+  .cat-group { display: flex; align-items: center; gap: 10px; margin: 18px 2px 0; color: #F4EDE6; font-size: 14px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+  .cat-group:first-child { margin-top: 0; }
+  .cat-group .cat-count { color: #B3A699; font-weight: 700; letter-spacing: 0; text-transform: none; font-size: 12.5px; }
+  .cat-group .cat-spacer { flex: 1; }
+  .cat-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "thumb info" "act act"; gap: 10px 12px; align-items: center; background: #FFF; border: 1.5px solid var(--border); border-radius: 14px; padding: 12px; }
+  .cat-row.is-paused { background: #FAFAFB; }
+  .cat-row.is-hidden { background: #F4F4F5; border-style: dashed; }
+  .cat-row.is-hidden .cat-thumb, .cat-row.is-hidden .cat-info { opacity: .6; }
+  .cat-row.dragging { opacity: .45; }
+  .cat-row.drop-before { box-shadow: 0 -4px 0 0 var(--brand); }
+  .cat-row.drop-after { box-shadow: 0 4px 0 0 var(--brand); }
+  .cat-handle { grid-area: handle; display: none; place-items: center; width: 22px; color: var(--text-muted); font-size: 18px; letter-spacing: -3px; user-select: none; }
+  .cat-thumb { grid-area: thumb; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; background: #F4F4F6; border: 1px solid var(--border); }
+  .cat-info { grid-area: info; min-width: 0; }
+  .cat-name { font-size: 15px; font-weight: 800; color: var(--text-primary); overflow-wrap: anywhere; }
+  .cat-prices { margin-top: 3px; font-size: 14px; }
+  .cat-price { font-weight: 800; color: #15803D; }
+  .cat-old { color: var(--text-muted); margin-right: 6px; font-size: 13px; }
+  .cat-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .cat-badge { display: inline-block; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 99px; }
+  .cat-badge.promo { background: #FEF3C7; color: #92400E; }
+  .cat-badge.off { background: #FEE2E2; color: #B91C1C; }
+  .cat-badge.hid { background: #E4E4E7; color: #3F3F46; }
+  /* Botões em duas colunas iguais, com nome por extenso (Subir, Descer, Disponível…): fácil de tocar e de entender */
+  .cat-actions { grid-area: act; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cat-move { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cat-actions .cat-btn { width: 100%; padding: 8px 10px; }
+  /* Duas linhas (foto e nome em cima, botões embaixo) cabem em qualquer largura; numa lista bem larga os botões vão para a direita */
+  @container (min-width: 940px) {
+    .cat-row { grid-template-columns: 64px minmax(0, 1fr) auto; grid-template-areas: "thumb info act"; }
+    .cat-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+    .cat-move { display: flex; margin-right: 6px; }
+    .cat-actions .cat-btn { width: auto; padding: 8px 12px; }
+    .cat-move .cat-btn { width: 44px; padding: 0; }
+    .cat-lbl { display: none; }
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .cat-handle { display: grid; }
+    .cat-row { grid-template-columns: 22px 64px minmax(0, 1fr); grid-template-areas: "handle thumb info" ". act act"; }
+    .cat-row[draggable="true"] { cursor: grab; }
+    @container (min-width: 940px) {
+      .cat-row { grid-template-columns: 22px 64px minmax(0, 1fr) auto; grid-template-areas: "handle thumb info act"; }
+    }
+  }
+
+  .cat-modal { max-height: calc(100vh - 40px); overflow-y: auto; max-width: 560px; }
+  .cat-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .cat-input { font-size: 16px !important; min-height: 48px; }
+  textarea.cat-input { min-height: 84px; }
+  .cat-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cat-help { font-size: 12.5px; color: var(--text-muted); margin: -6px 0 14px; line-height: 1.4; }
+  .cat-photo-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .cat-photo-preview { width: 112px; height: 112px; border-radius: 14px; object-fit: cover; border: 1px solid var(--border); background: #F4F4F6; flex: none; }
+  .cat-photo-actions { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; min-width: 160px; }
+  .cat-check { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 10px; cursor: pointer; }
+  .cat-check input { width: 22px; height: 22px; accent-color: var(--brand); flex: none; margin-top: 2px; }
+  .cat-check span { font-size: 14px; }
+  .cat-check small { display: block; color: var(--text-muted); font-size: 12.5px; font-weight: 500; margin-top: 2px; }
+  .cat-error { background: #FEF2F2; border: 1.5px solid #FCA5A5; color: #991B1B; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; font-weight: 700; margin-top: 4px; }
+  .cat-modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; position: sticky; bottom: -28px; background: #FFF; padding: 12px 0 0; }
 </style>
 </head>
 <body>
 
-<!-- OVERLAY DE AUTENTICAÇÃO POR SENHA (dads123) -->
+<!-- OVERLAY DE AUTENTICAÇÃO POR SENHA (a senha é conferida no servidor) -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
     <div class="auth-logo">
-      <img src="logo.png" alt="Dad's Burger">
+      <img src="logo.png" alt="Dad's Burger" data-store-logo onerror="this.onerror=null;this.src='logo.png'">
     </div>
     <h2>Painel do Restaurante</h2>
     <p>Digite a senha de acesso para liberar o painel da cozinha e despacho.</p>
     <form onsubmit="event.preventDefault(); window.submitPassword();">
       <input type="password" id="authPassInput" class="auth-input" placeholder="Digite a senha..." autofocus autocomplete="current-password">
       <button type="submit" class="auth-btn">Entrar no Painel</button>
-      <div class="auth-hint">Senha padrão da equipe: <code>dads123</code></div>
+      <div class="auth-hint">Use a senha da equipe.</div>
     </form>
   </div>
 </div>
@@ -1887,7 +1990,7 @@
 <header class="admin-header">
   <div class="brand-group">
     <div class="brand-logo">
-      <img src="logo.png" alt="Dad's Burger">
+      <img src="logo.png" alt="Dad's Burger" data-store-logo onerror="this.onerror=null;this.src='logo.png'">
     </div>
     <div class="brand-meta">
       <h1>Dad's Burger</h1>
@@ -2117,7 +2220,7 @@
             <span class="nav-icon">🍔</span>
             <div>
               <span class="nav-title">Cardápio & Estoque</span>
-              <span class="nav-sub">47 produtos e pausas</span>
+              <span class="nav-sub">Fotos, preços, ordem e logo</span>
             </div>
           </button>
 
@@ -2157,30 +2260,44 @@
 
       <!-- CONTEÚDO PRINCIPAL DAS CONFIGURAÇÕES -->
       <main class="settings-content-area">
-        <!-- ABA 1: CARDÁPIO & PRODUTOS ESTILO IFOOD -->
+        <!-- ABA 1: CARDÁPIO & ESTOQUE (fotos, preços, promoções, ordem dos produtos e logo da loja, tudo nesta tela) -->
         <div class="settings-tab-panel active" id="tabPanelCatalog">
+          <div class="ifood-card" id="storeLogoCard">
+            <div class="cat-logo-row">
+              <img id="storeLogoPreview" class="cat-logo-img" data-store-logo src="logo.png" alt="Logo da loja" onerror="this.onerror=null;this.src='logo.png'">
+              <div class="cat-logo-text">
+                <h3>Logo da loja</h3>
+                <p>Aparece no topo do cardápio, nas janelas de pedido e na aba do navegador. Escolha uma foto do celular ou do computador.</p>
+                <div class="cat-btn-row">
+                  <input type="file" id="storeLogoFile" accept="image/*" hidden onchange="window.CatalogEngine.uploadLogo(this)">
+                  <button type="button" class="cat-btn primary" id="btnStoreLogo" onclick="document.getElementById('storeLogoFile').click()">📷 Trocar logo</button>
+                  <button type="button" class="cat-btn" id="btnStoreLogoRemove" onclick="window.CatalogEngine.removeLogo()">Voltar à logo original</button>
+                </div>
+                <div class="cat-status" id="storeLogoStatus" role="status" aria-live="polite"></div>
+              </div>
+            </div>
+          </div>
+
           <div class="ifood-toolbar" style="margin-top:0">
             <div class="ifood-toolbar-left">
               <div class="ifood-search-box">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" id="catalogSearchInput" placeholder="Buscar produtos pelo nome ou ingrediente..." oninput="window.CatalogEngine.filter()">
+                <input type="text" id="catalogSearchInput" placeholder="Buscar produto pelo nome..." oninput="window.CatalogEngine.filter()" aria-label="Buscar produto">
               </div>
-              <select class="ifood-filter-select" id="catalogCatFilter" onchange="window.CatalogEngine.filter()">
-                <option value="todos">Todas as Categorias</option>
-                <option value="Combos na Caixa">Combos na Caixa</option>
-                <option value="Burgers Artesanais">Burgers Artesanais</option>
-                <option value="Porções">Porções</option>
-                <option value="Bebidas">Bebidas</option>
+              <select class="ifood-filter-select" id="catalogCatFilter" onchange="window.CatalogEngine.filter()" aria-label="Filtrar por categoria">
+                <option value="todos">Todas as categorias</option>
               </select>
-              <span style="font-size:12.5px;font-weight:700;color:var(--text-muted)" id="catalogCountBadge">0 produtos</span>
+              <span style="font-size:12.5px;font-weight:700;color:#D9CFC5" id="catalogCountBadge">0 produtos</span>
             </div>
-            <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.openCreateModal()">
+            <button type="button" class="ifood-primary-btn" style="min-height:46px" onclick="window.CatalogEngine.openCreateModal()">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span>+ Novo Produto</span>
+              <span>Novo produto</span>
             </button>
           </div>
 
-          <div class="product-admin-grid" id="catalogGrid">
+          <p class="cat-hint"><span id="catalogHint">Use as setas <b>▲ ▼</b> para escolher a ordem em que o cliente vê os produtos (no computador também dá para arrastar). Cada mudança é salva na hora.</span> <b id="catalogSaveState" role="status" aria-live="polite"></b></p>
+
+          <div class="cat-list" id="catalogGrid">
             <!-- Injetado dinamicamente via CatalogEngine -->
           </div>
         </div>
@@ -2199,14 +2316,24 @@
             </div>
 
             <!-- Switch Geral de Loja Aberta/Fechada -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:12px;flex-wrap:wrap;gap:12px">
               <div>
                 <div style="font-size:15px;font-weight:800;color:var(--text-primary)" id="storeStatusLabel">Loja Aberta para Pedidos</div>
-                <div style="font-size:12px;color:var(--text-muted)">Ao desativar, o cardápio exibe o aviso de loja fechada e bloqueia novos pedidos</div>
+                <div style="font-size:12px;color:var(--text-muted)">Ao desligar, a loja fecha na hora: o cardápio mostra o aviso e o servidor recusa novos pedidos, mesmo dentro do horário</div>
               </div>
               <label class="switch-ui" style="display:inline-flex;align-items:center;cursor:pointer">
                 <input type="checkbox" id="chkStoreOpenManual" onchange="window.SettingsEngine.onManualOpenChange(this.checked)" style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer">
-                <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkStoreOpenText">Aberta Agora</span>
+                <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkStoreOpenText">Recebendo pedidos</span>
+              </label>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-size:14px;font-weight:800;color:var(--text-primary)">Abrir e fechar sozinha nos horários da grade</div>
+                <div style="font-size:12px;color:var(--text-muted)">Ligado: só recebe pedido dentro dos horários abaixo. Desligado: vale só a chave acima, a qualquer hora</div>
+              </div>
+              <label class="switch-ui" style="display:inline-flex;align-items:center;cursor:pointer">
+                <input type="checkbox" id="chkAutoSchedule" onchange="window.SettingsEngine.onAutoScheduleChange(this.checked)" style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer">
+                <span style="margin-left:8px;font-size:13px;font-weight:800" id="chkAutoScheduleText">Automático</span>
               </label>
             </div>
 
@@ -2388,11 +2515,22 @@
                 <div class="payment-card-left">
                   <div class="payment-card-icon">📱</div>
                   <div>
-                    <div class="payment-card-title">Saldo Mercado Pago / Mercado Crédito</div>
-                    <div class="payment-card-type">Pagamento com saldo disponível em conta do Mercado Pago ou parcelamento na linha Mercado Crédito</div>
+                    <div class="payment-card-title">Saldo Mercado Pago / Mercado Crédito <span class="payment-soon">Em breve</span></div>
+                    <div class="payment-card-type">Precisa do Checkout Pro do Mercado Pago (o cliente entra na conta dele). Por ora o checkout mostra "em breve".</div>
                   </div>
                 </div>
                 <input type="checkbox" id="chkPay_mercadopago_saldo" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_mercadopago_saldo')">
+              </div>
+
+              <div class="payment-card-item" id="payCard_vr_online">
+                <div class="payment-card-left">
+                  <div class="payment-card-icon">🥗</div>
+                  <div>
+                    <div class="payment-card-title">Vale-Refeição Online (VR / Pluxee / Ticket) <span class="payment-soon">Em breve</span></div>
+                    <div class="payment-card-type">Falta conectar o provedor de pagamento. No checkout aparece como "em breve" e não cobra nada até lá.</div>
+                  </div>
+                </div>
+                <input type="checkbox" id="chkPay_vr_online" disabled style="width:20px;height:20px;accent-color:var(--brand);cursor:not-allowed" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_vr_online')">
               </div>
             </div>
 
@@ -2593,51 +2731,66 @@
 
   <!-- MODAL: CRIAR OU EDITAR PRODUTO -->
   <div class="admin-modal-backdrop" id="productModalBackdrop">
-    <div class="admin-modal-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div class="admin-modal-card cat-modal" role="dialog" aria-modal="true" aria-labelledby="productModalTitle">
+      <div class="cat-modal-head">
         <div>
-          <h3 class="admin-modal-title" id="productModalTitle">Adicionar Novo Produto</h3>
-          <p class="admin-modal-subtitle">Preencha os dados do item para exibir no cardápio</p>
+          <h3 class="admin-modal-title" id="productModalTitle">Novo produto</h3>
+          <p class="admin-modal-subtitle">Preencha e toque em Salvar. O produto aparece no cardápio na hora.</p>
         </div>
-        <button type="button" class="btn-icon-action" onclick="window.CatalogEngine.closeModal()">✕</button>
+        <button type="button" class="cat-icon-btn" onclick="window.CatalogEngine.closeModal()" aria-label="Fechar">✕</button>
       </div>
 
       <input type="hidden" id="modalProdId">
+      <input type="hidden" id="modalProdImage">
 
       <div class="admin-form-group">
-        <label>Nome do Produto</label>
-        <input type="text" id="modalProdName" class="admin-form-input" placeholder="Ex: Duplo Bacon Artesanal">
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="admin-form-group">
-          <label>Categoria</label>
-          <select id="modalProdCategory" class="admin-form-select">
-            <option value="Combos na Caixa">Combos na Caixa</option>
-            <option value="Burgers Artesanais">Burgers Artesanais</option>
-            <option value="Porções">Porções</option>
-            <option value="Bebidas">Bebidas</option>
-          </select>
-        </div>
-        <div class="admin-form-group">
-          <label>Preço (R$)</label>
-          <input type="number" id="modalProdPrice" class="admin-form-input" placeholder="0.00" step="0.10" min="0">
+        <label>Foto do produto</label>
+        <div class="cat-photo-row">
+          <img id="modalProdPhotoPreview" class="cat-photo-preview" src="logo.png" alt="Prévia da foto">
+          <div class="cat-photo-actions">
+            <input type="file" id="modalProdFile" accept="image/*" hidden onchange="window.CatalogEngine.uploadPhoto(this)">
+            <button type="button" class="cat-btn primary" id="btnUploadPhoto" onclick="document.getElementById('modalProdFile').click()">📷 Escolher foto</button>
+            <button type="button" class="cat-btn small" onclick="window.CatalogEngine.clearPhoto()">Tirar a foto</button>
+            <span id="modalProdUploadStatus" class="cat-status" role="status" aria-live="polite"></span>
+          </div>
         </div>
       </div>
 
       <div class="admin-form-group">
-        <label>URL da Foto (ou Imagem)</label>
-        <input type="text" id="modalProdImage" class="admin-form-input" placeholder="https://... ou logo.png">
+        <label for="modalProdName">Nome do produto</label>
+        <input type="text" id="modalProdName" class="admin-form-input cat-input" maxlength="200" placeholder="Ex.: Duplo Bacon Artesanal" autocomplete="off">
       </div>
 
       <div class="admin-form-group">
-        <label>Descrição dos Ingredientes</label>
-        <textarea id="modalProdDesc" class="admin-form-textarea" rows="3" placeholder="Blend artesanal, queijo cheddar, bacon crocante no brioche..."></textarea>
+        <label for="modalProdCategory">Categoria</label>
+        <select id="modalProdCategory" class="admin-form-select cat-input" onchange="window.CatalogEngine.onCategoryChange(this)"></select>
+        <input type="text" id="modalProdNewCat" class="admin-form-input cat-input" maxlength="40" placeholder="Nome da nova categoria (vira uma aba no cardápio)" autocomplete="off" hidden style="margin-top:8px">
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px">
-        <button type="button" class="btn-cancel-modal-back" onclick="window.CatalogEngine.closeModal()">Cancelar</button>
-        <button type="button" class="ifood-primary-btn" onclick="window.CatalogEngine.saveProductFromModal()">Salvar Produto</button>
+      <div class="cat-two">
+        <div class="admin-form-group">
+          <label for="modalProdPrice">Preço (R$)</label>
+          <input type="text" id="modalProdPrice" class="admin-form-input cat-input" inputmode="decimal" placeholder="29,90" autocomplete="off">
+        </div>
+        <div class="admin-form-group">
+          <label for="modalProdPromo">Preço promocional (R$)</label>
+          <input type="text" id="modalProdPromo" class="admin-form-input cat-input" inputmode="decimal" placeholder="Vazio = sem promoção" autocomplete="off">
+        </div>
+      </div>
+      <p class="cat-help">Com promoção, o cliente vê o preço normal riscado e o promocional ao lado. O preço promocional precisa ser menor que o normal.</p>
+
+      <div class="admin-form-group">
+        <label for="modalProdDesc">Descrição ou ingredientes</label>
+        <textarea id="modalProdDesc" class="admin-form-textarea cat-input" rows="3" maxlength="1000" placeholder="Blend artesanal, queijo cheddar, bacon crocante no brioche..."></textarea>
+      </div>
+
+      <label class="cat-check"><input type="checkbox" id="modalProdAvailable"> <span><b>Disponível hoje</b><small>Desmarque se acabou: o cliente vê “Esgotado” e não consegue pedir.</small></span></label>
+      <label class="cat-check"><input type="checkbox" id="modalProdVisible"> <span><b>Mostrar no cardápio</b><small>Desmarque para esconder o produto do cliente sem apagar.</small></span></label>
+
+      <div class="cat-error" id="modalProdError" role="alert" hidden></div>
+      <div class="cat-modal-foot">
+        <button type="button" class="cat-btn" onclick="window.CatalogEngine.closeModal()">Cancelar</button>
+        <button type="button" class="cat-btn primary" id="btnSaveProduct" onclick="window.CatalogEngine.saveProductFromModal()">Salvar produto</button>
       </div>
     </div>
   </div>
@@ -2705,7 +2858,7 @@
     <!-- BOTÕES DE AÇÃO NA COMANDA -->
     <div class="ticket-actions-bar">
       <button type="button" class="ticket-btn-primary" id="btnTicketMainAction" style="background:#D97706">
-        Enviar para Preparo
+        Aceitar e enviar para preparo
       </button>
 
       <div class="ticket-btn-secondary-row">
@@ -2755,41 +2908,79 @@
 <script>
 (() => {
   // -------------------------------------------------------------
-  // CONTROLE DE AUTENTICAÇÃO POR SENHA
+  // ENTRADA NO PAINEL: a senha é conferida no servidor, que devolve um cookie de sessão (a página não guarda senha)
   // -------------------------------------------------------------
-  const ADMIN_PASS = 'dads123';
-  const AUTH_KEY = 'dads_admin_auth_session';
-
-  function checkAuth() {
-    const isAuthed = sessionStorage.getItem(AUTH_KEY) === 'true' || localStorage.getItem(AUTH_KEY) === 'true';
-    const overlay = document.getElementById('authOverlay');
-    if (overlay) overlay.style.display = isAuthed ? 'none' : 'grid';
-    return isAuthed;
+  function showLock(show) {
+    const o = document.getElementById('authOverlay');
+    if (o) o.style.display = show ? 'grid' : 'none';
+    if (show) document.getElementById('authPassInput')?.focus();
   }
 
-  window.submitPassword = function() {
-    const inp = document.getElementById('authPassInput');
-    const val = inp ? inp.value.trim() : '';
-    if (val === ADMIN_PASS || val === 'admin123' || val === 'dads2026') {
-      sessionStorage.setItem(AUTH_KEY, 'true');
-      localStorage.setItem(AUTH_KEY, 'true');
-      const overlay = document.getElementById('authOverlay');
-      if (overlay) overlay.style.display = 'none';
-      showToast('Acesso autorizado.');
-      AdminApp.init();
-    } else {
-      if (inp) {
-        inp.style.borderColor = '#DC2626';
-        inp.value = '';
-        inp.focus();
+  // Chamada que exige login: se o servidor responder 401 (sessão vencida), volta para a tela da senha
+  async function adminFetch(url, opts) {
+    const res = await fetch(url, opts);
+    if (res.status === 401) {
+      showLock(true);
+      showToast('Sua sessão terminou. Entre com a senha de novo.');
+    }
+    return res;
+  }
+  window.adminFetch = adminFetch;
+
+  let panelStarted = false;
+  function startPanel() {
+    if (panelStarted) return;
+    panelStarted = true;
+    loadStoreCoordinates();
+    SettingsEngine.load();
+    CatalogEngine.load();
+    AdminApp.init();
+  }
+
+  // As unidades e o centro do círculo do raio vêm do servidor: é de lá que sai a conta da distância de cada pedido
+  async function loadStoreCoordinates() {
+    try {
+      const res = await fetch('/api/stores');
+      if (!res.ok) return;
+      for (const u of await res.json()) {
+        if (STORE_COORDINATES[u.id]) { STORE_COORDINATES[u.id].lat = u.lat; STORE_COORDINATES[u.id].lon = u.lon; }
       }
-      showToast('Senha incorreta. Use a senha: dads123');
+    } catch (e) {}
+  }
+
+  async function warnDefaultPassword() {
+    try {
+      const d = await (await fetch('/api/admin/session')).json();
+      if (d.authenticated && d.defaultPassword) showToast('⚠️ O painel ainda usa a senha padrão. Defina ADMIN_PASSWORD no arquivo .env do servidor.');
+    } catch (e) {}
+  }
+
+  window.submitPassword = async function() {
+    const inp = document.getElementById('authPassInput');
+    const val = inp ? inp.value : '';
+    try {
+      const res = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: val }) });
+      if (res.ok) {
+        if (inp) { inp.value = ''; inp.style.borderColor = ''; }
+        showLock(false);
+        showToast('Acesso autorizado.');
+        startPanel();
+        warnDefaultPassword();
+        return;
+      }
+      showToast(res.status === 429 ? 'Muitas tentativas. Espere alguns minutos e tente de novo.' : 'Senha incorreta.');
+    } catch (e) {
+      showToast('Não foi possível falar com o servidor. Confira a conexão.');
+    }
+    if (inp) {
+      inp.style.borderColor = '#DC2626';
+      inp.value = '';
+      inp.focus();
     }
   };
 
-  document.getElementById('btnLogout').onclick = () => {
-    sessionStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem(AUTH_KEY);
+  document.getElementById('btnLogout').onclick = async () => {
+    try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
     location.reload();
   };
 
@@ -2805,6 +2996,14 @@
 
   function brl(num) {
     return Number(num || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  // Logo da loja no painel (tela da senha, menu e aba do navegador): a que o dono enviou e, sem ela, a original do site
+  function applyStoreLogo(url) {
+    const logo = url || 'logo.png';
+    document.querySelectorAll('img[data-store-logo]').forEach((i) => { i.src = logo; });
+    const icon = document.querySelector('link[rel~="icon"]');
+    if (icon) { icon.removeAttribute('type'); icon.href = logo; }
   }
 
   // -------------------------------------------------------------
@@ -3661,7 +3860,7 @@
 
     async loadOrders() {
       try {
-        const res = await fetch('/api/orders');
+        const res = await adminFetch('/api/orders');
         if (res.ok) {
           const data = await res.json();
           if (data.orders && Array.isArray(data.orders)) {
@@ -3677,7 +3876,7 @@
 
     async poll() {
       try {
-        const res = await fetch('/api/orders');
+        const res = await adminFetch('/api/orders');
         if (res.ok) {
           const data = await res.json();
           if (data.orders && Array.isArray(data.orders)) {
@@ -3713,27 +3912,11 @@
       } catch(e) {}
     },
 
-    handleIncoming(ord) {
-      if (!ord) return;
-      const oid = ord.orderId || ord.id;
-      const exists = this.orders.some(o => (o.orderId || o.id) === oid);
-      if (!exists) {
-        this.orders.unshift(ord);
-      }
-      this.render();
-
-      // Só toca o alarme se o pedido pertence à unidade selecionada (ou se "todas" estiver selecionada)
-      const matchesStore = this.selectedStore === 'todas' || 
-                           ord.unitId === this.selectedStore || 
-                           ord.order?.unitId === this.selectedStore;
-      if (matchesStore) {
-        AlarmEngine.startLoop(ord);
-
-        // Disparo automático de impressão se configurado
-        if (window.PrinterEngine && window.PrinterEngine.config && window.PrinterEngine.config.autoPrint) {
-          window.PrinterEngine.printOrder(ord);
-        }
-      }
+    // Aviso vindo de outra aba: o quadro só mostra pedido que o servidor confirmou (pago no Mercado Pago ou
+    // para pagar no balcão), então o conteúdo do aviso não vale: só pedimos a lista de novo ao servidor.
+    // O alarme e a impressão automática disparam em poll(), para os pedidos novos que a lista trouxer.
+    handleIncoming() {
+      this.poll();
     },
 
     checkAlarm() {
@@ -3783,7 +3966,7 @@
       this.render();
 
       try {
-        const res = await fetch(`/api/orders/${encodeURIComponent(cleanId)}`, {
+        const res = await adminFetch(`/api/orders/${encodeURIComponent(cleanId)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: nextStatus })
@@ -3860,7 +4043,7 @@
       if (novos.length === 0) {
         colNovos.innerHTML = '<div class="kanban-empty">Nenhum novo pedido pendente.</div>';
       } else {
-        colNovos.innerHTML = novos.map(o => this.createCardHtml(o, 'novo', 'Enviar para Preparo', 'to-prep')).join('');
+        colNovos.innerHTML = novos.map(o => this.createCardHtml(o, 'novo', 'Aceitar pedido', 'to-prep')).join('');
       }
 
       // Coluna 2: Em Preparo
@@ -3890,6 +4073,8 @@
       const items = ord.order?.items || ord.items || [];
       const total = Number(ord.total) || Number(ord.order?.total) || 0;
       const pay = ord.paymentMethod || ord.payment || 'PIX';
+      // Pedido já pago que o Mercado Pago devolveu ou o cliente contestou depois: o restaurante precisa ver
+      const payFlag = ord.chargedBack ? ' · CONTESTADO' : (ord.refunded ? ' · REEMBOLSADO' : '');
       const timeAgo = this.formatTimeAgo(ord.created_at);
 
       const itemsSummary = items.map(it => `${it.q || 1}x ${it.name}`).join(', ');
@@ -3911,7 +4096,7 @@
           </div>
 
           <div class="card-footer">
-            <span class="card-payment-label">${pay}</span>
+            <span class="card-payment-label">${pay}${payFlag ? `<b style="color:#DC2626">${payFlag}</b>` : ''}</span>
             <span class="card-price">${brl(total)}</span>
           </div>
 
@@ -4049,7 +4234,7 @@
       if (st === 'novo') {
         mainBtn.style.display = 'block';
         mainBtn.style.background = '#D97706';
-        mainBtn.textContent = 'Enviar para Preparo';
+        mainBtn.textContent = 'Aceitar e enviar para preparo';
         cancelBtn.style.display = 'block';
       } else if (st === 'preparando') {
         mainBtn.style.display = 'block';
@@ -4187,9 +4372,11 @@
       document.getElementById('countColPrep').textContent = String(prep);
       document.getElementById('countColRota').textContent = String(rota);
 
-      document.getElementById('badgeActiveCount').textContent = String(activeTotal);
-      document.getElementById('badgeDoneCount').textContent = String(done);
-      document.getElementById('badgeCanceledCount').textContent = String(canc);
+      // Selos de contagem: só existem nas telas que os têm (sem eles, o quadro inteiro deixava de ser desenhado)
+      [['badgeActiveCount', activeTotal], ['badgeDoneCount', done], ['badgeCanceledCount', canc]].forEach(([id, n]) => {
+        const badgeEl = document.getElementById(id);
+        if (badgeEl) badgeEl.textContent = String(n);
+      });
     },
 
     copyCurrentMpId() {
@@ -4258,10 +4445,31 @@
       pix_online: { id: "pix_online", name: "Pix Online (Mercado Pago)", enabled: true, type: "online", icon: "⚡" },
       cartao_online: { id: "cartao_online", name: "Cartão de Crédito Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
       cartao_debito_online: { id: "cartao_debito_online", name: "Cartão de Débito Virtual / Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
-      mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo Mercado Pago / Mercado Crédito", enabled: true, type: "online", icon: "📱" },
+      mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo Mercado Pago / Mercado Crédito", enabled: true, connected: false, type: "online", icon: "📱" },
+      vr_online: { id: "vr_online", name: "Vale-Refeição Online (VR / Pluxee / Ticket)", enabled: false, connected: false, provider: "", type: "online", icon: "🥗" },
       balcao_vr: { id: "balcao_vr", name: "Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)", enabled: true, type: "pickup", icon: "🥗" },
       balcao_cartao: { id: "balcao_cartao", name: "Cartão Crédito/Débito no Balcão (Maquininha Point)", enabled: true, type: "pickup", icon: "💳" }
     }
+  };
+
+  const API_ERRORS = {
+    raio_invalido: 'O raio de entrega precisa estar entre 0,5 e 100 km.',
+    faixas_invalidas: 'Confira as faixas de taxa: km e valor precisam ser números.',
+    frete_gratis_invalido: 'Confira o valor do frete grátis.',
+    horario_invalido: 'Confira os horários (formato HH:MM).',
+    preparationTimeMin_invalido: 'Confira o tempo de preparo mínimo.',
+    preparationTimeMax_invalido: 'Confira o tempo de preparo máximo.',
+    produtos_invalidos: 'Confira os produtos: nome, preço maior que zero e identificador único.',
+    nome_repetido: 'Já existe outro produto com esse nome. Use um nome diferente.',
+    promo_invalida: 'O preço promocional precisa ser maior que zero e menor que o preço normal.',
+    foto_invalida: 'A foto desse produto não é válida. Escolha a foto de novo.',
+    logo_invalida: 'A logo enviada não é válida. Escolha a imagem de novo.',
+    imagem_invalida: 'Esse arquivo não é uma imagem que dê para usar. Tente outra foto.',
+    formato_nao_aceito: 'Use uma foto JPG, PNG ou WEBP.',
+    imagem_grande_demais: 'A foto é grande demais (máximo 5 MB).',
+    imagens_indisponiveis: 'O servidor não consegue tratar fotos agora. Peça ajuda a quem cuida do servidor.',
+    nao_foi_possivel_salvar: 'O servidor não conseguiu guardar o arquivo.',
+    login_necessario: 'Sua sessão terminou. Entre com a senha de novo.'
   };
 
   const SettingsEngine = {
@@ -4276,7 +4484,8 @@
           if (data && data.store) {
             this.settings = { ...this.settings, ...data };
             localStorage.setItem('dads_settings', JSON.stringify(this.settings));
-            this.updateStorePill();
+            applyStoreLogo(this.settings.store && this.settings.store.logo);
+            this.refreshStatus();
             return;
           }
         }
@@ -4292,54 +4501,110 @@
       this.updateStorePill();
     },
 
+    // Grava no servidor (é de lá que o site e os pedidos leem). Só devolve true se o servidor aceitou; senão avisa.
     async save() {
       localStorage.setItem('dads_settings', JSON.stringify(this.settings));
+      let ok = false;
       try {
-        const bc = new BroadcastChannel('dads_restaurant_channel');
-        bc.postMessage({ type: 'SETTINGS_UPDATED', settings: this.settings });
-      } catch (e) {}
-      try {
-        await fetch('/api/admin/settings', {
+        const res = await adminFetch('/api/admin/settings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.settings)
         });
+        ok = res.ok;
+        if (!ok && res.status !== 401) {
+          const d = await res.json().catch(() => ({}));
+          showToast(`❌ ${API_ERRORS[d.error] || `O servidor recusou (${d.error || res.status}).`} Nada foi alterado no site.`);
+        }
+      } catch (e) {
+        showToast('❌ Sem conexão com o servidor: a mudança NÃO foi salva no site.');
+      }
+      if (ok) {
+        try {
+          const bc = new BroadcastChannel('dads_restaurant_channel');
+          bc.postMessage({ type: 'SETTINGS_UPDATED', settings: this.settings });
+        } catch (e) {}
+      }
+      await this.refreshStatus();
+      return ok;
+    },
+
+    // Situação de verdade, a mesma conta que o servidor faz em cada pedido: chave "recebendo pedidos" ligada
+    // E dentro do horário da grade (quando "abrir e fechar sozinha" está ligado)
+    status: null,
+    async refreshStatus() {
+      try {
+        const res = await fetch('/api/store/status');
+        if (res.ok) this.status = await res.json();
       } catch (e) {}
       this.updateStorePill();
     },
 
     updateStorePill() {
+      const st = this.settings.store || {};
+      const manual = st.isOpenManual !== false;
+      const auto = st.autoSchedule !== false;
+      const open = this.status ? Boolean(this.status.open) : manual;
+      const outOfHours = Boolean(this.status && !this.status.open && this.status.reason === 'fora_do_horario');
       const pill = document.getElementById('storeQuickToggle');
       const text = document.getElementById('storeQuickText');
-      const isOpen = Boolean(this.settings.store?.isOpenManual);
       if (pill) {
-        pill.classList.toggle('open', isOpen);
-        pill.classList.toggle('closed', !isOpen);
+        pill.classList.toggle('open', open);
+        pill.classList.toggle('closed', !open);
       }
-      if (text) {
-        text.textContent = isOpen ? 'Loja Aberta' : 'Loja Fechada';
-      }
+      if (text) text.textContent = open ? 'Loja Aberta' : (outOfHours ? 'Fora do horário' : 'Loja Fechada');
       const chk = document.getElementById('chkStoreOpenManual');
-      if (chk) chk.checked = isOpen;
+      if (chk) chk.checked = manual;
       const chkTxt = document.getElementById('chkStoreOpenText');
-      if (chkTxt) chkTxt.textContent = isOpen ? 'Aberta Agora' : 'Fechada Agora';
+      if (chkTxt) chkTxt.textContent = manual ? 'Recebendo pedidos' : 'Pausada';
+      const chkAuto = document.getElementById('chkAutoSchedule');
+      if (chkAuto) chkAuto.checked = auto;
+      const chkAutoTxt = document.getElementById('chkAutoScheduleText');
+      if (chkAutoTxt) chkAutoTxt.textContent = auto ? 'Automático' : 'Manual';
       const statusLabel = document.getElementById('storeStatusLabel');
       if (statusLabel) {
-        statusLabel.textContent = isOpen ? 'Loja Aberta para Pedidos (Recebendo)' : 'Loja Fechada Temporariamente (Pausada)';
+        statusLabel.textContent = open ? 'Loja aberta: recebendo pedidos agora'
+          : (outOfHours ? 'Fora do horário da grade: a loja abre sozinha no próximo horário'
+            : 'Loja pausada: não recebe pedidos até você ligar de novo');
       }
+    },
+
+    // Liga ou desliga o recebimento de pedidos. Ligar fora do horário da grade pede confirmação, porque aí a loja
+    // só abre se o modo automático for desligado.
+    async setReceiving(on) {
+      const st = this.settings.store;
+      const before = st.isOpenManual;
+      st.isOpenManual = on;
+      if (!(await this.save())) { st.isOpenManual = before; this.updateStorePill(); return; }
+      if (!on) { showToast('🔴 Loja fechada. Os clientes veem o aviso e o servidor recusa novos pedidos.'); return; }
+      if (this.status && !this.status.open && this.status.reason === 'fora_do_horario') {
+        if (confirm('Agora está fora do horário da grade. Abrir mesmo assim?\n\nIsso desliga "Abrir e fechar sozinha nos horários". Ligue de novo quando quiser voltar ao automático.')) {
+          st.autoSchedule = false;
+          if (await this.save()) showToast('🟢 Loja aberta fora do horário (modo manual). Ligue "Abrir e fechar sozinha" para voltar ao automático.');
+          else { st.autoSchedule = true; this.updateStorePill(); }
+        } else {
+          showToast('A loja segue fechada: está fora do horário da grade.');
+        }
+        return;
+      }
+      showToast('🟢 Loja aberta para receber pedidos!');
     },
 
     toggleStoreOpenQuick() {
-      const current = Boolean(this.settings.store?.isOpenManual);
-      this.settings.store.isOpenManual = !current;
-      this.save();
-      showToast(!current ? '🟢 Loja aberta para receber pedidos!' : '🔴 Loja fechada. Clientes verão o aviso.');
+      const open = this.status ? Boolean(this.status.open) : this.settings.store?.isOpenManual !== false;
+      return this.setReceiving(!open);
     },
 
     onManualOpenChange(checked) {
-      this.settings.store.isOpenManual = checked;
-      this.save();
-      showToast(checked ? '🟢 Loja aberta!' : '🔴 Loja fechada!');
+      return this.setReceiving(checked);
+    },
+
+    async onAutoScheduleChange(checked) {
+      const st = this.settings.store;
+      const before = st.autoSchedule;
+      st.autoSchedule = checked;
+      if (await this.save()) showToast(checked ? '⏰ Loja abre e fecha sozinha nos horários da grade.' : '✋ Modo manual: vale só a chave "Recebendo pedidos".');
+      else { st.autoSchedule = before; this.updateStorePill(); }
     },
 
     renderHours() {
@@ -4351,6 +4616,8 @@
       if (prepMin) prepMin.value = st.preparationTimeMin || 25;
       if (prepMax) prepMax.value = st.preparationTimeMax || 45;
       if (closedNotice) closedNotice.value = st.closedNotice || '';
+      const chkAuto = document.getElementById('chkAutoSchedule');
+      if (chkAuto) chkAuto.checked = st.autoSchedule !== false;
 
       const grid = document.getElementById('scheduleGrid');
       if (!grid) return;
@@ -4378,7 +4645,7 @@
       if (row) row.classList.toggle('inactive', !active);
     },
 
-    saveHours() {
+    async saveHours() {
       const prepMin = parseInt(document.getElementById('cfgPrepMin')?.value || '25', 10);
       const prepMax = parseInt(document.getElementById('cfgPrepMax')?.value || '45', 10);
       const closedNotice = document.getElementById('cfgClosedNotice')?.value || '';
@@ -4397,8 +4664,7 @@
         if (closeInp) sched[k].close = closeInp.value;
       }
 
-      this.save();
-      showToast('Horários de funcionamento salvos com sucesso!');
+      if (await this.save()) showToast('Horários de funcionamento salvos com sucesso!');
     },
 
     renderDelivery() {
@@ -4429,7 +4695,7 @@
       if (freeDel) freeDel.value = (d.freeDeliveryThreshold || 0).toFixed(2);
     },
 
-    saveDelivery() {
+    async saveDelivery() {
       const radius = parseFloat(document.getElementById('radiusSlider')?.value || '15');
       const freeDelivery = parseFloat(document.getElementById('cfgFreeDelivery')?.value || '0');
 
@@ -4455,8 +4721,7 @@
         ]
       };
 
-      this.save();
-      showToast(`Raio de entrega (${radius} km) e taxas salvas com sucesso!`);
+      if (await this.save()) showToast(`Raio de entrega (${radius} km) e taxas salvas com sucesso!`);
     },
 
     renderPayments() {
@@ -4464,8 +4729,13 @@
       for (const [key, p] of Object.entries(pay)) {
         const chk = document.getElementById(`chkPay_${key}`);
         const card = document.getElementById(`payCard_${key}`);
-        if (chk) chk.checked = Boolean(p.enabled);
-        if (card) card.classList.toggle('enabled', Boolean(p.enabled));
+        // Método com "connected" (provedor externo) fica travado até o provedor ser conectado
+        const locked = 'connected' in p && !p.connected;
+        if (chk) {
+          chk.checked = Boolean(p.enabled) && !locked;
+          chk.disabled = locked;
+        }
+        if (card) card.classList.toggle('enabled', Boolean(p.enabled) && !locked);
       }
     },
 
@@ -4474,14 +4744,13 @@
       if (card) card.classList.toggle('enabled', checkbox.checked);
     },
 
-    savePayments() {
+    async savePayments() {
       const pay = this.settings.payments || DEFAULT_SETTINGS.payments;
       for (const key of Object.keys(pay)) {
         const chk = document.getElementById(`chkPay_${key}`);
         if (chk) pay[key].enabled = chk.checked;
       }
-      this.save();
-      showToast('Formas de pagamento do checkout salvas com sucesso!');
+      if (await this.save()) showToast('Formas de pagamento do checkout salvas com sucesso!');
     }
   };
 
@@ -4572,136 +4841,287 @@
   };
 
   // =========================================================================
-  // GESTOR DE CARDÁPIO & PRODUTOS ESTILO IFOOD
+  // CARDÁPIO & ESTOQUE: produtos, fotos, preço e promoção, ordem e logo da loja, tudo na mesma tela.
+  // Cada mudança é gravada no servidor na hora (é de lá que o site do cliente lê o cardápio). Sem link e sem código.
   // =========================================================================
   const CatalogEngine = {
     products: [],
+    saving: Promise.resolve(),
+    saveTimer: null,
+    lastError: '',
+    dragId: null,
+    wired: false,
+
+    esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    },
+
+    // A logo que vale agora: a que o dono enviou ou, sem ela, a original do site
+    logoUrl() {
+      const st = SettingsEngine.settings && SettingsEngine.settings.store;
+      return (st && st.logo) || 'logo.png';
+    },
+
+    // O site lê a foto em `img` (e categoria/descrição em `cat`/`desc`), igual ao products.json.
+    photoOf(p) {
+      const v = (p && (p.img || p.image)) || '';
+      return v === 'logo.png' ? '' : v;
+    },
+
+    // O que o <img> recebe: mesma regra do site (foto enviada, link que o produto já tinha ou id curto do Unsplash;
+    // sem foto, a logo da loja)
+    srcOf(v) {
+      if (!v) return this.logoUrl();
+      return /^(https?:|data:image\/|blob:|\/|\.{1,2}\/)|\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i.test(v)
+        ? v
+        : `https://images.unsplash.com/photo-${v}?auto=format&fit=crop&w=200&q=70`;
+    },
+
+    thumbFallback(img) {
+      img.onerror = null;
+      img.src = this.logoUrl();
+    },
+
+    normalize(list) {
+      return (list || []).map((p) => {
+        const q = { ...p, img: this.photoOf(p) };
+        delete q.image;
+        q.category = q.category || q.cat || 'Outros';
+        q.cat = q.category;
+        q.desc = q.desc || q.description || '';
+        q.description = q.description || q.desc;
+        q.paused = Boolean(q.paused);
+        q.hidden = Boolean(q.hidden);
+        const promo = Number(q.promo);
+        if (promo > 0 && promo < Number(q.price)) q.promo = promo; else delete q.promo;
+        return q;
+      });
+    },
+
+    // Cada categoria fica junta, na ordem em que aparece; dentro dela vale a ordem dos produtos
+    categories() {
+      return [...new Set(this.products.map((p) => p.category))];
+    },
+
+    normalizeOrder() {
+      this.products = this.categories().flatMap((c) => this.products.filter((p) => p.category === c));
+    },
 
     async load() {
-      // 1. Tenta API do servidor local
+      await this.flush(); // não busca no servidor antes de gravar o que acabou de mudar
       try {
-        let res = await fetch('/api/admin/products');
-        if (!res.ok) {
-          res = await fetch('products.json');
-        }
+        const res = await adminFetch('/api/admin/products');
         if (res.ok) {
           const list = await res.json();
-          if (Array.isArray(list) && list.length > 0) {
-            this.products = list;
-            localStorage.setItem('dads_products', JSON.stringify(this.products));
+          if (Array.isArray(list)) {
+            this.products = this.normalize(list);
+            this.normalizeOrder();
+            try { localStorage.setItem('dads_products', JSON.stringify(this.products)); } catch (e) {}
             return;
           }
         }
       } catch (e) {}
 
-      // 2. Tenta cache do localStorage (e atualiza se faltar itens)
-      const cached = localStorage.getItem('dads_products');
-      if (cached) {
-        try {
-          const list = JSON.parse(cached);
-          if (Array.isArray(list) && list.length > 0) {
-            this.products = list;
-            // Se o cache tiver menos de 47 itens, tenta atualizar com products.json
-            if (list.length < 47) {
-              try {
-                const pjRes = await fetch('products.json');
-                if (pjRes.ok) {
-                  const pjList = await pjRes.json();
-                  if (Array.isArray(pjList) && pjList.length >= 47) {
-                    this.products = pjList;
-                    localStorage.setItem('dads_products', JSON.stringify(this.products));
-                  }
-                }
-              } catch (e2) {}
-            }
-            return;
-          }
-        } catch (e) {}
-      }
-
-      // 3. Fallback estático direto
+      // Sem servidor: o último cardápio guardado neste aparelho e, por fim, o arquivo que vem junto com o painel
       try {
-        const pjRes = await fetch('products.json');
-        if (pjRes.ok) {
-          this.products = await pjRes.json();
-          localStorage.setItem('dads_products', JSON.stringify(this.products));
-          return;
-        }
+        const cached = JSON.parse(localStorage.getItem('dads_products') || 'null');
+        if (Array.isArray(cached) && cached.length) { this.products = this.normalize(cached); this.normalizeOrder(); return; }
       } catch (e) {}
-
+      try {
+        const pj = await fetch('products.json');
+        if (pj.ok) { this.products = this.normalize(await pj.json()); this.normalizeOrder(); return; }
+      } catch (e) {}
       this.products = [];
     },
 
-    async save() {
-      localStorage.setItem('dads_products', JSON.stringify(this.products));
+    // ---- gravação -------------------------------------------------------------------------------------------
+    // Uma gravação por vez (na ordem): cliques seguidos em ▲ ▼ não se atropelam e a última lista é a que fica no servidor.
+    save() {
+      const run = () => this.saveNow();
+      this.saving = this.saving.then(run, run);
+      return this.saving;
+    },
+
+    async saveNow() {
+      try { localStorage.setItem('dads_products', JSON.stringify(this.products)); } catch (e) {}
+      this.setSaveState('Salvando…');
+      let ok = false;
+      this.lastError = '';
       try {
-        const bc = new BroadcastChannel('dads_restaurant_channel');
-        bc.postMessage({ type: 'PRODUCTS_UPDATED', products: this.products });
-      } catch (e) {}
-      try {
-        await fetch('/api/admin/products', {
+        const res = await adminFetch('/api/admin/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(this.products)
         });
-      } catch (e) {}
+        ok = res.ok;
+        if (!ok) {
+          const d = await res.json().catch(() => ({}));
+          this.lastError = res.status === 401 ? API_ERRORS.login_necessario : this.describeError(d, res.status);
+        }
+      } catch (e) {
+        this.lastError = 'Sem conexão com o servidor: a mudança NÃO foi salva no site.';
+      }
+      if (ok) {
+        this.setSaveState('✅ Salvo no site');
+        clearTimeout(this.stateTimer);
+        this.stateTimer = setTimeout(() => this.setSaveState(''), 3500);
+        try {
+          const bc = new BroadcastChannel('dads_restaurant_channel');
+          bc.postMessage({ type: 'PRODUCTS_UPDATED', products: this.products });
+        } catch (e) {}
+      } else {
+        this.setSaveState(`❌ ${this.lastError}`);
+        showToast(`❌ ${this.lastError} Nada foi alterado no site.`);
+      }
+      return ok;
+    },
+
+    describeError(d, status) {
+      const base = API_ERRORS[d.error] || `O servidor recusou (${d.error || status}).`;
+      return d.detail ? `${base} (${d.detail})` : base;
+    },
+
+    // Mudança de ordem: espera meio segundo pelo próximo clique e grava uma vez só
+    scheduleSave(okMsg) {
+      clearTimeout(this.saveTimer);
+      this.setSaveState('Salvando…');
+      this.saveTimer = setTimeout(async () => {
+        this.saveTimer = null;
+        if (await this.save()) showToast(okMsg);
+        else { await this.load(); this.render(); }
+      }, 500);
+    },
+
+    async flush() {
+      if (this.saveTimer) { clearTimeout(this.saveTimer); this.saveTimer = null; await this.save(); }
+      await this.saving;
+    },
+
+    setSaveState(text) {
+      const el = document.getElementById('catalogSaveState');
+      if (el) el.textContent = text;
+    },
+
+    // ---- lista ----------------------------------------------------------------------------------------------
+    money(n) { return Number(n).toFixed(2).replace('.', ','); },
+
+    // "12,90", "12.90" e "1.234,50" valem; vazio ou texto vira NaN
+    parseMoney(v) {
+      let s = String(v == null ? '' : v).replace(/R\$|\s/g, '');
+      if (!s) return NaN;
+      s = s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s;
+      return /^\d+(\.\d{1,2})?$/.test(s) ? Number(s) : NaN;
+    },
+
+    priceHtml(p) {
+      const promo = Number(p.promo) > 0 && Number(p.promo) < Number(p.price);
+      return promo
+        ? `<s class="cat-old">${brl(p.price)}</s><b class="cat-price">${brl(p.promo)}</b>`
+        : `<b class="cat-price">${brl(p.price)}</b>`;
+    },
+
+    rowTop(selector) {
+      const el = document.querySelector(selector);
+      return el ? el.getBoundingClientRect().top : null;
+    },
+
+    // Depois de mover, o item continua no mesmo lugar da tela: dá para tocar na seta de novo sem olhar onde ele foi parar
+    keepInPlace(selector, topBefore, focusSel) {
+      const el = document.querySelector(selector);
+      if (!el || topBefore == null) return;
+      const sc = el.closest('.settings-content-area') || document.scrollingElement;
+      if (sc) sc.scrollTop += el.getBoundingClientRect().top - topBefore;
+      const f = focusSel && document.querySelector(focusSel);
+      if (f && !f.disabled) f.focus({ preventScroll: true });
+    },
+
+    rowHtml(p, canMove, first, last) {
+      const e = (v) => this.esc(v);
+      const id = e(p.id);
+      const promo = Number(p.promo) > 0 && Number(p.promo) < Number(p.price);
+      const badges = [
+        promo ? `<span class="cat-badge promo">🏷 Promoção −${Math.round((1 - Number(p.promo) / Number(p.price)) * 100)}%</span>` : '',
+        p.paused ? '<span class="cat-badge off">Esgotado</span>' : '',
+        p.hidden ? '<span class="cat-badge hid">Escondido do cliente</span>' : ''
+      ].join('');
+      return `
+        <div class="cat-row${p.paused ? ' is-paused' : ''}${p.hidden ? ' is-hidden' : ''}" id="pCard_${id}" data-id="${id}" data-cat="${e(p.category)}"${canMove ? ' draggable="true"' : ''}>
+          <span class="cat-handle" aria-hidden="true" title="Arraste para mudar a ordem">⋮⋮</span>
+          <img class="cat-thumb" src="${e(this.srcOf(this.photoOf(p)))}" alt="" loading="lazy" onerror="window.CatalogEngine.thumbFallback(this)">
+          <div class="cat-info">
+            <div class="cat-name">${e(p.name)}</div>
+            <div class="cat-prices">${this.priceHtml(p)}</div>
+            <div class="cat-badges">${badges}</div>
+          </div>
+          <div class="cat-actions">
+            <div class="cat-move">
+              <button type="button" class="cat-btn small" data-act="up" data-id="${id}" ${canMove && !first ? '' : 'disabled'} aria-label="Subir ${e(p.name)}" title="Subir"><span aria-hidden="true">▲</span><span class="cat-lbl">Subir</span></button>
+              <button type="button" class="cat-btn small" data-act="down" data-id="${id}" ${canMove && !last ? '' : 'disabled'} aria-label="Descer ${e(p.name)}" title="Descer"><span aria-hidden="true">▼</span><span class="cat-lbl">Descer</span></button>
+            </div>
+            <button type="button" class="cat-btn small ${p.paused ? 'bad' : 'good'}" data-act="pause" data-id="${id}" title="Marque como esgotado quando acabar">${p.paused ? '🔴 Esgotado' : '🟢 Disponível'}</button>
+            <button type="button" class="cat-btn small" data-act="hide" data-id="${id}" title="Esconder tira o produto do cardápio sem apagar">${p.hidden ? '🚫 Escondido' : '👁 Visível'}</button>
+            <button type="button" class="cat-btn small" data-act="edit" data-id="${id}">✏️ Editar</button>
+            <button type="button" class="cat-btn small danger" data-act="del" data-id="${id}" aria-label="Remover ${e(p.name)}">🗑 Remover</button>
+          </div>
+        </div>`;
     },
 
     render() {
+      this.wire();
       const grid = document.getElementById('catalogGrid');
-      const search = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
-      const cat = document.getElementById('catalogCatFilter')?.value || 'todos';
       if (!grid) return;
-
-      const list = this.products.filter(p => {
-        const matchesCat = cat === 'todos' || p.category === cat;
-        const matchesSearch = !search || 
-                              p.name.toLowerCase().includes(search) || 
-                              (p.description || '').toLowerCase().includes(search);
-        return matchesCat && matchesSearch;
-      });
+      const search = (document.getElementById('catalogSearchInput')?.value || '').toLowerCase().trim();
+      const filterSel = document.getElementById('catalogCatFilter');
+      const cats = this.categories();
+      if (filterSel) {
+        const have = [...filterSel.options].slice(1).map((o) => o.value);
+        if (cats.join('|') !== have.join('|')) {
+          const keep = filterSel.value;
+          filterSel.replaceChildren(new Option('Todas as categorias', 'todos'), ...cats.map((c) => new Option(c, c)));
+          filterSel.value = cats.includes(keep) ? keep : 'todos';
+        }
+      }
+      const cat = filterSel?.value || 'todos';
+      const canMove = !search; // com busca a lista fica incompleta: a ordem só muda com a lista inteira (ou uma categoria) na tela
+      const list = this.products.filter((p) => (cat === 'todos' || p.category === cat)
+        && (!search || p.name.toLowerCase().includes(search) || (p.description || '').toLowerCase().includes(search)));
 
       const countBadge = document.getElementById('catalogCountBadge');
       if (countBadge) countBadge.textContent = `${list.length} de ${this.products.length} produtos`;
+      const hint = document.getElementById('catalogHint');
+      if (hint) {
+        hint.innerHTML = canMove
+          ? 'Use as setas <b>▲ ▼</b> para escolher a ordem em que o cliente vê os produtos (no computador também dá para arrastar). Cada mudança é salva na hora.'
+          : 'Apague a busca para mudar a ordem dos produtos.';
+      }
 
-      if (list.length === 0) {
+      if (!list.length) {
         grid.innerHTML = `
-          <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text-muted);background:#FFF;border-radius:14px;border:1.5px dashed var(--border)">
-            Nenhum produto encontrado com os filtros atuais.
-          </div>
-        `;
+          <div style="text-align:center;padding:40px 16px;color:var(--text-muted);background:#FFF;border-radius:14px;border:1.5px dashed var(--border)">
+            ${this.products.length ? 'Nenhum produto encontrado.' : 'Ainda não há produtos. Toque em “Novo produto” para começar.'}
+          </div>`;
         return;
       }
 
-      grid.innerHTML = list.map(p => {
-        const isPaused = Boolean(p.paused);
-        const imgSrc = p.image || 'logo.png';
-        return `
-          <div class="product-admin-card ${isPaused ? 'paused' : ''}" id="pCard_${p.id}">
-            <div class="product-admin-top">
-              <img src="${imgSrc}" class="product-admin-img" alt="${p.name}" onerror="this.src='logo.png'">
-              <div class="product-admin-info">
-                <span class="product-admin-cat">${p.category}</span>
-                <div class="product-admin-name" title="${p.name}">${p.name}</div>
-                <div class="product-admin-desc">${p.description || 'Sem descrição cadastrada'}</div>
-              </div>
-            </div>
-            <div class="product-admin-bottom">
-              <div class="product-admin-price">${brl(p.price)}</div>
-              <div class="product-admin-actions">
-                <button type="button" class="product-status-btn ${isPaused ? 'paused' : 'available'}" onclick="window.CatalogEngine.togglePause('${p.id}')">
-                  ${isPaused ? '🔴 Pausado (Esgotado)' : '🟢 Disponível'}
-                </button>
-                <button type="button" class="btn-icon-action" title="Editar Produto" onclick="window.CatalogEngine.openEditModal('${p.id}')">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button type="button" class="btn-icon-action danger" title="Excluir Produto" onclick="window.CatalogEngine.deleteProduct('${p.id}')">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
+      const groups = [];
+      for (const p of list) {
+        let g = groups.find((x) => x[0] === p.category);
+        if (!g) { g = [p.category, []]; groups.push(g); }
+        g[1].push(p);
+      }
+      const canMoveCats = canMove && cat === 'todos';
+      grid.innerHTML = groups.map(([c, items]) => {
+        const all = this.products.filter((p) => p.category === c);
+        const ci = cats.indexOf(c);
+        const head = `
+          <div class="cat-group" data-cat="${this.esc(c)}">
+            <span>${this.esc(c)}</span>
+            <span class="cat-count">${items.length} ${items.length === 1 ? 'produto' : 'produtos'}</span>
+            <span class="cat-spacer"></span>
+            <button type="button" class="cat-icon-btn" data-act="catup" data-cat="${this.esc(c)}" ${canMoveCats && ci > 0 ? '' : 'disabled'} aria-label="Subir a categoria ${this.esc(c)}" title="Subir a categoria">▲</button>
+            <button type="button" class="cat-icon-btn" data-act="catdown" data-cat="${this.esc(c)}" ${canMoveCats && ci < cats.length - 1 ? '' : 'disabled'} aria-label="Descer a categoria ${this.esc(c)}" title="Descer a categoria">▼</button>
+          </div>`;
+        return head + items.map((p) => this.rowHtml(p, canMove, all[0].id === p.id, all[all.length - 1].id === p.id)).join('');
       }).join('');
     },
 
@@ -4709,37 +5129,195 @@
       this.render();
     },
 
-    togglePause(prodId) {
-      const p = this.products.find(x => x.id === prodId);
+    // Cliques, arrastar e soltar: um ouvinte só na lista, porque a lista é redesenhada a cada mudança
+    wire() {
+      if (this.wired) return;
+      const grid = document.getElementById('catalogGrid');
+      if (!grid) return;
+      this.wired = true;
+      grid.addEventListener('click', (ev) => {
+        const b = ev.target.closest('[data-act]');
+        if (!b || b.disabled) return;
+        const id = b.dataset.id;
+        switch (b.dataset.act) {
+          case 'up': this.moveProduct(id, -1); break;
+          case 'down': this.moveProduct(id, 1); break;
+          case 'edit': this.openEditModal(id); break;
+          case 'pause': this.togglePause(id); break;
+          case 'hide': this.toggleHidden(id); break;
+          case 'del': this.deleteProduct(id); break;
+          case 'catup': this.moveCategory(b.dataset.cat, -1); break;
+          case 'catdown': this.moveCategory(b.dataset.cat, 1); break;
+        }
+      });
+      const sameGroup = (row) => {
+        const drag = this.dragId && this.products.find((p) => p.id === this.dragId);
+        return row && drag && row.dataset.id !== this.dragId && row.dataset.cat === drag.category ? drag : null;
+      };
+      const clear = () => grid.querySelectorAll('.dragging, .drop-before, .drop-after').forEach((n) => n.classList.remove('dragging', 'drop-before', 'drop-after'));
+      grid.addEventListener('dragstart', (ev) => {
+        const row = ev.target.closest && ev.target.closest('.cat-row[draggable="true"]');
+        if (!row) return;
+        this.dragId = row.dataset.id;
+        ev.dataTransfer.effectAllowed = 'move';
+        try { ev.dataTransfer.setData('text/plain', row.dataset.id); } catch (err) {}
+        row.classList.add('dragging');
+      });
+      grid.addEventListener('dragover', (ev) => {
+        const row = ev.target.closest('.cat-row');
+        grid.querySelectorAll('.drop-before, .drop-after').forEach((n) => n.classList.remove('drop-before', 'drop-after'));
+        if (!sameGroup(row)) return;
+        ev.preventDefault();
+        const r = row.getBoundingClientRect();
+        row.classList.add(ev.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+      });
+      grid.addEventListener('drop', (ev) => {
+        const row = ev.target.closest('.cat-row');
+        const drag = sameGroup(row);
+        if (!drag) return;
+        ev.preventDefault();
+        const r = row.getBoundingClientRect();
+        const after = ev.clientY >= r.top + r.height / 2;
+        this.products = this.products.filter((p) => p.id !== drag.id);
+        const at = this.products.findIndex((p) => p.id === row.dataset.id);
+        this.products.splice(after ? at + 1 : at, 0, drag);
+        this.dragId = null;
+        this.render();
+        this.scheduleSave('Ordem salva.');
+      });
+      grid.addEventListener('dragend', () => { this.dragId = null; clear(); });
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && document.getElementById('productModalBackdrop')?.style.display === 'grid') this.closeModal();
+      });
+    },
+
+    // ---- ordem ----------------------------------------------------------------------------------------------
+    moveProduct(id, dir) {
+      const i = this.products.findIndex((p) => p.id === id);
+      if (i < 0) return;
+      const cat = this.products[i].category;
+      let j = i + dir;
+      while (j >= 0 && j < this.products.length && this.products[j].category !== cat) j += dir;
+      if (j < 0 || j >= this.products.length) return;
+      const sel = `#pCard_${CSS.escape(id)}`;
+      const top = this.rowTop(sel);
+      [this.products[i], this.products[j]] = [this.products[j], this.products[i]];
+      this.render();
+      this.keepInPlace(sel, top, `${sel} [data-act="${dir < 0 ? 'up' : 'down'}"]`);
+      this.scheduleSave('Ordem salva.');
+    },
+
+    moveCategory(cat, dir) {
+      const cats = this.categories();
+      const i = cats.indexOf(cat);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= cats.length) return;
+      const sel = `.cat-group[data-cat="${CSS.escape(cat)}"]`;
+      const top = this.rowTop(sel);
+      [cats[i], cats[j]] = [cats[j], cats[i]];
+      this.products = cats.flatMap((c) => this.products.filter((p) => p.category === c));
+      this.render();
+      this.keepInPlace(sel, top, `${sel} [data-act="${dir < 0 ? 'catup' : 'catdown'}"]`);
+      this.scheduleSave('Ordem das categorias salva.');
+    },
+
+    // Produto novo vai para o fim da sua categoria (e uma categoria nova vai para o fim do cardápio)
+    placeLast(prod) {
+      this.products = this.products.filter((x) => x.id !== prod.id);
+      let at = -1;
+      this.products.forEach((x, i) => { if (x.category === prod.category) at = i; });
+      if (at < 0) this.products.push(prod); else this.products.splice(at + 1, 0, prod);
+    },
+
+    // ---- ações rápidas da lista -----------------------------------------------------------------------------
+    async togglePause(prodId) {
+      const p = this.products.find((x) => x.id === prodId);
       if (!p) return;
       p.paused = !p.paused;
-      this.save();
       this.render();
-      showToast(p.paused ? `"${p.name}" pausado (Esgotado hoje)` : `"${p.name}" reativado no cardápio!`);
+      if (await this.save()) showToast(p.paused ? `“${p.name}” marcado como esgotado.` : `“${p.name}” voltou a ficar disponível.`);
+      else { await this.load(); this.render(); }
     },
 
-    openCreateModal() {
-      document.getElementById('productModalTitle').textContent = 'Adicionar Novo Produto';
-      document.getElementById('modalProdId').value = '';
-      document.getElementById('modalProdName').value = '';
-      document.getElementById('modalProdCategory').value = 'Burgers Artesanais';
-      document.getElementById('modalProdPrice').value = '';
-      document.getElementById('modalProdImage').value = '';
-      document.getElementById('modalProdDesc').value = '';
-      document.getElementById('productModalBackdrop').style.display = 'grid';
+    async toggleHidden(prodId) {
+      const p = this.products.find((x) => x.id === prodId);
+      if (!p) return;
+      p.hidden = !p.hidden;
+      this.render();
+      if (await this.save()) showToast(p.hidden ? `“${p.name}” foi escondido: o cliente não vê.` : `“${p.name}” voltou ao cardápio.`);
+      else { await this.load(); this.render(); }
     },
+
+    async deleteProduct(prodId) {
+      const p = this.products.find((x) => x.id === prodId);
+      if (!p) return;
+      if (!confirm(`Remover “${p.name}” do cardápio?\n\nIsso apaga o produto. Para só tirar do cardápio por um tempo, use “Visível / Escondido”.`)) return;
+      this.products = this.products.filter((x) => x.id !== prodId);
+      this.render();
+      if (await this.save()) showToast(`“${p.name}” foi removido do cardápio.`);
+      else { await this.load(); this.render(); }
+    },
+
+    // ---- janela de produto ----------------------------------------------------------------------------------
+    fillCategories(selected) {
+      const sel = document.getElementById('modalProdCategory');
+      if (!sel) return;
+      const list = this.categories();
+      sel.replaceChildren(...list.map((c) => new Option(c, c)), new Option('➕ Nova categoria…', '__nova__'));
+      sel.value = selected && list.includes(selected) ? selected : (list[0] || '__nova__');
+      this.onCategoryChange(sel);
+    },
+
+    onCategoryChange(sel) {
+      const input = document.getElementById('modalProdNewCat');
+      if (!input) return;
+      input.hidden = sel.value !== '__nova__';
+      if (!input.hidden) input.focus();
+    },
+
+    setModalError(msg) {
+      const box = document.getElementById('modalProdError');
+      if (!box) return;
+      box.textContent = msg || '';
+      box.hidden = !msg;
+      if (msg) box.scrollIntoView({ block: 'nearest' });
+    },
+
+    fillModal(p) {
+      const set = (id, v) => { document.getElementById(id).value = v; };
+      document.getElementById('productModalTitle').textContent = p ? 'Editar produto' : 'Novo produto';
+      set('modalProdId', p ? p.id : '');
+      set('modalProdName', p ? p.name : '');
+      this.fillCategories(p ? p.category : '');
+      set('modalProdNewCat', '');
+      set('modalProdPrice', p ? this.money(p.price) : '');
+      set('modalProdPromo', p && p.promo ? this.money(p.promo) : '');
+      set('modalProdImage', p ? this.photoOf(p) : '');
+      set('modalProdDesc', p ? (p.description || '') : '');
+      document.getElementById('modalProdAvailable').checked = p ? !p.paused : true;
+      document.getElementById('modalProdVisible').checked = p ? !p.hidden : true;
+      const upStatus = document.getElementById('modalProdUploadStatus');
+      if (upStatus) { upStatus.textContent = ''; upStatus.className = 'cat-status'; }
+      this.setModalError('');
+      this.previewPhoto();
+      document.getElementById('productModalBackdrop').style.display = 'grid';
+      document.getElementById('modalProdName').focus();
+    },
+
+    openCreateModal() { this.fillModal(null); },
 
     openEditModal(prodId) {
-      const p = this.products.find(x => x.id === prodId);
-      if (!p) return;
-      document.getElementById('productModalTitle').textContent = 'Editar Produto';
-      document.getElementById('modalProdId').value = p.id;
-      document.getElementById('modalProdName').value = p.name;
-      document.getElementById('modalProdCategory').value = p.category;
-      document.getElementById('modalProdPrice').value = p.price;
-      document.getElementById('modalProdImage').value = p.image || '';
-      document.getElementById('modalProdDesc').value = p.description || '';
-      document.getElementById('productModalBackdrop').style.display = 'grid';
+      const p = this.products.find((x) => x.id === prodId);
+      if (p) this.fillModal(p);
+    },
+
+    // Miniatura grande: mostra o que o cliente vai ver (sem foto = logo da loja)
+    previewPhoto() {
+      const box = document.getElementById('modalProdPhotoPreview');
+      if (!box) return;
+      const url = document.getElementById('modalProdImage').value.trim();
+      box.onerror = () => { box.onerror = null; box.src = this.logoUrl(); };
+      box.src = this.srcOf(url);
     },
 
     closeModal() {
@@ -4747,66 +5325,175 @@
       if (m) m.style.display = 'none';
     },
 
-    saveProductFromModal() {
-      const id = document.getElementById('modalProdId').value;
-      const name = document.getElementById('modalProdName').value.trim();
-      const category = document.getElementById('modalProdCategory').value;
-      const price = parseFloat(document.getElementById('modalProdPrice').value || '0');
-      const image = document.getElementById('modalProdImage').value.trim();
-      const description = document.getElementById('modalProdDesc').value.trim();
-
-      if (!name) {
-        showToast('Informe o nome do produto.');
-        return;
+    // Foto do aparelho (galeria ou câmera): reduzida no próprio celular para subir rápido; o servidor confere, reduz de
+    // novo e grava uma imagem nova. Aqui só guarda o endereço que o servidor devolve.
+    async uploadPhoto(input) {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      const status = document.getElementById('modalProdUploadStatus');
+      const btn = document.getElementById('btnUploadPhoto');
+      const say = (t, kind) => { if (status) { status.textContent = t; status.className = `cat-status ${kind || ''}`; } };
+      if (!/^image\//.test(file.type)) { say('Escolha um arquivo de imagem (JPG, PNG ou WEBP).', 'err'); return; }
+      if (btn) btn.disabled = true;
+      say('Enviando a foto…');
+      try {
+        const dataUrl = await this.shrinkImage(file, 1200, 'image/jpeg');
+        const res = await adminFetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, kind: 'product' })
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.url) throw new Error(API_ERRORS[d.error] || 'o servidor não aceitou a foto');
+        document.getElementById('modalProdImage').value = d.url;
+        this.previewPhoto();
+        say('✅ Foto enviada. Toque em “Salvar produto” para publicar.', 'ok');
+      } catch (e) {
+        say(`❌ Não foi possível enviar a foto: ${e.message || e}`, 'err');
+      } finally {
+        if (btn) btn.disabled = false;
       }
-      if (isNaN(price) || price <= 0) {
-        showToast('Informe um preço válido.');
-        return;
-      }
-
-      if (id) {
-        // Editando existente
-        const idx = this.products.findIndex(x => x.id === id);
-        if (idx !== -1) {
-          this.products[idx] = {
-            ...this.products[idx],
-            name,
-            category,
-            price,
-            image: image || 'logo.png',
-            description
-          };
-          showToast(`"${name}" atualizado com sucesso!`);
-        }
-      } else {
-        // Novo
-        const newProd = {
-          id: 'prod_' + Date.now(),
-          name,
-          category,
-          price,
-          image: image || 'logo.png',
-          description,
-          paused: false
-        };
-        this.products.unshift(newProd);
-        showToast(`"${name}" adicionado ao cardápio!`);
-      }
-
-      this.save();
-      this.closeModal();
-      this.render();
     },
 
-    deleteProduct(prodId) {
-      const p = this.products.find(x => x.id === prodId);
-      if (!p) return;
-      if (confirm(`Tem certeza que deseja remover o produto "${p.name}" do cardápio?`)) {
-        this.products = this.products.filter(x => x.id !== prodId);
-        this.save();
-        this.render();
-        showToast(`"${p.name}" foi removido do cardápio.`);
+    shrinkImage(file, maxSide, mime) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+          const w = Math.max(1, Math.round(img.naturalWidth * scale));
+          const h = Math.max(1, Math.round(img.naturalHeight * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          if (mime === 'image/jpeg') { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); } // foto sem transparência: fundo branco
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL(mime, 0.85));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('não consegui ler essa imagem')); };
+        img.src = url;
+      });
+    },
+
+    clearPhoto() {
+      document.getElementById('modalProdImage').value = '';
+      const status = document.getElementById('modalProdUploadStatus');
+      if (status) { status.textContent = ''; status.className = 'cat-status'; }
+      this.previewPhoto();
+    },
+
+    async saveProductFromModal() {
+      const val = (id) => document.getElementById(id).value.trim();
+      const id = val('modalProdId');
+      const name = val('modalProdName');
+      if (!name) return this.setModalError('Escreva o nome do produto.');
+      if (this.products.some((x) => x.id !== id && x.name.trim().toLowerCase() === name.toLowerCase())) {
+        return this.setModalError(`Já existe um produto chamado “${name}”. Use um nome diferente.`);
       }
+      let category = val('modalProdCategory');
+      if (category === '__nova__') {
+        category = val('modalProdNewCat').replace(/\s+/g, ' ');
+        if (!category) return this.setModalError('Escreva o nome da nova categoria ou escolha uma que já existe.');
+        category = this.categories().find((c) => c.toLowerCase() === category.toLowerCase()) || category;
+      }
+      if (!category) return this.setModalError('Escolha a categoria do produto.');
+      const price = this.parseMoney(val('modalProdPrice'));
+      if (!(price > 0 && price < 10000)) return this.setModalError('Escreva o preço do produto, maior que zero. Exemplo: 29,90');
+      let promo = null;
+      if (val('modalProdPromo')) {
+        promo = this.parseMoney(val('modalProdPromo'));
+        if (!(promo > 0 && promo < price)) {
+          return this.setModalError(`O preço promocional precisa ser menor que o preço normal (R$ ${this.money(price)}). Para tirar a promoção, deixe o campo vazio.`);
+        }
+      }
+      this.setModalError('');
+      const description = val('modalProdDesc');
+      const fields = {
+        name, category, cat: category, price, img: val('modalProdImage'), description, desc: description,
+        paused: !document.getElementById('modalProdAvailable').checked,
+        hidden: !document.getElementById('modalProdVisible').checked
+      };
+      const keep = this.products;
+      const idx = id ? this.products.findIndex((x) => x.id === id) : -1;
+      let prod;
+      let doneMsg;
+      if (idx >= 0) {
+        prod = { ...this.products[idx], ...fields };
+        if (promo) prod.promo = promo; else delete prod.promo;
+        const moved = this.products[idx].category !== category;
+        this.products = this.products.map((x, i) => (i === idx ? prod : x));
+        if (moved) this.placeLast(prod); // mudou de categoria: vai para o fim da nova
+        doneMsg = `“${name}” atualizado.`;
+      } else {
+        prod = { id: `prod_${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`, ...fields };
+        if (promo) prod.promo = promo;
+        this.placeLast(prod);
+        doneMsg = `“${name}” foi adicionado no fim da categoria ${category}.`;
+      }
+      this.render();
+      const btn = document.getElementById('btnSaveProduct');
+      if (btn) btn.disabled = true;
+      const ok = await this.save();
+      if (btn) btn.disabled = false;
+      if (!ok) {
+        // o servidor recusou: volta ao que está lá e deixa a janela aberta, com o que foi digitado e o motivo
+        this.products = keep;
+        await this.load();
+        this.render();
+        return this.setModalError(`${this.lastError} Nada foi alterado no site.`);
+      }
+      showToast(doneMsg);
+      this.closeModal();
+    },
+
+    // ---- logo da loja ---------------------------------------------------------------------------------------
+    logoSay(text, kind) {
+      const el = document.getElementById('storeLogoStatus');
+      if (el) { el.textContent = text; el.className = `cat-status ${kind || ''}`; }
+    },
+
+    // Envia a imagem como logo e grava o endereço nas configurações da loja; o cardápio do cliente e este painel passam a usá-la
+    async uploadLogo(input) {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { this.logoSay('Escolha um arquivo de imagem (JPG, PNG ou WEBP).', 'err'); return; }
+      const btn = document.getElementById('btnStoreLogo');
+      if (btn) btn.disabled = true;
+      this.logoSay('Enviando a logo…');
+      try {
+        const dataUrl = await this.shrinkImage(file, 640, 'image/png'); // PNG: mantém o fundo transparente da logo
+        const res = await adminFetch('/api/admin/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl, kind: 'logo' })
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.url) throw new Error(API_ERRORS[d.error] || 'o servidor não aceitou a imagem');
+        const store = SettingsEngine.settings.store = SettingsEngine.settings.store || {};
+        const before = store.logo;
+        store.logo = d.url;
+        if (!(await SettingsEngine.save())) { store.logo = before; throw new Error('não deu para salvar a logo no site'); }
+        applyStoreLogo(d.url);
+        this.logoSay('✅ Logo trocada. O cardápio dos clientes já usa a nova.', 'ok');
+      } catch (e) {
+        this.logoSay(`❌ Não foi possível trocar a logo: ${e.message || e}`, 'err');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    },
+
+    async removeLogo() {
+      const store = SettingsEngine.settings.store = SettingsEngine.settings.store || {};
+      if (!store.logo) { this.logoSay('A logo original já está em uso.'); return; }
+      const before = store.logo;
+      store.logo = '';
+      if (!(await SettingsEngine.save())) { store.logo = before; this.logoSay('❌ Não foi possível voltar à logo original.', 'err'); return; }
+      applyStoreLogo('');
+      this.logoSay('✅ O cardápio voltou a usar a logo original.', 'ok');
     }
   };
 
@@ -4817,12 +5504,13 @@
   window.MapEngine = MapEngine;
   window.CatalogEngine = CatalogEngine;
 
-  // Inicia aplicação
-  if (checkAuth()) {
-    SettingsEngine.load();
-    CatalogEngine.load();
-    AdminApp.init();
-  }
+  // A tela da senha já mostra a logo da loja (as configurações são públicas: o cardápio do cliente lê as mesmas)
+  fetch('/api/admin/settings').then((r) => (r.ok ? r.json() : null)).then((d) => applyStoreLogo(d && d.store && d.store.logo)).catch(() => {});
+
+  // Inicia aplicação: só abre o painel se o servidor já reconhece a sessão; senão mostra a tela da senha
+  fetch('/api/admin/session').then((r) => r.json()).then((d) => {
+    if (d.authenticated) { showLock(false); startPanel(); warnDefaultPassword(); } else { showLock(true); }
+  }).catch(() => showLock(true));
 })();
 </script>
 </body>

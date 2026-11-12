@@ -742,8 +742,7 @@ export default defineConfig(({ mode }) => {
     plugins: [apiMockPlugin()],
     server: {
       port: 3000,
-      host: '0.0.0.0',
-      allowedHosts: true,
+      host: '127.0.0.1', // só este computador enxerga o servidor de desenvolvimento
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

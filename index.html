@@ -16,6 +16,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <!-- SDK Oficial MercadoPago.js v2 -->
 <script src="https://sdk.mercadopago.com/js/v2"></script>
+<!-- Device ID do Mercado Pago (antifraude): cria window.MP_DEVICE_SESSION_ID, que vai junto com o pagamento (o SDK sozinho não cria essa variável) -->
+<script src="https://www.mercadopago.com/v2/security.js" view="checkout"></script>
 <style>
   :root { --brand: #D79C45; --brand-text: #fff; --btn: #0B0705; --btn-text: #fff; --ink: #0B0705; --muted: #8F847A; --cream: #F1EDEA; --card: #FFFFFF; --soft: #EFBCA9; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -885,39 +887,106 @@
     white-space: nowrap;
   }
 
-  /* Integração Gestor iFood */
-  .payment-methods-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 8px;
-    margin-top: 6px;
+  /* Forma de pagamento em quadros só com o logo, como os botões de PayPal, Apple Pay e Google Pay da referência
+     (Uiverse.io, zanina-yassine): quadros iguais de 55px, canto de 11px, sem texto e com a marca no centro.
+     São 2 colunas para as marcas caberem no celular. Cor, fonte e espaçamento seguem o resto do site. */
+  .payment-methods-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+  .pay-group { grid-column: 1 / -1; margin: 8px 2px 0; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+  .pay-group:first-child { margin-top: 2px; }
+  .payment-methods-grid button.pay-tile {
+    position: relative; height: 55px; padding: 0 14px; border-radius: 11px; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px #E5DDD6; cursor: pointer;
+    transition: box-shadow .3s cubic-bezier(.15, .83, .66, 1), background-color .3s cubic-bezier(.15, .83, .66, 1), transform .3s cubic-bezier(.15, .83, .66, 1);
   }
-  .payment-methods-grid button {
-    padding: 10px 8px;
-    font-size: 12.5px;
-    font-weight: 700;
-    border-radius: 12px;
-    border: 1.5px solid #E5DDD6;
-    background: #FFF;
-    color: #3F3F46;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: all .15s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  @media (hover: hover) { .pay-tile:not(.off):hover { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--brand) 50%, #E5DDD6); } }
+  .pay-tile:not(.off):active { transform: scale(.98); }
+  .pay-tile:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .payment-methods-grid button.pay-tile.on { background: color-mix(in srgb, var(--brand) 8%, var(--card)); box-shadow: inset 0 0 0 2px var(--brand); }
+  .pay-tile > svg { width: 26px; height: 26px; flex: none; }
+  .pay-fallback { font-size: 13px; font-weight: 800; line-height: 1.2; text-align: center; }
+  /* Altura de cada marca: pesos parecidos a olho nu. --s encolhe o conjunto quando há 4 marcas no mesmo quadro */
+  .tile-logo { height: calc(var(--lh, 20px) * var(--s, 1)); width: auto; min-width: 0; max-width: 100%; display: block; object-fit: contain; }
+  .pay-tile.n1 { --s: 1.25; }
+  .pay-tile.n4 { --s: .85; gap: 7px; padding: 0 12px; }
+  .tile-logo.pix { --lh: 22px; } .tile-logo.mp { --lh: 24px; }
+  .tile-logo.visa { --lh: 14px; } .tile-logo.master { --lh: 22px; } .tile-logo.elo { --lh: 26px; } .tile-logo.amex { --lh: 24px; }
+  .tile-logo.vr { --lh: 24px; } .tile-logo.alelo { --lh: 26px; } .tile-logo.pluxee { --lh: 13px; } .tile-logo.ticket { --lh: 15px; }
+  .pay-check { position: absolute; top: 6px; right: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--brand); color: var(--brand-text); display: grid; place-items: center; opacity: 0; transform: scale(.5); transition: opacity .3s cubic-bezier(.15, .83, .66, 1), transform .3s cubic-bezier(.15, .83, .66, 1); }
+  .pay-check svg { width: 9px; height: 9px; }
+  .pay-tile.on .pay-check { opacity: 1; transform: none; }
+  /* Ainda não conectada: quadro tracejado, marcas apagadas e uma etiqueta "Em breve" pendurada no alto */
+  .payment-methods-grid button.pay-tile.off { cursor: default; background: transparent; box-shadow: none; border: 1px dashed #D3C9BF; }
+  .pay-tile.off .tile-logo, .pay-tile.off > svg { opacity: .45; filter: grayscale(1); }
+  .pay-tile .pay-soon { position: absolute; top: 0; right: 10px; padding: 1px 7px 2px; border-radius: 0 0 7px 7px; font-size: 9px; letter-spacing: .2px; }
+  .pay-caption { margin: 8px 2px 0; min-height: 1.3em; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+  .pay-caption b { color: var(--ink); font-weight: 800; }
+  @media (prefers-reduced-motion: reduce) { .payment-methods-grid button.pay-tile, .pay-check { transition: none; } }
+  /* Logos oficiais das marcas, cada uma numa plaquinha branca (usadas no formulário do cartão) */
+  .brand-img { width: 46px; height: 28px; padding: 4px 7px; border: 1px solid #ECE6E0; border-radius: 7px; background: #fff; box-sizing: border-box; display: block; object-fit: contain; }
+  .brand-img.elo, .brand-img.alelo, .brand-img.vr, .brand-img.amex { padding: 3px; }
+  .brand-chip { padding: 1px 6px; border-radius: 6px; background: var(--cream); color: #4A423B; font-size: 10.5px; font-weight: 800; letter-spacing: .2px; }
+  .pay-soon { padding: 3px 9px; border-radius: 99px; background: #FEF3C7; color: #92400E; font-size: 10.5px; font-weight: 800; white-space: nowrap; }
+
+  /* Cartão virtual do pagamento (visual inspirado no credit-card-form do 21st.dev, em CSS puro, feito para o celular).
+     Só o BIN (primeiros dígitos) chega até aqui: número, validade e CVV ficam nos campos seguros do Mercado Pago. */
+  .cc { --u: calc(min(340px, 100vw - 40px) / 100); position: relative; width: min(100%, 340px); aspect-ratio: 1.586; margin: 14px auto 18px; perspective: 900px; container-type: inline-size; }
+  @supports (width: 1cqw) { .cc { --u: 1cqw; } }
+  .cc-inner { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.2,.7,.2,1); }
+  .cc.flip .cc-inner { transform: rotateY(180deg); }
+  .cc-face { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: calc(var(--u) * 6.2) calc(var(--u) * 7); border-radius: calc(var(--u) * 5.4); overflow: hidden; color: #fff;
+    background: var(--cc-bg, linear-gradient(135deg, #323941, #061018)); box-shadow: 0 22px 38px -18px rgba(6,16,24,.7); backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: background .4s ease; }
+  .cc-face::before, .cc-face::after { content: ""; position: absolute; width: calc(var(--u) * 80); height: calc(var(--u) * 80); border: calc(var(--u) * 3.6) solid var(--cc-ring1, #ff6be7); border-radius: 50%; filter: blur(calc(var(--u) * 3.2)); opacity: .5; pointer-events: none; left: -calc(var(--u) * 20); top: -calc(var(--u) * 16); transition: border-color .4s ease; }
+  .cc-face::after { border-color: var(--cc-ring2, #7288ff); left: -calc(var(--u) * 56); top: 38%; }
+  .cc-face > * { position: relative; z-index: 1; }
+  .cc-back { transform: rotateY(180deg); padding: calc(var(--u) * 7) 0 0; justify-content: flex-start; gap: calc(var(--u) * 6.5); }
+  .cc-row { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--u) * 3); }
+  .cc-shop { font-size: calc(var(--u) * 3.5); font-weight: 800; letter-spacing: .14em; color: #E3B261; }
+  .cc-kind { font-size: calc(var(--u) * 3); font-weight: 800; letter-spacing: .12em; padding: .calc(var(--u) * 7) calc(var(--u) * 2.6); border-radius: 99px; background: rgba(255,255,255,.16); }
+  .cc-chiprow { display: flex; align-items: center; gap: calc(var(--u) * 3); }
+  .cc-chip { width: calc(var(--u) * 11.5); height: calc(var(--u) * 8.6); border-radius: calc(var(--u) * 1.8); background: linear-gradient(135deg, #f6dc92, #c99b3f 55%, #f3d78a); box-shadow: inset 0 0 0 .calc(var(--u) * 25) rgba(0,0,0,.25); }
+  .cc-nfc { width: calc(var(--u) * 6.4); height: calc(var(--u) * 6.4); opacity: .8; }
+  .cc-number { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: calc(var(--u) * 6.3); font-weight: 700; letter-spacing: .06em; text-shadow: 0 1px 3px rgba(0,0,0,.55); white-space: nowrap; }
+  .cc-bottom { align-items: flex-end; }
+  .cc small { display: block; font-size: calc(var(--u) * 2.5); font-weight: 700; letter-spacing: .1em; opacity: .75; margin-bottom: .calc(var(--u) * 6); }
+  .cc b { font-size: calc(var(--u) * 3.8); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .cc-holder { min-width: 0; flex: 1; }
+  .cc-holder b { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cc-logo { width: calc(var(--u) * 14.5); height: calc(var(--u) * 9.6); border-radius: calc(var(--u) * 1.8); background: #fff; display: grid; place-items: center; flex: none; visibility: hidden; }
+  .cc-logo img { max-width: 82%; max-height: 74%; object-fit: contain; }
+  .cc-logo img[hidden] { display: none; }
+  .cc-hl { position: absolute; z-index: 2; left: 4%; top: 42%; width: 92%; height: 17%; border: .calc(var(--u) * 5) solid rgba(255,255,255,.95); border-radius: calc(var(--u) * 2.4); box-shadow: 0 0 calc(var(--u) * 2.2) rgba(255,255,255,.7); opacity: 0; pointer-events: none; transition: all .3s ease; }
+  .cc[data-focus="number"] .cc-hl { opacity: 1; }
+  .cc[data-focus="holder"] .cc-hl { opacity: 1; left: 4%; top: 71%; width: 58%; height: 21%; }
+  .cc[data-focus="expiry"] .cc-hl { opacity: 1; left: 63%; top: 71%; width: 22%; height: 21%; }
+  .cc-strip { height: calc(var(--u) * 12.5); background: #14181d; }
+  .cc-sign { display: flex; align-items: center; gap: calc(var(--u) * 3); padding: 0 calc(var(--u) * 7); }
+  .cc-sigline { flex: 1; height: calc(var(--u) * 10); border-radius: calc(var(--u) * 1.2); background: repeating-linear-gradient(135deg, #f3f3f3 0 calc(var(--u) * 1.4), #e1e1e1 calc(var(--u) * 1.4) calc(var(--u) * 2.8)); }
+  .cc-cvv { min-width: calc(var(--u) * 17); padding: calc(var(--u) * 1.4) calc(var(--u) * 2.6); border-radius: calc(var(--u) * 1.6); background: #fff; color: #111; text-align: center; }
+  .cc-cvv small { color: #555; opacity: 1; }
+  .cc-logo-back { align-self: flex-end; margin: 0 calc(var(--u) * 7); }
+  .cc[data-brand="visa"]   { --cc-bg: linear-gradient(135deg, #1c2f9e, #0b1455 62%, #060b33); --cc-ring1: #5b8cff; --cc-ring2: #00c2ff; }
+  .cc[data-brand="master"] { --cc-bg: linear-gradient(135deg, #2b2b30, #0b0b0d 66%); --cc-ring1: #eb001b; --cc-ring2: #f79e1b; }
+  .cc[data-brand="elo"]    { --cc-bg: linear-gradient(135deg, #1d1d1d, #050505 66%); --cc-ring1: #ffcb05; --cc-ring2: #00a4e0; }
+  .cc[data-brand="amex"]   { --cc-bg: linear-gradient(135deg, #2e77bb, #124a82 60%, #0a2f55); --cc-ring1: #8fd0ff; --cc-ring2: #1d8f6a; }
+  @media (prefers-reduced-motion: reduce) { .cc-inner, .cc-hl { transition: none; } }
+  /* Botões de finalizar: um só estilo; o app mostra apenas o que vale para a forma escolhida */
+  .cta {
+    width: 100%; min-height: 56px; margin-top: 4px; padding: 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;
+    border-radius: 18px; background: var(--brand); color: var(--brand-text); font-size: 16px; font-weight: 800; letter-spacing: -.1px;
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--brand) 38%, transparent); transition: transform .12s ease, box-shadow .15s ease;
   }
-  .payment-methods-grid button:hover {
-    border-color: #C88A2E;
-    background: #FFFBF5;
-  }
-  .payment-methods-grid button.on {
-    background: #C88A2E;
-    color: #FFF;
-    border-color: #C88A2E;
-    box-shadow: 0 4px 12px rgba(200,138,46,0.28);
-  }
+  .cta:active { transform: scale(.985); }
+  .cta:disabled { cursor: not-allowed; box-shadow: none; }
+  .cta svg { flex: none; width: 18px; height: 18px; }
+  .ghost { display: block; width: 100%; min-height: 44px; margin-top: 6px; border-radius: 14px; background: none; color: var(--muted); font-size: 13.5px; font-weight: 700; }
+  .ghost:active { background: rgba(11,7,5,.06); }
+  /* Logo da loja nos pontos do pedido */
+  .logo.sm { width: 38px; height: 38px; font-size: 15px; box-shadow: none; }
+  #cardBrandBadge svg, #cardBrandIcon svg { height: 16px; width: auto; display: block; }
+  /* Campos seguros do Mercado Pago (o número do cartão fica dentro deles, não neste site) */
+  .mp-field { height: 46px; margin-top: 6px; padding: 0 14px; border-radius: 14px; border: 1px solid #E5DDD6; background: #fff; display: flex; align-items: center; }
+  .mp-field iframe { width: 100%; }
   .badge-paused {
     position: absolute;
     top: 10px;
@@ -1020,13 +1089,12 @@
       <!-- AVISO DE UNIDADE NO CARRINHO -->
       <div class="panel" id="cartUnitBox" style="margin-bottom:12px;padding:12px 14px;background:#FFF9EB;border:1.5px solid #F5DEB3;border-radius:18px;display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div style="display:flex;align-items:center;gap:10px;min-width:0">
-          <span style="font-size:20px;flex-shrink:0">📍</span>
+          <span class="logo sm" data-shop-logo></span>
           <div style="min-width:0">
             <small style="color:#B27B1E;font-size:10.5px;font-weight:800;text-transform:uppercase;display:block">Pedido para a unidade</small>
             <b id="cartUnitName" style="display:block;font-size:13.5px;color:#0B0705;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Dad's Burger</b>
           </div>
         </div>
-        <button type="button" id="btnChangeUnitCart" style="font-size:11.5px;font-weight:800;color:#B27B1E;background:#FFF0D0;border:1px solid #F5DEB3;padding:5px 12px;border-radius:99px;cursor:pointer;flex-shrink:0">Trocar</button>
       </div>
 
       <div class="panel"><div id="lines"></div></div>
@@ -1041,7 +1109,7 @@
       <div id="addrBox" class="panel" style="margin-top:12px;padding:14px;background:#fff;border:1px solid #E5DDD6;border-radius:18px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <b style="font-size:13px;color:#0B0705;letter-spacing:0.3px;">📍 Endereço de entrega</b>
-          <span style="font-size:11px;font-weight:700;color:var(--brand);background:rgba(215,156,69,.12);padding:3px 8px;border-radius:6px;">Raio máx: 15 km</span>
+          <span style="font-size:11px;font-weight:700;color:var(--brand);background:rgba(215,156,69,.12);padding:3px 8px;border-radius:6px;" id="radiusMaxLabel">Raio máx: 15 km</span>
         </div>
 
         <input type="hidden" id="delAddr">
@@ -1095,16 +1163,14 @@
           <label class="fld" id="custPhoneFld">WhatsApp / Celular<input id="custPhone" placeholder="(51) 99999-9999" inputmode="tel" autocomplete="tel"></label>
           <label class="fld" id="custCpfFld">CPF <em style="font-size:11px;color:var(--muted)">(para o Pix)</em><input id="custCpf" placeholder="000.000.000-00" inputmode="numeric"></label>
         </div>
+        <label class="fld" id="custEmailFld">E-mail <em style="font-size:11px;color:var(--muted)">(para pagar online)</em><input id="custEmail" type="email" placeholder="voce@email.com" inputmode="email" autocomplete="email"></label>
       </div>
 
       <div class="fld" id="payFld">
         <span style="font-weight:700">Forma de pagamento</span>
-        <div class="payment-methods-grid" id="pay">
-          <button type="button" class="on" data-pay="pix_online">⚡ Pix Online</button>
-          <button type="button" data-pay="cartao_online">💳 Cartão Online</button>
-        </div>
+        <div class="payment-methods-grid" id="pay" role="radiogroup" aria-label="Forma de pagamento"></div>
+        <p class="pay-caption" id="payCaption" aria-live="polite"></p>
       </div>
-      <p class="hint" id="payHint">⚡ QR Code Pix gerado na hora com confirmação automática sem mandar comprovante.</p>
 
       <!-- AVISO DE ENTREGA 99 (SEM DINHEIRO, 100% PRÉ-PAGO ONLINE) -->
       <div id="delivery99Notice" style="margin-top:10px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:12px;color:#475569;display:flex;align-items:center;gap:8px">
@@ -1168,10 +1234,10 @@
         </div>
       </div>
 
-      <button class="pill brand wide" id="btnPayPix" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(215,156,69,.4);display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Pix</button>
-      <button class="pill brand wide" id="btnPayCardMp" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(0,158,227,.35);background:#009EE3;color:#fff;display:none;align-items:center;justify-content:center;gap:8px;font-weight:700">Pagar com Cartão Online</button>
-      <button class="pill brand wide" id="btnPayDelivery" style="font-size:15px;padding:15px;box-shadow:0 6px 20px rgba(22,163,74,.35);background:#16A34A;color:#fff;display:none;align-items:center;justify-content:center;gap:8px;font-weight:700">✓ Confirmar Pedido (Pagar na Entrega)</button>
-      <button class="pill light wide" data-clear>Limpar pedido</button>
+      <button type="button" class="cta" id="btnPayPix">Pagar com Pix</button>
+      <button type="button" class="cta" id="btnPayCardMp" style="display:none">Pagar com cartão</button>
+      <button type="button" class="cta" id="btnPayDelivery" style="display:none">Confirmar pedido</button>
+      <button type="button" class="ghost" data-clear>Limpar pedido</button>
     </div>
   </div>
 
@@ -1259,6 +1325,7 @@
     <!-- ETAPA 1: AGUARDANDO PAGAMENTO -->
     <div id="pixStepWait">
       <div class="pix-head">
+        <div class="logo" data-shop-logo style="margin:0 auto 10px"></div>
         <div class="pix-badge">PIX MERCADO PAGO</div>
         <h3 id="pixModalTitle">Pague com Pix</h3>
         <p class="pix-sub">Escaneie o QR Code ou copie o código no app do seu banco</p>
@@ -1341,40 +1408,50 @@
     <!-- ETAPA 1: DIGITAÇÃO DO CARTÃO -->
     <div id="cardStepForm">
       <div class="pix-head">
+        <div class="logo" data-shop-logo style="margin:0 auto 10px"></div>
         <div class="pix-badge" style="background:#E0F2FE;color:#0369A1">💳 CARTÃO DE CRÉDITO OU DÉBITO</div>
         <h3 id="cardModalTitle">Pagar com Cartão</h3>
         <p class="pix-sub">Processamento seguro criptografado via <b>Mercado Pago</b></p>
         <div class="pix-amount" id="cardModalAmount">R$ 0,00</div>
       </div>
 
-      <!-- VISUALIZADOR DE CARTÃO INTERATIVO -->
-      <div class="virtual-card" id="virtualCardPreview" style="background:linear-gradient(135deg, #18181B 0%, #27272A 50%, #09090B 100%);color:#fff;border-radius:18px;padding:18px 20px;margin:14px 0 16px;box-shadow:0 12px 30px rgba(0,0,0,.35);position:relative;border:1px solid rgba(255,255,255,.1);min-height:165px;display:flex;flex-direction:column;justify-content:space-between">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;font-weight:800;letter-spacing:1px;color:#D79C45">DAD'S BURGER</span>
-          <span id="cardBrandIcon" style="font-size:12px;font-weight:800;background:rgba(255,255,255,.16);padding:3px 9px;border-radius:6px;letter-spacing:0.5px">CARTÃO</span>
-        </div>
-        <div id="cardNumPreview" style="font-family:monospace;font-size:17px;font-weight:700;letter-spacing:2px;margin:14px 0;text-shadow:0 1px 3px rgba(0,0,0,.6)">•••• •••• •••• ••••</div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end">
-          <div>
-            <div style="font-size:9px;text-transform:uppercase;color:#A1A1AA;letter-spacing:0.5px">Titular</div>
-            <div id="cardNamePreview" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">SEU NOME</div>
+      <!-- CARTÃO VIRTUAL: marca, titular e o campo em foco; número, validade e CVV ficam nos campos seguros do Mercado Pago -->
+      <div class="cc" id="cc" data-brand="" data-focus="" aria-hidden="true">
+        <div class="cc-inner">
+          <div class="cc-face cc-front">
+            <div class="cc-row">
+              <span class="cc-shop">DAD'S BURGER</span>
+              <span class="cc-kind" id="ccKind">CRÉDITO</span>
+            </div>
+            <div class="cc-chiprow">
+              <span class="cc-chip"></span>
+              <svg class="cc-nfc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.5 8.5a5 5 0 0 1 0 7M12 6a8.5 8.5 0 0 1 0 12M15.5 3.5a12 12 0 0 1 0 17"/></svg>
+            </div>
+            <div class="cc-number" id="cardNumPreview">•••• •••• •••• ••••</div>
+            <div class="cc-row cc-bottom">
+              <div class="cc-holder"><small>TITULAR</small><b id="cardNamePreview">SEU NOME</b></div>
+              <div class="cc-exp"><small>VALIDADE</small><b id="ccExp">MM/AA</b></div>
+              <span class="cc-logo"><img id="ccBrandLogo" alt="" hidden></span>
+            </div>
+            <i class="cc-hl"></i>
           </div>
-          <div style="text-align:right">
-            <div style="font-size:9px;text-transform:uppercase;color:#A1A1AA;letter-spacing:0.5px">Validade</div>
-            <div id="cardExpPreview" style="font-size:12px;font-weight:700;font-family:monospace">MM/AA</div>
+          <div class="cc-face cc-back">
+            <div class="cc-strip"></div>
+            <div class="cc-sign"><span class="cc-sigline"></span><span class="cc-cvv"><small>CVV</small><b id="ccCvv">•••</b></span></div>
+            <span class="cc-logo cc-logo-back"><img id="ccBrandLogoBack" alt="" hidden></span>
           </div>
         </div>
       </div>
 
-      <!-- FORMULÁRIO DE DADOS DO CARTÃO -->
+      <!-- FORMULÁRIO DE DADOS DO CARTÃO (número, validade e CVV são campos seguros do Mercado Pago) -->
       <form id="cardForm" onsubmit="return false;" style="display:flex;flex-direction:column;gap:12px">
-        <label class="fld" id="cardNumFld" style="margin:0">
+        <div class="fld" id="cardNumFld" style="margin:0">
           <span style="font-size:13px;font-weight:700">Número do Cartão</span>
           <div style="position:relative">
-            <input id="cardNum" type="tel" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="cc-number" style="font-size:15px;padding-right:45px">
-            <span id="cardBrandBadge" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;font-weight:800;color:#71717A">💳</span>
+            <div id="mpCardNumber" class="mp-field"></div>
+            <span id="cardBrandBadge" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);margin-top:3px;font-size:12px;font-weight:800;color:#71717A;pointer-events:none">💳</span>
           </div>
-        </label>
+        </div>
 
         <label class="fld" id="cardHolderFld" style="margin:0">
           <span style="font-size:13px;font-weight:700">Nome Impresso no Cartão</span>
@@ -1382,14 +1459,14 @@
         </label>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <label class="fld" id="cardExpFld" style="margin:0">
+          <div class="fld" id="cardExpFld" style="margin:0">
             <span style="font-size:13px;font-weight:700">Validade</span>
-            <input id="cardExp" type="tel" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp">
-          </label>
-          <label class="fld" id="cardCvvFld" style="margin:0">
+            <div id="mpCardExpiry" class="mp-field"></div>
+          </div>
+          <div class="fld" id="cardCvvFld" style="margin:0">
             <span style="font-size:13px;font-weight:700">CVV</span>
-            <input id="cardCvv" type="tel" placeholder="123" maxlength="4" autocomplete="cc-csc">
-          </label>
+            <div id="mpCardCvv" class="mp-field"></div>
+          </div>
         </div>
 
         <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:10px">
@@ -1405,8 +1482,8 @@
           </label>
         </div>
 
-        <button class="pill brand wide" id="btnSubmitCardPay" type="button" style="margin-top:8px;font-size:15px;padding:15px;background:#009EE3;box-shadow:0 6px 20px rgba(0,158,227,.35);font-weight:800">
-          🔒 Confirmar Pagamento com Cartão
+        <button class="cta" id="btnSubmitCardPay" type="button" style="margin-top:8px">
+          🔒 Pagar
         </button>
 
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;color:#71717A;font-size:11.5px;margin-top:2px">
@@ -1480,7 +1557,8 @@ window.__CFG__ = {
   const MINUS = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg>';
   const img = (id, w = 500) => {
     if (!id) return `https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=${w}&q=70`;
-    if (typeof id === 'string' && (id.startsWith('http://') || id.startsWith('https://'))) return id;
+    // foto própria (link, data: ou arquivo do site, como logo.png) vale como está; só id curto é foto do Unsplash
+    if (typeof id === 'string' && /^(https?:|data:image\/|blob:|\/|\.{1,2}\/)|\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i.test(id)) return id;
     return `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=70`;
   };
   const it = (cat, name, desc, price, photo) => ({ cat, name, desc, price, img: photo });
@@ -1637,17 +1715,14 @@ window.__CFG__ = {
       ]
     },
     payments: {
+      // Mesmas formas do settings.json (usadas quando o site roda sem servidor, como no GitHub Pages)
       pix_online: { id: "pix_online", name: "Pix Online", enabled: true, icon: "⚡", type: "online" },
       cartao_online: { id: "cartao_online", name: "Crédito Online", enabled: true, icon: "💳", type: "online" },
       cartao_debito_online: { id: "cartao_debito_online", name: "Débito Online", enabled: true, icon: "💳", type: "online" },
-      vr_online: { id: "vr_online", name: "VR Online", enabled: true, icon: "🥗", type: "online" },
-      mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo MP", enabled: true, icon: "📱", type: "online" },
-      pix_entrega: { id: "pix_entrega", name: "Pix Entrega", enabled: true, icon: "📱", type: "delivery" },
-      cartao_credito_entrega: { id: "cartao_credito_entrega", name: "Crédito Entrega", enabled: true, icon: "💳", type: "delivery" },
-      cartao_debito_entrega: { id: "cartao_debito_entrega", name: "Débito Entrega", enabled: true, icon: "💳", type: "delivery" },
-      vr_entrega: { id: "vr_entrega", name: "VR Entrega", enabled: true, icon: "🥗", type: "delivery" },
-      va_entrega: { id: "va_entrega", name: "VA Entrega", enabled: true, icon: "🛒", type: "delivery" },
-      dinheiro_entrega: { id: "dinheiro_entrega", name: "Dinheiro", enabled: true, icon: "💵", type: "delivery" }
+      mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo MP", enabled: true, connected: false, icon: "📱", type: "online" },
+      vr_online: { id: "vr_online", name: "Vale-refeição", enabled: false, connected: false, provider: "", icon: "🥗", type: "online" },
+      balcao_vr: { id: "balcao_vr", name: "Vale-refeição no balcão", enabled: true, icon: "🥗", type: "pickup" },
+      balcao_cartao: { id: "balcao_cartao", name: "Cartão no balcão", enabled: true, icon: "💳", type: "pickup" }
     }
   };
   let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -1658,12 +1733,11 @@ window.__CFG__ = {
   const el = (tag, attrs = {}, ...kids) => { const e = document.createElement(tag); Object.assign(e, attrs); e.append(...kids); return e; };
   const toast = (t) => { const x = $('#toast'); x.textContent = t; x.classList.add('show'); clearTimeout(x._t); x._t = setTimeout(() => x.classList.remove('show'), 2400); };
 
-  function getOrigPrice(price) {
-    const p = Number(price) || 0;
-    if (p <= 0) return 0;
-    const orig = Math.ceil(p * 1.22) - 0.10;
-    return orig > p ? Math.round(orig * 100) / 100 : Math.round((p + 4.90) * 100) / 100;
-  }
+  // Preço de venda: o promocional quando o dono definiu um (sempre menor que o normal); sem promoção, o normal.
+  // O "De R$" riscado só aparece com promoção de verdade. O servidor confere o preço de novo em cada pedido.
+  const promoOf = (m) => { const p = Number(m && m.promo); return p > 0 && p < Number(m.price) ? p : 0; };
+  const unitPrice = (m) => promoOf(m) || Number(m.price);
+  const origPrice = (m) => (promoOf(m) ? Number(m.price) : 0);
 
   // =============================================================
   // REDE DAD'S BURGER - UNIDADES E FILIAIS (POR ZONA E BAIRRO)
@@ -1825,6 +1899,40 @@ window.__CFG__ = {
   window.setUnit = setUnit;
 
   const st = {};
+  // Foto de produto que não carrega (link errado ou arquivo removido): mostra a logo da loja, não o ícone quebrado
+  document.addEventListener('error', (e) => {
+    const im = e.target;
+    if (!(im instanceof HTMLImageElement) || im.dataset.fallback || !im.closest('#grid, #trend, #lines, #upList, #chips')) return;
+    im.dataset.fallback = '1';
+    im.src = st.logoUrl || 'logo.png';
+  }, true);
+  // Logo da loja: a que o dono enviou no painel (settings.store.logo) e, sem ela (ou depois de removida), a do link ou do site.
+  // Uma logo escolhida de propósito no link (?logo=…) continua valendo. Aparece no topo, nas janelas de pedido, Pix e cartão e na aba do navegador.
+  function paintLogos() {
+    const own = SETTINGS && SETTINGS.store && SETTINGS.store.logo;
+    const chosenInLink = P.get('logo') && P.get('logo') !== (window.__CFG__ && window.__CFG__.logo);
+    st.logo = own && !chosenInLink ? own : st.baseLogo;
+    // logo.png é resolvido pelo endereço da página (funciona em /, /index.html e na subpasta do GitHub Pages)
+    const resolve = (u) => (u === 'logo.png' ? new URL('logo.png', location.href).href : u);
+    st.logoUrl = resolve(st.logo);
+    const words = String(st.nome || '').split(/\s+/).filter((w) => w && !/^(d[aeo]s?|e|o|a|&|the)$/i.test(w));
+    const initials = (words[0] ? words[0][0] : (String(st.nome || '')[0] || 'R')).toUpperCase();
+    const mountLogo = (box) => {
+      if (!box) return;
+      if (!st.logoUrl) { box.replaceChildren(initials); return; }
+      const imgEl = el('img', { src: st.logoUrl, alt: st.nome });
+      // foto da loja que sumiu: volta para a logo do site; se nem essa abrir, as iniciais
+      imgEl.onerror = () => {
+        const base = resolve(st.baseLogo);
+        if (base && imgEl.src !== new URL(base, location.href).href) imgEl.src = base; else box.replaceChildren(initials);
+      };
+      box.replaceChildren(imgEl);
+    };
+    mountLogo($('#logo'));
+    document.querySelectorAll('[data-shop-logo]').forEach(mountLogo); // unidade no pedido, Pix e cartão
+    const icon = document.querySelector('link[rel~="icon"]');
+    if (icon && st.logoUrl) { icon.removeAttribute('type'); icon.href = st.logoUrl; }
+  }
   function apply() {
     const hex = (k, d) => (/^[0-9a-f]{6}$/i.test(P.get(k) || '') ? '#' + P.get(k) : d);
     st.nome = (P.get('nome') || T.nome).slice(0, 60);
@@ -1848,24 +1956,8 @@ window.__CFG__ = {
     document.querySelectorAll('[data-name]').forEach((n) => { n.textContent = st.nome; });
     const taglineEl = $('#tagline');
     if (taglineEl) taglineEl.textContent = T.tagline;
-    const words = st.nome.split(/\s+/).filter((w) => w && !/^(d[aeo]s?|e|o|a|&|the)$/i.test(w));
-    const initials = (words[0] ? words[0][0] : (st.nome[0] || 'R')).toUpperCase();
-    if (st.logo) {
-      const resolvedLogo = (st.logo === 'logo.png')
-        ? (location.pathname.endsWith('/') ? 'logo.png' : `${location.pathname.replace(/\/+$/, '')}/logo.png`)
-        : st.logo;
-      const imgEl = el('img', { src: resolvedLogo, alt: st.nome });
-      imgEl.onerror = () => {
-        if (resolvedLogo !== '/logos/ed06fa64aff6ba57.png' && /dad'?s/i.test(st.nome)) {
-          imgEl.src = '/logos/ed06fa64aff6ba57.png';
-        } else {
-          $('#logo').replaceChildren(initials);
-        }
-      };
-      $('#logo').replaceChildren(imgEl);
-    } else {
-      $('#logo').replaceChildren(initials);
-    }
+    st.baseLogo = st.logo;
+    paintLogos();
     const featPhoto = img(T.feat.img);
     $('#featImg').loading = 'eager';
     $('#featImg').onerror = () => { if ($('#featImg').src !== featPhoto) $('#featImg').src = featPhoto; };
@@ -1902,7 +1994,7 @@ window.__CFG__ = {
 
   function getDeliveryFeeByDistance(distKm) {
     const d = Number(distKm) || 0;
-    const subtotal = [...cart.entries()].reduce((s, [i, q]) => s + MENU[i].price * q, 0);
+    const subtotal = [...cart.entries()].reduce((s, [i, q]) => s + unitPrice(MENU[i]) * q, 0);
 
     const deliveryConfig = SETTINGS?.delivery;
     if (deliveryConfig?.freeDeliveryThreshold > 0 && subtotal >= deliveryConfig.freeDeliveryThreshold) {
@@ -1944,7 +2036,7 @@ window.__CFG__ = {
 
   function paintCart() {
     const items = [...cart.entries()];
-    const subtotal = items.reduce((s, [i, q]) => s + MENU[i].price * q, 0);
+    const subtotal = items.reduce((s, [i, q]) => s + unitPrice(MENU[i]) * q, 0);
     const qty = items.reduce((s, [, q]) => s + q, 0);
 
     const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
@@ -2002,7 +2094,7 @@ window.__CFG__ = {
 
     const finalTotal = qty > 0 ? (pickup ? subtotal : (subtotal + deliveryFee)) : 0;
 
-    const totalOriginal = items.reduce((s, [i, q]) => s + getOrigPrice(MENU[i].price) * q, 0);
+    const totalOriginal = items.reduce((s, [i, q]) => s + (origPrice(MENU[i]) || unitPrice(MENU[i])) * q, 0);
     const totalSavings = Math.max(0, totalOriginal - subtotal);
 
     $('#cart').classList.toggle('show', qty > 0 && tab === 'home');
@@ -2026,13 +2118,14 @@ window.__CFG__ = {
     paintUpsell();
     $('#lines').replaceChildren(...items.map(([i, q]) => {
       const m = MENU[i];
-      const orig = getOrigPrice(m.price);
+      const orig = origPrice(m);
+      const unit = unitPrice(m);
       return el('div', { className: 'line' },
         el('img', { src: img(m.img, 120), alt: '' }),
         el('div', {},
           el('b', { textContent: m.name }),
           el('small', {
-            innerHTML: `<s style="color:#A8A29E;margin-right:6px">${brl(orig * q)}</s><strong style="color:#15803D">${q} × ${brl(m.price)} = ${brl(m.price * q)}</strong>`
+            innerHTML: `${orig ? `<s style="color:#A8A29E;margin-right:6px">${brl(orig * q)}</s>` : ''}<strong style="color:#15803D">${q} × ${brl(unit)} = ${brl(unit * q)}</strong>`
           })
         ),
         el('div', { className: 'step' },
@@ -2051,9 +2144,10 @@ window.__CFG__ = {
   }
 
   // "Peça também": refrigerantes gelados (upsell prioritário quando não há bebida no pedido) ou porções/sobremesas
-  const UP = (T.up || []).map((n) => MENU.findIndex((m) => m.name === n)).filter((i) => i >= 0);
+  const upIdx = () => (T.up || []).map((n) => MENU.findIndex((m) => m.name === n)).filter((i) => i >= 0); // por nome e a cada vez: a ordem do cardápio muda no painel
   const isSoda = (m) => (m.cat === 'Bebidas' || m.cat === 'Bebida Gelada?') && !/\b(cerveja|chopp|chope|heineken|amstel|polar|vinho|saquê|whisky|vodka|licor|tequila|drink|gin)\b/i.test(m.name);
   function paintUpsell() {
+    const UP = upIdx();
     const hasDrink = [...cart.keys()].some((i) => MENU[i].cat === 'Bebidas' || MENU[i].cat === 'Bebida Gelada?');
     let list;
     if (!hasDrink) {
@@ -2077,7 +2171,7 @@ window.__CFG__ = {
     $('#upsell').hidden = !list.length;
     $('#upList').replaceChildren(...list.map((i) => {
       const m = MENU[i];
-      const orig = getOrigPrice(m.price);
+      const orig = origPrice(m);
       return el('div', { className: 'up-card' },
         el('div', { className: 'up-media', style: 'position:relative' },
           el('img', { src: img(m.img, 200), alt: m.name, loading: 'lazy' })
@@ -2086,8 +2180,8 @@ window.__CFG__ = {
         el('small', { textContent: m.desc || 'Gelado' }),
         el('div', { className: 'foot-row' },
           el('div', { className: 'price-box' },
-            el('span', { className: 'old-price', textContent: brl(orig) }),
-            el('span', { className: 'price', textContent: brl(m.price) })
+            ...(orig ? [el('span', { className: 'old-price', textContent: brl(orig) })] : []),
+            el('span', { className: 'price', textContent: brl(unitPrice(m)) })
           ),
           addBtn(i)
         )
@@ -2095,7 +2189,72 @@ window.__CFG__ = {
     }));
   }
 
-  // Pagamento: Dinâmico estilo iFood (Pix Online, Cartão Online e Pagamento na Entrega)
+  // Logos oficiais das formas de pagamento: arquivos em assets/pay (origem de cada um em assets/pay/LEIA-ME.txt).
+  // Se um arquivo não abrir, a marca aparece como etiqueta de texto.
+  const BRAND_SRC = {
+    visa: 'assets/pay/visa.svg', master: 'assets/pay/mastercard.svg', elo: 'assets/pay/elo.png', amex: 'assets/pay/amex.svg',
+    pix: 'assets/pay/pix.svg', mp: 'assets/pay/mercadopago.svg',
+    vr: 'assets/pay/vr.png', alelo: 'assets/pay/alelo.png', pluxee: 'assets/pay/pluxee.svg', ticket: 'assets/pay/ticket.svg'
+  };
+  const BRAND_NAME = { visa: 'Visa', master: 'Mastercard', elo: 'Elo', amex: 'American Express', pix: 'Pix', mp: 'Mercado Pago', vr: 'VR', alelo: 'Alelo', pluxee: 'Pluxee', ticket: 'Ticket' };
+  function brandImg(key) {
+    const im = el('img', { className: `brand-img ${key}`, src: BRAND_SRC[key], alt: BRAND_NAME[key] || key, loading: 'lazy', decoding: 'async' });
+    im.onerror = () => { im.replaceWith(el('span', { className: 'brand-chip', textContent: BRAND_NAME[key] || key })); };
+    return im;
+  }
+  const LINE = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  const ICON = {
+    pix: '<svg viewBox="0 0 512 512" aria-hidden="true"><path fill="#32BCAD" d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 488.6C280.3 518.9 231.1 518.9 200.8 488.6L103.3 391.1H112.6C132.6 391.1 151.5 383.3 165.7 369.1L242.4 292.5zM262.5 218.9C257.1 224.3 247.8 224.3 242.4 218.9L165.7 142.2C151.5 128 132.6 120.2 112.6 120.2H103.3L200.7 22.8C231.1-7.6 280.3-7.6 310.6 22.8L407.8 119.9H392.6C372.6 119.9 353.7 127.7 339.5 141.9L262.5 218.9zM112.6 142.7C126.4 142.7 139.1 148.3 149.7 158.1L226.4 234.8C233.6 241.1 243 245.6 252.5 245.6C261.9 245.6 271.3 241.1 278.5 234.8L355.5 157.8C365.2 148.1 378.8 142.5 392.6 142.5H430.3L488.6 200.8C518.9 231.1 518.9 280.3 488.6 310.6L430.3 368.9H392.6C378.8 368.9 365.2 363.3 355.5 353.6L278.5 276.6C264.6 262.7 240.3 262.7 226.4 276.6L149.7 353.2C139.1 363 126.4 368.6 112.6 368.6H80.8L22.8 310.6C-7.6 280.3-7.6 231.1 22.8 200.8L80.8 142.7H112.6z"/></svg>',
+    card: `<svg ${LINE}><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19M6.5 15h4"/></svg>`,
+    wallet: `<svg ${LINE}><path d="M19.5 8V6.5A1.5 1.5 0 0 0 18 5H5.5A2.5 2.5 0 0 0 3 7.5v9A2.5 2.5 0 0 0 5.5 19H18a1.5 1.5 0 0 0 1.5-1.5V16"/><path d="M21 11.5v4h-4.5a2 2 0 0 1 0-4z"/></svg>`,
+    meal: `<svg ${LINE}><path d="M7.5 3v8M4.5 3v5a3 3 0 0 0 6 0V3M7.5 11v10"/><path d="M17.5 21V3c-2.3 1.3-3.5 4.1-3.5 7.4 0 2 1.2 3.1 3.5 3.1"/></svg>`,
+    cash: `<svg ${LINE}><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.7"/><path d="M6 9.5v.01M18 14.5v.01"/></svg>`,
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    lock: `<svg ${LINE.replace('1.9', '2.3')}><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`
+  };
+  // Marcas de cada forma de pagamento (o quadro mostra só o logo; o texto vai no rótulo acessível e na legenda abaixo da grade)
+  const PAY_UI = {
+    pix_online: { logos: ['pix'], title: 'Pix', sub: 'Aprovação na hora' },
+    cartao_online: { logos: ['visa', 'master', 'elo', 'amex'], title: 'Cartão de crédito', sub: 'à vista ou parcelado' },
+    cartao_debito_online: { logos: ['elo'], title: 'Cartão de débito', sub: 'só débito Elo' },
+    mercadopago_saldo: { logos: ['mp'], title: 'Mercado Pago', sub: 'Saldo em conta' },
+    vr_online: { logos: ['vr', 'alelo', 'pluxee', 'ticket'], title: 'Vale-refeição e alimentação', sub: 'pelo site' },
+    balcao_vr: { logos: ['vr', 'alelo', 'pluxee', 'ticket'], title: 'Vale-refeição e alimentação', sub: 'na maquininha' },
+    balcao_cartao: { logos: ['visa', 'master', 'elo'], title: 'Crédito ou débito', sub: 'na maquininha' }
+  };
+  const PAY_GROUP = { online: 'Pague pelo site', pickup: 'Pague na retirada', delivery: 'Pague na entrega' };
+
+  // Cada forma de pagamento é um quadro só com o logo no centro (como os botões da referência). O nome fica no rótulo
+  // acessível, na dica ao passar o mouse e na legenda embaixo da grade. Sem marca (ex.: dinheiro) usa um ícone limpo
+  // e uma forma nova, sem nada cadastrado em PAY_UI, mostra o próprio nome.
+  function payInfo(p) {
+    if (PAY_UI[p.id]) return PAY_UI[p.id];
+    if (/dinheiro|cash/i.test(p.id)) return { icon: 'cash', title: 'Dinheiro' };
+    return { title: p.name };
+  }
+  function tileLogo(key) {
+    const chip = () => el('span', { className: 'brand-chip', textContent: BRAND_NAME[key] || key });
+    if (!BRAND_SRC[key]) return chip();
+    const im = el('img', { className: `tile-logo ${key}`, src: BRAND_SRC[key], alt: '', decoding: 'async' });
+    im.onerror = () => im.replaceWith(chip());
+    return im;
+  }
+  function payTile(p, active, soon) {
+    const ui = payInfo(p);
+    const logos = ui.logos || [];
+    const name = [ui.title, ui.sub, ...(soon ? ['em breve'] : [])].filter(Boolean);
+    const btn = el('button', { type: 'button', className: `pay-tile n${Math.min(logos.length, 4)}${active ? ' on' : ''}${soon ? ' off' : ''}`, title: name.join(' · ') });
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-label', name.join(', '));
+    btn.dataset.payName = ui.title || '';
+    btn.dataset.paySub = ui.sub || '';
+    if (logos.length) logos.forEach((k) => btn.append(tileLogo(k)));
+    else if (ICON[ui.icon]) btn.insertAdjacentHTML('beforeend', ICON[ui.icon]);
+    else btn.append(el('span', { className: 'pay-fallback', textContent: ui.title || '' }));
+    btn.append(soon ? el('span', { className: 'pay-soon', textContent: 'Em breve' }) : el('span', { className: 'pay-check', innerHTML: ICON.check }));
+    return btn;
+  }
+
   // Pagamento: Dinâmico estilo iFood (Online Mercado Pago para Entrega 99 / Opção de Balcão para Retirada)
   function paintPaymentMethods() {
     const payContainer = $('#pay');
@@ -2106,33 +2265,59 @@ window.__CFG__ = {
 
     // Para Entrega 99: apenas pagamentos online Mercado Pago (o motoboy não recebe valores)
     // Para Retirada no Balcão: online + pagamento presencial na maquininha Point
+    // Forma com provedor ainda não conectado (connected: false) aparece como "em breve" e não dá para escolher
+    const isSoon = (p) => 'connected' in p && !p.connected;
     const enabledList = Object.values(payments).filter((p) => {
+      if (isSoon(p)) return true;
       if (p.enabled === false) return false;
       if (!pickup && p.type === 'pickup') return false;
       return true;
     });
+    const pickable = enabledList.filter((p) => !isSoon(p));
 
-    if (!enabledList.length) {
-      enabledList.push({ id: 'pix_online', name: 'Pix Online', enabled: true, icon: '⚡' });
+    if (!pickable.length) {
+      const pix = { id: 'pix_online', name: 'Pix Online', enabled: true, icon: '⚡' };
+      enabledList.unshift(pix);
+      pickable.push(pix);
     }
 
     const currentOn = payContainer.querySelector('.on')?.dataset.pay;
-    const activePay = enabledList.some((p) => p.id === currentOn) ? currentOn : enabledList[0].id;
+    const activePay = pickable.some((p) => p.id === currentOn) ? currentOn : pickable[0].id;
+    const manyGroups = new Set(enabledList.map((p) => p.type || 'online')).size > 1;
 
-    payContainer.replaceChildren(...enabledList.map((p) => {
-      const btn = el('button', {
-        type: 'button',
-        className: p.id === activePay ? 'on' : '',
-        onclick: (e) => {
+    const nodes = [];
+    let lastGroup = null;
+    enabledList.forEach((p) => {
+      const group = p.type || 'online';
+      if (manyGroups && group !== lastGroup) nodes.push(el('div', { className: 'pay-group', textContent: PAY_GROUP[group] || '' }));
+      lastGroup = group;
+      const soon = isSoon(p);
+      const btn = payTile(p, !soon && p.id === activePay, soon);
+      if (soon) {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.onclick = (e) => { e.preventDefault(); toast(p.id === 'mercadopago_saldo' ? 'Pagar com o saldo do Mercado Pago chega em breve. Por enquanto, pague com Pix ou cartão.' : 'Vale-refeição e alimentação pelo site chega em breve. Por enquanto, pague com Pix ou cartão.'); };
+      } else {
+        btn.dataset.pay = p.id;
+        btn.onclick = (e) => {
           e.preventDefault();
           payContainer.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
           $('#payFld')?.classList.remove('miss');
           paintPay();
-        }
-      }, el('span', { textContent: p.icon || '💳' }), el('span', { textContent: p.name }));
-      btn.dataset.pay = p.id;
-      return btn;
-    }));
+        };
+      }
+      nodes.push(btn);
+    });
+    payContainer.replaceChildren(...nodes);
+    payContainer.onkeydown = (e) => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      const tiles = [...payContainer.querySelectorAll('button[data-pay]')];
+      const at = tiles.indexOf(document.activeElement);
+      if (!step || at < 0) return;
+      e.preventDefault();
+      const next = tiles[(at + step + tiles.length) % tiles.length];
+      next.focus();
+      next.click();
+    };
 
     paintPay();
   }
@@ -2141,45 +2326,36 @@ window.__CFG__ = {
     const on = $('#pay .on');
     const payMode = on ? on.dataset.pay : 'pix_online';
     const isPixOnline = payMode === 'pix_online' || payMode === 'pix';
-    const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'mercadopago_saldo'].includes(payMode);
+    const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'vr_online'].includes(payMode);
     const isPickupPay = ['balcao_vr', 'balcao_cartao'].includes(payMode);
+    document.querySelectorAll('#pay button').forEach((b) => {
+      const sel = b.classList.contains('on');
+      b.setAttribute('aria-checked', String(sel));
+      b.tabIndex = sel ? 0 : -1; // um só ponto de parada no grupo; as setas trocam de forma
+    });
+    const cap = $('#payCaption');
+    if (cap) cap.replaceChildren(...(on ? [el('b', { textContent: on.dataset.payName }), on.dataset.paySub ? ` · ${on.dataset.paySub}` : ''] : []));
 
-    if ($('#btnPayPix')) $('#btnPayPix').style.display = isPixOnline ? 'flex' : 'none';
+    const setCta = (btn, label, icon) => { btn.innerHTML = `${icon}<span>${label}</span>`; };
+    if ($('#btnPayPix')) {
+      $('#btnPayPix').style.display = isPixOnline ? 'flex' : 'none';
+      setCta($('#btnPayPix'), 'Pagar com Pix', ICON.lock);
+    }
     if ($('#btnPayCardMp')) {
       $('#btnPayCardMp').style.display = isCardOnline ? 'flex' : 'none';
       const cardLabels = {
-        cartao_online: '💳 Pagar com Cartão de Crédito Online',
-        cartao: '💳 Pagar com Cartão de Crédito Online',
-        cartao_debito_online: '💳 Pagar com Débito Online / Virtual',
-        mercadopago_saldo: '📱 Pagar com Saldo Mercado Pago / Crédito'
+        cartao_online: 'Pagar com cartão de crédito',
+        cartao: 'Pagar com cartão de crédito',
+        cartao_debito_online: 'Pagar com cartão de débito',
+        vr_online: 'Pagar com vale-refeição'
       };
-      $('#btnPayCardMp').textContent = cardLabels[payMode] || '💳 Pagar com Mercado Pago Online';
+      setCta($('#btnPayCardMp'), cardLabels[payMode] || 'Pagar com cartão', ICON.lock);
     }
     if ($('#btnPayDelivery')) {
       $('#btnPayDelivery').style.display = isPickupPay ? 'flex' : 'none';
-      const labelMap = {
-        balcao_vr: 'Confirmar Pedido (Pagar com VR no Balcão)',
-        balcao_cartao: 'Confirmar Pedido (Pagar com Cartão no Balcão)'
-      };
-      $('#btnPayDelivery').textContent = `✓ ${labelMap[payMode] || 'Confirmar Pedido (Pagar na Retirada)'}`;
+      setCta($('#btnPayDelivery'), 'Confirmar pedido', ICON.check);
     }
 
-    const hints = {
-      pix_online: '⚡ QR Code Pix gerado na hora pelo Mercado Pago com confirmação automática sem mandar comprovante.',
-      pix: '⚡ QR Code Pix gerado na hora pelo Mercado Pago com confirmação automática sem mandar comprovante.',
-      cartao_online: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
-      cartao: '💳 Pague online com cartão de crédito (Visa, Mastercard, Elo, Hipercard, Amex) com tokenização segura Mercado Pago.',
-      cartao_debito_online: '💳 Pague online com cartão de débito virtual (Caixa Tem, Elo Débito, Visa Débito) via Mercado Pago.',
-      mercadopago_saldo: '📱 Pague diretamente usando seu saldo em conta Mercado Pago ou parcelamento Mercado Crédito.',
-      balcao_vr: '🥗 Pague na retirada no balcão da hamburgueria com seu Vale-Refeição na maquininha Point (VR, Sodexo/Pluxee, Alelo, Ticket).',
-      balcao_cartao: '💳 Pague na retirada no balcão da hamburgueria com cartão de crédito ou débito na maquininha Point.'
-    };
-    const hint = hints[payMode] || '';
-
-    if ($('#payHint')) {
-      $('#payHint').hidden = !hint;
-      $('#payHint').textContent = hint;
-    }
     if ($('#custCpfFld')) $('#custCpfFld').style.display = isPixOnline ? 'block' : 'none';
     if (typeof updateDeliveryButtonsState === 'function') {
       updateDeliveryButtonsState(lastValidationResult ? lastValidationResult.allowed : true);
@@ -2242,40 +2418,44 @@ window.__CFG__ = {
     return groups.map(({ t, days }) => `${days.length > 2 ? `${short[days[0]]} a ${short[days[days.length - 1]].toLowerCase()}`
       : days.map((d, k) => (k ? short[d].toLowerCase() : short[d])).join(' e ')} ${t}`).join(' · ');
   }
+  // Hora da loja: sempre no fuso de Brasília, igual ao servidor (o relógio do celular do cliente não manda)
+  function shopClock(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+    const get = (t) => parts.find((p) => p.type === t).value;
+    return { dow: { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[get('weekday')], minutes: Number(get('hour')) * 60 + Number(get('minute')) };
+  }
+  const SHOP_DAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+  const maxRadiusKm = () => parseFloat(SETTINGS?.delivery?.maxRadiusKm || 15);
+  // Mesma regra do servidor (que é quem manda): chave "aberta" ligada E dentro do horário do dia (se "seguir os
+  // horários" estiver ligado); horário que passa da meia-noite vale também na madrugada do dia seguinte
   function isStoreOpenBySettings() {
     if (!SETTINGS || !SETTINGS.store) return true;
     const store = SETTINGS.store;
     if (store.isOpenManual === false) return false;
-    if (store.autoSchedule === false) return store.isOpenManual !== false;
-
-    const sched = store.schedule;
-    if (!sched) return true;
-
-    const now = new Date();
-    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-    const todayKey = dayMap[now.getDay()];
-    const todaySched = sched[todayKey];
-    if (!todaySched || todaySched.active === false) return false;
-
-    const curMin = now.getHours() * 60 + now.getMinutes();
-    const [oh, om] = (todaySched.open || '18:00').split(':').map(Number);
-    const [ch, cm] = (todaySched.close || '23:45').split(':').map(Number);
-    const openMin = oh * 60 + om;
-    let closeMin = ch * 60 + cm;
-    if (closeMin < openMin) {
-      if (curMin >= openMin || curMin < closeMin) return true;
-      return false;
+    if (store.autoSchedule === false || !store.schedule) return true;
+    const { dow, minutes } = shopClock();
+    const toMin = (v, d) => { const [h, m] = String(v || d).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+    const today = store.schedule[SHOP_DAYS[dow]];
+    const yesterday = store.schedule[SHOP_DAYS[(dow + 6) % 7]];
+    if (today && today.active !== false) {
+      const o = toMin(today.open, '18:00');
+      const c = toMin(today.close, '23:45');
+      if (c >= o ? (minutes >= o && minutes <= c) : minutes >= o) return true;
     }
-    return curMin >= openMin && curMin <= closeMin;
+    if (yesterday && yesterday.active !== false) {
+      const o = toMin(yesterday.open, '18:00');
+      const c = toMin(yesterday.close, '23:45');
+      if (c < o && minutes < c) return true;
+    }
+    return false;
   }
 
   function paintHours() {
     const isOpen = isStoreOpenBySettings();
     const store = SETTINGS?.store;
-    const now = new Date();
-    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-    const todayKey = dayMap[now.getDay()];
-    const todaySched = store?.schedule?.[todayKey];
+    const todaySched = store?.schedule?.[SHOP_DAYS[shopClock().dow]];
+    const radiusLabel = $('#radiusMaxLabel');
+    if (radiusLabel) radiusLabel.textContent = `Raio máx: ${maxRadiusKm()} km`;
 
     const prepMin = store?.preparationTimeMin || 25;
     const prepMax = store?.preparationTimeMax || 45;
@@ -2357,7 +2537,7 @@ window.__CFG__ = {
     const list = MENU.map((m, i) => [m, i]).filter(([m]) => (cat === 'Todos' || m.cat === cat) && (!q || `${m.name} ${m.desc}`.toLowerCase().includes(q)));
     $('#count').textContent = `${list.length} ${list.length === 1 ? 'opção' : 'opções'}`;
     $('#grid').replaceChildren(...list.map(([m, i]) => {
-      const orig = getOrigPrice(m.price);
+      const orig = origPrice(m);
       const isPaused = m.paused === true;
       const card = el('div', { className: `item${isPaused ? ' paused-item' : ''}` },
         ...(isPaused ? [el('span', { className: 'badge-paused', textContent: 'ESGOTADO HOJE' })] : []),
@@ -2366,8 +2546,8 @@ window.__CFG__ = {
         el('p', { textContent: m.desc }),
         el('div', { className: 'row' },
           el('div', { className: 'price-box' },
-            el('span', { className: 'old-price', textContent: `De ${brl(orig)}` }),
-            el('span', { className: 'price', textContent: brl(m.price) })
+            ...(orig ? [el('span', { className: 'old-price', textContent: `De ${brl(orig)}` })] : []),
+            el('span', { className: 'price', textContent: brl(unitPrice(m)) })
           ),
           isPaused
             ? el('button', { className: 'add disabled', innerHTML: '✕', title: 'Produto esgotado hoje', disabled: true })
@@ -2379,13 +2559,16 @@ window.__CFG__ = {
     }));
     const cats = ['Todos', ...new Set(MENU.map((m) => m.cat))];
     $('#chips').replaceChildren(...cats.map((c) => el('button', { className: `chip${c === cat ? ' on' : ''}`, onclick: () => { cat = c; paintMenu(); } },
-      el('img', { src: img((MENU.find((m) => m.cat === c) || MENU[0]).img, 80), alt: '' }), c)));
+      el('img', { src: img(((MENU.find((m) => m.cat === c) || MENU[0]) || {}).img, 80), alt: '' }), c)));
+    if (!MENU.length) $('#grid').replaceChildren(el('p', { textContent: 'O cardápio está sendo atualizado. Volte em instantes.', style: 'grid-column:1/-1;padding:24px 8px;color:#8C827A;text-align:center' }));
   }
+  // "Em alta" vem do modelo da página como posições; vira nomes uma vez, porque a ordem do cardápio muda no painel
+  const TREND = (T.trend || []).map((i) => T.items[i] && T.items[i].name).filter(Boolean);
   function paintTrend() {
-    const trendList = (T.trend || []).filter(idx => MENU[idx]);
+    const trendList = TREND.map((n) => MENU.findIndex((m) => m.name === n)).filter((i) => i >= 0);
     $('#trend').replaceChildren(...trendList.map((i) => {
       const m = MENU[i];
-      const orig = getOrigPrice(m.price);
+      const orig = origPrice(m);
       const isPaused = m.paused === true;
       return el('div', { className: `tcard${isPaused ? ' paused-item' : ''}` },
         ...(isPaused ? [el('span', { className: 'badge-paused', textContent: 'ESGOTADO' })] : []),
@@ -2397,8 +2580,8 @@ window.__CFG__ = {
         ),
         el('div', { className: 'meta' }, el('span', { className: 'star', textContent: '★' }), `5,0 · ${m.cat}`),
         el('div', { className: 'tcard-price-row' },
-          el('span', { className: 'old-price', textContent: brl(orig) }),
-          el('span', { className: 'price', textContent: brl(m.price) })
+          ...(orig ? [el('span', { className: 'old-price', textContent: brl(orig) })] : []),
+          el('span', { className: 'price', textContent: brl(unitPrice(m)) })
         ),
         el('img', { src: img(m.img, 400), alt: m.name, loading: 'lazy' }),
         ...((!isPaused && qtyOf(i)) ? [el('span', {
@@ -2466,17 +2649,8 @@ window.__CFG__ = {
       document.querySelectorAll('#pay button').forEach((b) => b.classList.toggle('on', b === t));
       $('#payFld').classList.remove('miss');
       paintPay();
-      if (t.dataset.pay === 'cartao') {
-        startMpCardCheckout();
-      }
     }
 
-    if (t.id === 'btnPayPix' || t.closest('#btnPayPix')) {
-      startPixCheckout();
-    }
-    if (t.id === 'btnPayCardMp' || t.closest('#btnPayCardMp')) {
-      startMpCardCheckout();
-    }
     if (t.hasAttribute('data-clear')) { cart.clear(); paintCart(); paintMenu(); }
     if (t.hasAttribute('data-share')) navigator.share ? navigator.share({ title: st.nome, url: location.href }).catch(() => {}) : toast('Link pronto para compartilhar.');
   });
@@ -2536,7 +2710,7 @@ window.__CFG__ = {
         if (!isStoreOpen) {
           btn.title = 'Loja Fechada: ' + (SETTINGS?.store?.closedNotice || 'pedidos desativados no momento.');
         } else if (!pickup && !allowed) {
-          btn.title = 'Endereço fora do raio de entrega de 15 km';
+          btn.title = `Endereço fora do raio de entrega de ${maxRadiusKm()} km`;
         } else {
           btn.title = '';
         }
@@ -2732,7 +2906,7 @@ window.__CFG__ = {
       statusBox.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;">
           <span>⏳</span>
-          <span>Validando endereço e distância (máx 15 km)...</span>
+          <span>Validando endereço e distância (máx ${maxRadiusKm()} km)...</span>
         </div>
       `;
     }
@@ -2747,7 +2921,8 @@ window.__CFG__ = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             addressDetails: s,
-            unitId: currentUnit ? currentUnit.id : 'passo-dareia'
+            unitId: currentUnit ? currentUnit.id : 'passo-dareia',
+            subtotal: [...cart.entries()].reduce((sum, [i, q]) => sum + unitPrice(MENU[i]) * q, 0)
           })
         });
         const cType = res.headers.get('content-type') || '';
@@ -2758,22 +2933,9 @@ window.__CFG__ = {
         data = null;
       }
 
-      // Fallback autônomo (Google AI Studio ou backend indisponível)
+      // Sem resposta do servidor não dá para confirmar a distância (e o servidor confere o pedido de novo): entrega bloqueada
       if (!data) {
-        const u = currentUnit || DADS_UNITS[0];
-        const isPoaOrMetro = !s.cidade || /porto alegre|canoas|cachoeirinha|alvorada|gravata[ií]|viam[aã]o/i.test(s.cidade);
-        const distanceKm = isPoaOrMetro ? 2.8 : 24.0;
-        const allowed = isPoaOrMetro && distanceKm <= 15.0;
-        const fee = getDeliveryFeeByDistance(distanceKm);
-        data = {
-          valid: true,
-          allowed,
-          distanceKm,
-          deliveryFee: fee,
-          unitId: u.id,
-          unitName: u.fullName,
-          closestUnit: u
-        };
+        data = { valid: false, allowed: false, error: 'Não foi possível validar o endereço agora. Tente de novo ou escolha retirada.' };
       } else if (typeof data.deliveryFee !== 'number' && data.distanceKm) {
         data.deliveryFee = getDeliveryFeeByDistance(data.distanceKm);
       }
@@ -2847,7 +3009,7 @@ window.__CFG__ = {
         } else {
           switchHtml = `
             <div style="margin-top:8px;font-size:12px;color:#B91C1C;">
-              💡 Dica: Altere a opção acima para <strong>"Retirar no local"</strong> ou escolha outro endereço até 15 km.
+              💡 Dica: Altere a opção acima para <strong>"Retirar no local"</strong> ou escolha outro endereço até ${maxRadiusKm()} km.
             </div>
           `;
         }
@@ -2858,7 +3020,7 @@ window.__CFG__ = {
             <div style="flex:1">
               <div style="font-weight:700;font-size:13.5px">Fora do raio de entrega (${data.distanceKm} km)</div>
               <div style="font-size:12px;color:#7F1D1D;margin-top:3px;line-height:1.4">
-                O perímetro máximo de entrega é de <strong>15 km</strong> da loja (<strong>${data.unitName}</strong>). Pedidos acima de 15 km não são permitidos.
+                O perímetro máximo de entrega é de <strong>${maxRadiusKm()} km</strong> da loja (<strong>${data.unitName}</strong>). Pedidos acima de ${maxRadiusKm()} km não são permitidos.
               </div>
               ${switchHtml}
             </div>
@@ -3048,6 +3210,7 @@ window.__CFG__ = {
     const name = ($('#custName')?.value || '').trim();
     const phone = ($('#custPhone')?.value || '').trim();
     const cpf = ($('#custCpf')?.value || '').trim();
+    const email = ($('#custEmail')?.value || '').trim();
     const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const ref = ($('#delRef')?.value || '').trim();
 
@@ -3137,7 +3300,7 @@ window.__CFG__ = {
       }
     }
 
-    const subtotal = [...cart.entries()].reduce((sum, [i, q]) => sum + MENU[i].price * q, 0);
+    const subtotal = [...cart.entries()].reduce((sum, [i, q]) => sum + unitPrice(MENU[i]) * q, 0);
     let deliveryFee = 0;
     let distanceKm = 0;
 
@@ -3150,13 +3313,15 @@ window.__CFG__ = {
 
     const total = Math.round((pickup ? subtotal : (subtotal + deliveryFee)) * 100) / 100;
     const items = [...cart.entries()].map(([i, q]) => ({
+      ...(MENU[i].id ? { id: MENU[i].id } : {}),
       name: MENU[i].name,
-      price: MENU[i].price,
+      price: unitPrice(MENU[i]),
       q
     }));
 
     return {
       name,
+      email,
       phone: cleanPhone,
       cpf: cleanCpf,
       pickup,
@@ -3184,50 +3349,31 @@ window.__CFG__ = {
     const on = $('#pay .on');
     const payMode = on ? on.dataset.pay : 'balcao_cartao';
 
-    let paymentDesc = 'Pagar no Balcão';
-
-    if (payMode === 'balcao_vr') {
-      paymentDesc = 'Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)';
-    } else if (payMode === 'balcao_cartao') {
-      paymentDesc = 'Cartão Crédito/Débito no Balcão (Maquininha Point)';
-    } else {
-      paymentDesc = 'Pagar na Retirada no Balcão';
+    // Pedido para pagar no balcão: o servidor confere itens e total, escolhe a forma pelas configurações e dá o número do pedido
+    let created = null;
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payMode,
+          customer: { name: val.name, phone: val.phone },
+          order: {
+            items: val.items,
+            mode: 'retirada',
+            unitId: currentUnit ? currentUnit.id : 'passo-dareia',
+            ref: val.ref
+          }
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.success && data.order) created = data.order;
+    } catch (netErr) {
+      created = null;
     }
+    if (!created) return toast('Não foi possível enviar o pedido agora. Tente de novo em instantes.');
 
-    const orderId = `DAD-${Date.now().toString().slice(-4)}`;
-    const fullOrder = {
-      orderId,
-      id: orderId,
-      paymentId: 'ENTREGA-' + Date.now().toString().slice(-6),
-      mpOrderId: 'ENTREGA-' + Date.now().toString().slice(-6),
-      status: 'novo',
-      total: val.total,
-      customer: {
-        name: val.name,
-        phone: val.phone,
-        address: val.address || 'Retirada no balcão'
-      },
-      order: {
-        items: val.items,
-        subtotal: val.subtotal,
-        deliveryFee: val.deliveryFee,
-        distanceKm: val.distanceKm,
-        total: val.total,
-        mode: val.pickup ? 'retirada' : 'entrega',
-        address: val.address,
-        addressDetails: val.addressDetails,
-        ref: val.ref
-      },
-      unitId: currentUnit ? currentUnit.id : 'passo-dareia',
-      unitName: currentUnit ? currentUnit.fullName : "Dad's Burger",
-      paymentMethod: paymentDesc,
-      troco: trocoVal,
-      created_at: Date.now() / 1000,
-      isNew: true
-    };
-
-    registerOrderAndNotify(fullOrder);
-    openDeliverySuccessModal(fullOrder);
+    openDeliverySuccessModal(created);
   }
   window.startDeliveryCheckout = startDeliveryCheckout;
 
@@ -3327,166 +3473,269 @@ window.__CFG__ = {
     modal.hidden = false;
   }
 
+  // Respostas do servidor sobre as regras do dono (horário, raio, pagamento ligado, valor que mudou)
+  const OWNER_RULE_ERRORS = ['loja_fechada', 'fora_do_raio', 'endereco_nao_confirmado', 'forma_desativada', 'valor_mudou'];
+  function ownerRuleMessage(d) {
+    if (d.error === 'loja_fechada') { loadSettingsAndProducts(); return d.notice || 'A loja está fechada no momento.'; }
+    if (d.error === 'fora_do_raio') return 'Endereço fora da área de entrega.';
+    if (d.error === 'endereco_nao_confirmado') return 'Não conseguimos confirmar o endereço pelo CEP. Confira o CEP ou escolha retirada.';
+    if (d.error === 'forma_desativada') { loadSettingsAndProducts(); return 'Esta forma de pagamento não está disponível agora. Escolha outra.'; }
+    if (d.error === 'valor_mudou') {
+      loadSettingsAndProducts().then(() => checkDeliveryRadius(true));
+      return `O valor do pedido mudou para ${brl(d.total)}. Confira o total e pague de novo.`;
+    }
+    return '';
+  }
+
+  // Pagamento online: o Mercado Pago pede e-mail do comprador e nome com sobrenome (recibo, antifraude, aprovação)
+  const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  function checkOnlineBuyer(val) {
+    const twoWords = val.name.split(/\s+/).filter(Boolean).length >= 2;
+    $('#custNameFld')?.classList.toggle('miss', !twoWords);
+    if (!twoWords) {
+      $('#custName')?.focus();
+      toast('Digite nome e sobrenome.');
+      return false;
+    }
+    const mailOk = EMAIL_RE.test(val.email);
+    $('#custEmailFld')?.classList.toggle('miss', !mailOk);
+    if (!mailOk) {
+      $('#custEmail')?.focus();
+      toast('Digite um e-mail válido para receber o recibo.');
+      return false;
+    }
+    return true;
+  }
+
   // Disparo do Checkout Pix com Mercado Pago (Transparente via API)
   async function startPixCheckout() {
     const val = await validateCheckoutCustomerAndAddress(true);
-    if (!val) return;
+    if (!val || !checkOnlineBuyer(val)) return;
 
-    const orderId = `DAD-${Date.now().toString().slice(-4)}`;
     const btn = $('#btnPayPix');
     const origHtml = btn ? btn.innerHTML : '';
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span>Gerando Pix Mercado Pago...</span>';
+      btn.innerHTML = '<span>Gerando Pix...</span>';
     }
 
+    // O Pix nasce no servidor, no Mercado Pago. Sem resposta dele não existe QR Code: nada é simulado.
     let data = null;
+    let msg = 'Pagamento online indisponível agora. Tente de novo em instantes ou escolha outra forma de pagamento.';
     try {
       const res = await fetch('/api/mercadopago/pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer: { name: val.name, cpf: val.cpf, phone: val.phone, email: '' },
+          customer: { name: val.name, cpf: val.cpf, phone: val.phone, email: val.email },
+          deviceId: window.MP_DEVICE_SESSION_ID,
           order: {
             items: val.items,
-            subtotal: val.subtotal,
-            deliveryFee: val.deliveryFee,
-            distanceKm: val.distanceKm,
-            total: val.total,
+            expectedTotal: val.total,
             mode: val.pickup ? 'retirada' : 'entrega',
             address: val.address,
             addressDetails: val.addressDetails,
             unitId: currentUnit ? currentUnit.id : 'passo-dareia',
             ref: val.ref
-          },
-          orderId
+          }
         })
       });
-      const cType = res.headers.get('content-type') || '';
-      if (res.ok && cType.includes('application/json')) {
-        const resData = await res.json();
-        if (resData && !resData.error) data = resData;
-      }
+      const resData = await res.json().catch(() => null);
+      if (res.ok && resData && resData.success && resData.qrCode) data = resData;
+      else if (resData && OWNER_RULE_ERRORS.includes(resData.error)) msg = ownerRuleMessage(resData);
+      else if (resData && resData.error === 'item_indisponivel') msg = 'Algum item saiu do cardápio. Atualize a página e refaça o pedido.';
+      else if (resData && resData.error === 'cpf_invalido') msg = 'Confira o CPF informado.';
+      else if (resData && resData.error === 'email_invalido') msg = 'Confira o e-mail informado.';
+      else if (resData && resData.error === 'nome_completo') msg = 'Digite nome e sobrenome.';
     } catch (netErr) {
       data = null;
     }
 
-    // Se o backend não responder (Google AI Studio ou offline), gera Pix simulado autônomo
-    if (!data) {
-      const mockQr = `00020126580014BR.GOV.BCB.PIX0136dadsburger51993248655@mercadopago.com520400005303986540${val.total.toFixed(2)}5802BR5912DADS BURGER6012PORTO ALEGRE62070503***6304E2CA`;
-      const mpNumericId = String(Math.floor(1000000000 + Math.random() * 9000000000));
-      data = {
-        success: true,
-        orderId,
-        paymentId: mpNumericId,
-        mpOrderId: mpNumericId,
-        qrCode: mockQr,
-        qrCodePayload: mockQr,
-        qrCodeImage: `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(mockQr)}`,
-        status: 'pending',
-        isMock: true
-      };
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origHtml;
     }
+    if (!data) return toast(msg);
 
-    try {
-      currentPixPayment = {
-        ...data,
-        name: val.name,
-        phone: val.phone,
-        total: val.total,
-        items: val.items,
-        pickup: val.pickup,
-        addr: val.address,
-        ref: val.ref,
-        orderId: data.orderId || orderId
-      };
-
-      openPixModal(currentPixPayment);
-      // O registro e notificação ao gestor é disparado exclusivamente após a confirmação do pagamento em showPaymentSuccess()
-
-    } catch (err) {
-      toast('Falha ao gerar Pix: ' + err.message);
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = origHtml;
-      }
-    }
+    currentPixPayment = { ...data, name: val.name, phone: val.phone, pickup: val.pickup, addr: val.address, ref: val.ref };
+    openPixModal(currentPixPayment);
+    // O pedido só chega ao quadro do restaurante depois que o Mercado Pago confirmar o pagamento (feito pelo servidor)
   }
   window.startPixCheckout = startPixCheckout;
   window.startAsaasPixCheckout = startPixCheckout;
 
   // -------------------------------------------------------------
-  // CONTROLE DO MODAL DE CARTÃO INSTANTÂNEO MERCADO PAGO
+  // CARTÃO (Mercado Pago, campos seguros)
+  // Número, validade e CVV são digitados em campos do próprio Mercado Pago (iframes): este site nunca vê o
+  // número do cartão. Ele recebe só um token e manda o token ao servidor, que cria a cobrança.
   // -------------------------------------------------------------
   let currentCardOrder = null;
+  let mpFields = null;
+  let cardBin = '';
+  let cardMethod = null; // { id, issuerId } conforme o BIN do cartão e o tipo (crédito ou débito)
+  let cardBusy = false;
+
+  const cardKind = () => ($('#pay .on')?.dataset.pay === 'cartao_debito_online' ? 'debit_card' : 'credit_card');
+
+  function unmountCardFields() {
+    if (mpFields) Object.values(mpFields).forEach((f) => { try { f.unmount(); } catch (e) {} });
+    mpFields = null;
+    cardBin = '';
+    cardMethod = null;
+  }
 
   function closeCardModal() {
     const modal = $('#cardModal');
     if (modal) modal.hidden = true;
     document.body.style.overflow = '';
+    unmountCardFields();
   }
   const cardCloseBtn = $('#cardClose');
   if (cardCloseBtn) cardCloseBtn.addEventListener('click', closeCardModal);
   const cardBackdropEl = $('#cardBackdrop');
   if (cardBackdropEl) cardBackdropEl.addEventListener('click', closeCardModal);
 
-  function detectCardBrand(num) {
-    const clean = (num || '').replace(/\D/g, '');
-    if (/^4/.test(clean)) return { id: 'visa', name: 'Visa', icon: 'VISA' };
-    if (/^(5[1-5]|2[2-7])/.test(clean)) return { id: 'master', name: 'Mastercard', icon: 'MASTERCARD' };
-    if (/^(4011|4389|5041|6362|6363|5067|4576|5090)/.test(clean)) return { id: 'elo', name: 'Elo', icon: 'ELO' };
-    if (/^3[47]/.test(clean)) return { id: 'amex', name: 'Amex', icon: 'AMEX' };
-    if (/^(6062|3841)/.test(clean)) return { id: 'hipercard', name: 'Hipercard', icon: 'HIPERCARD' };
-    return { id: 'master', name: 'Cartão', icon: 'CARTÃO' };
+  // Cartão virtual: só o BIN (primeiros 6 dígitos) chega até aqui; o resto do número fica dentro do campo seguro do Mercado Pago
+  function paintCardNumber(bin) {
+    const box = $('#cardNumPreview');
+    if (!box) return;
+    const amex = $('#cc')?.dataset.brand === 'amex';
+    const chars = Array.from({ length: amex ? 15 : 16 }, (_, i) => ((bin || '')[i] && i < 6 ? bin[i] : '•'));
+    const groups = amex ? [chars.slice(0, 4), chars.slice(4, 10), chars.slice(10)] : [0, 4, 8, 12].map((i) => chars.slice(i, i + 4));
+    box.textContent = groups.map((g) => g.join('')).join(' ');
   }
 
-  function formatCardNumber(v) {
-    const clean = (v || '').replace(/\D/g, '').slice(0, 16);
-    return clean.replace(/(\d{4})(?=\d)/g, '$1 ');
+  // Campo em foco: o cartão destaca a região certa; o CVV vira o cartão para o verso
+  function focusCard(name) {
+    const cc = $('#cc');
+    if (!cc) return;
+    cc.classList.toggle('flip', name === 'cvv');
+    cc.dataset.focus = name === 'cvv' ? '' : (name || '');
   }
 
-  function formatExpiry(v) {
-    const clean = (v || '').replace(/\D/g, '').slice(0, 4);
-    if (clean.length >= 2) return `${clean.slice(0, 2)}/${clean.slice(2)}`;
-    return clean;
+  function cardValidity(name, ev) {
+    const bad = Boolean(ev && ((Array.isArray(ev.errorMessages) && ev.errorMessages.length) || ev.valid === false));
+    if (name === 'expiry' && $('#ccExp')) $('#ccExp').textContent = bad ? 'MM/AA' : '••/••';
   }
 
-  // Abertura do Modal de Cartão Instantâneo
-  function openCardModal(val) {
-    currentCardOrder = {
-      ...val,
-      orderId: `DAD-${Date.now().toString().slice(-4)}`
-    };
+  function resetCardPreview() {
+    const cc = $('#cc');
+    if (!cc) return;
+    cc.classList.remove('flip');
+    cc.dataset.focus = '';
+    cc.dataset.brand = '';
+    if ($('#ccKind')) $('#ccKind').textContent = cardKind() === 'debit_card' ? 'DÉBITO' : 'CRÉDITO';
+    if ($('#ccExp')) $('#ccExp').textContent = 'MM/AA';
+    paintCardNumber('');
+  }
 
-    if ($('#cardModalAmount')) $('#cardModalAmount').textContent = brl(val.total);
-    if ($('#cardModalTitle')) $('#cardModalTitle').textContent = 'Pagar com Cartão';
-
-    // Gera opções de parcelas
-    const sel = $('#cardInstallments');
-    if (sel) {
-      const opts = [];
-      for (let i = 1; i <= 12; i++) {
-        const valParc = val.total / i;
-        if (i === 1) opts.push(`<option value="1">1x de ${brl(valParc)} à vista</option>`);
-        else if (valParc >= 5) opts.push(`<option value="${i}">${i}x de ${brl(valParc)} sem juros</option>`);
-      }
-      sel.innerHTML = opts.join('');
+  // Marca do cartão (vem do BIN): logo oficial no cartão virtual e no campo do número, e a cor do cartão acompanha
+  function setCardBrand(method) {
+    const id = method ? String(method.id).replace(/^deb/, '') : '';
+    const key = BRAND_SRC[id] ? id : '';
+    const cc = $('#cc');
+    if (cc) cc.dataset.brand = key;
+    ['#ccBrandLogo', '#ccBrandLogoBack'].forEach((sel) => {
+      const im = $(sel);
+      if (!im) return;
+      if (key) { im.src = BRAND_SRC[key]; im.alt = BRAND_NAME[key]; im.hidden = false; } else { im.hidden = true; im.removeAttribute('src'); }
+      if (im.parentElement) im.parentElement.style.visibility = key ? 'visible' : 'hidden';
+    });
+    const badge = $('#cardBrandBadge');
+    if (badge) {
+      badge.replaceChildren();
+      if (key) badge.append(brandImg(key)); else badge.textContent = method ? '' : '💳';
     }
+    paintCardNumber(cardBin);
+  }
 
-    // Pré-preenche se já houver dados
+  function resetInstallments() {
+    const sel = $('#cardInstallments');
+    if (sel) sel.replaceChildren(new Option(cardKind() === 'debit_card' ? 'Débito à vista' : 'Digite o número do cartão', '1'));
+  }
+
+  // Parcelas vêm do Mercado Pago (com o juro de cada uma, se houver)
+  async function loadInstallments(bin) {
+    const sel = $('#cardInstallments');
+    if (!sel || !currentCardOrder) return;
+    const res = await window.mp.getInstallments({ amount: String(currentCardOrder.total), bin, paymentTypeId: 'credit_card' });
+    if (bin !== cardBin) return;
+    const info = Array.isArray(res) ? res[0] : null;
+    const costs = (info && info.payer_costs) || [];
+    if (!costs.length) { resetInstallments(); return; }
+    sel.replaceChildren(...costs.slice(0, 12).map((c) => new Option(c.recommended_message || `${c.installments}x`, String(c.installments))));
+    if (info.issuer && info.issuer.id && cardMethod) cardMethod.issuerId = info.issuer.id;
+  }
+
+  // Quando o cliente digita os primeiros números, o Mercado Pago diz qual cartão é
+  async function onCardBin(ev) {
+    const bin = ev && ev.bin;
+    if (!bin) { cardBin = ''; cardMethod = null; setCardBrand(null); resetInstallments(); return; }
+    if (bin === cardBin) return;
+    cardBin = bin;
+    cardMethod = null;
+    paintCardNumber(bin);
+    try {
+      const kind = cardKind();
+      const found = await window.mp.getPaymentMethods({ bin });
+      if (bin !== cardBin) return; // o cliente já digitou outro número
+      const m = ((found && found.results) || []).find((x) => x.payment_type_id === kind);
+      setCardBrand(m || null);
+      if (!m) {
+        resetInstallments();
+        toast(kind === 'debit_card' ? 'Este cartão não aceita débito online.' : 'Este cartão não é aceito. Tente outro ou use o Pix.');
+        return;
+      }
+      cardMethod = { id: m.id, issuerId: m.issuer && m.issuer.id };
+      if (kind === 'credit_card') await loadInstallments(bin);
+    } catch (e) {
+      setCardBrand(null);
+    }
+  }
+
+  function mountCardFields() {
+    if (!window.mp || !window.mp.fields) return false;
+    try {
+      mpFields = {
+        number: window.mp.fields.create('cardNumber', { placeholder: '0000 0000 0000 0000' }).mount('mpCardNumber'),
+        expiry: window.mp.fields.create('expirationDate', { placeholder: 'MM/AA' }).mount('mpCardExpiry'),
+        cvv: window.mp.fields.create('securityCode', { placeholder: '123' }).mount('mpCardCvv')
+      };
+      mpFields.number.on('binChange', onCardBin);
+      [['number', 'number'], ['expiry', 'expiry'], ['cvv', 'cvv']].forEach(([k, name]) => {
+        try {
+          mpFields[k].on('focus', () => focusCard(name));
+          mpFields[k].on('blur', () => focusCard(''));
+          mpFields[k].on('validityChange', (ev) => cardValidity(name, ev));
+        } catch (e) {}
+      });
+      return true;
+    } catch (e) {
+      unmountCardFields();
+      return false;
+    }
+  }
+
+  // Abertura do formulário do cartão
+  function openCardModal(val) {
+    currentCardOrder = { ...val };
+    const kind = cardKind();
+    if ($('#cardModalAmount')) $('#cardModalAmount').textContent = brl(val.total);
+    if ($('#cardModalTitle')) $('#cardModalTitle').textContent = kind === 'debit_card' ? 'Pagar no débito' : 'Pagar no crédito';
     if (val.cpf && $('#cardCpf')) $('#cardCpf').value = maskCpf(val.cpf);
     if (val.name && $('#cardHolder')) {
       $('#cardHolder').value = val.name.toUpperCase();
       if ($('#cardNamePreview')) $('#cardNamePreview').textContent = val.name.toUpperCase();
     }
+    resetCardPreview();
+    setCardBrand(null);
+    resetInstallments();
 
     const btnSubmit = $('#btnSubmitCardPay');
     if (btnSubmit) {
-      btnSubmit.textContent = `🔒 Confirmar Pagamento de ${brl(val.total)}`;
+      btnSubmit.textContent = `🔒 Pagar ${brl(val.total)}`;
       btnSubmit.disabled = false;
     }
-
     if ($('#cardStepForm')) $('#cardStepForm').hidden = false;
     if ($('#cardStepSuccess')) $('#cardStepSuccess').hidden = true;
     const cardModalEl = $('#cardModal');
@@ -3494,22 +3743,14 @@ window.__CFG__ = {
       cardModalEl.hidden = false;
       document.body.style.overflow = 'hidden';
     }
+    unmountCardFields();
+    if (!mountCardFields()) {
+      closeCardModal();
+      toast('Pagamento com cartão indisponível agora. Use o Pix.');
+    }
   }
   window.openCardModal = openCardModal;
   window.closeCardModal = closeCardModal;
-
-  // Interatividade do Formulário do Cartão
-  const cardNumEl = $('#cardNum');
-  if (cardNumEl) {
-    cardNumEl.addEventListener('input', (e) => {
-      const formatted = formatCardNumber(e.target.value);
-      e.target.value = formatted;
-      const brand = detectCardBrand(formatted);
-      if ($('#cardBrandIcon')) $('#cardBrandIcon').textContent = brand.icon;
-      if ($('#cardBrandBadge')) $('#cardBrandBadge').textContent = brand.icon === 'CARTÃO' ? '💳' : brand.icon;
-      if ($('#cardNumPreview')) $('#cardNumPreview').textContent = formatted || '•••• •••• •••• ••••';
-    });
-  }
 
   const cardHolderEl = $('#cardHolder');
   if (cardHolderEl) {
@@ -3517,22 +3758,8 @@ window.__CFG__ = {
       e.target.value = e.target.value.toUpperCase();
       if ($('#cardNamePreview')) $('#cardNamePreview').textContent = e.target.value || 'SEU NOME';
     });
-  }
-
-  const cardExpEl = $('#cardExp');
-  if (cardExpEl) {
-    cardExpEl.addEventListener('input', (e) => {
-      const formatted = formatExpiry(e.target.value);
-      e.target.value = formatted;
-      if ($('#cardExpPreview')) $('#cardExpPreview').textContent = formatted || 'MM/AA';
-    });
-  }
-
-  const cardCvvEl = $('#cardCvv');
-  if (cardCvvEl) {
-    cardCvvEl.addEventListener('input', (e) => {
-      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
-    });
+    cardHolderEl.addEventListener('focus', () => focusCard('holder'));
+    cardHolderEl.addEventListener('blur', () => focusCard(''));
   }
 
   const cardCpfEl = $('#cardCpf');
@@ -3542,181 +3769,179 @@ window.__CFG__ = {
     });
   }
 
-  // Disparo do Checkout Cartão (Abre Pop-up Instantaneamente)
+  // Vale-refeição pelo site (VR / Pluxee / Ticket). Fica "em breve" até o provedor ser conectado
+  // (settings.payments.vr_online com connected e enabled = true). A cobrança nasce no servidor
+  // (POST /api/vr/charges) e o pedido só vale quando o provedor confirmar: o navegador nunca aprova nada
+  // e, sem "ok" do servidor, nenhum pedido é registrado.
+  // Falta, junto com o provedor: o formulário do cartão VR com token do provedor (o número do cartão
+  // não passa pelo nosso servidor).
+  const vrLive = () => { const v = SETTINGS?.payments?.vr_online; return Boolean(v && v.enabled && v.connected); };
+  let vrBusy = false;
+  async function startVrCheckout() {
+    if (!vrLive()) return toast('Vale-refeição pelo site ainda não está disponível. Use Pix, cartão ou pague no balcão.');
+    if (vrBusy) return;
+    vrBusy = true;
+    try {
+      const val = await validateCheckoutCustomerAndAddress(false);
+      if (!val) return;
+      const res = await fetch('/api/vr/charges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: { name: val.name, phone: val.phone },
+          order: {
+            items: val.items,
+            deliveryFee: val.deliveryFee,
+            distanceKm: val.distanceKm,
+            mode: val.pickup ? 'retirada' : 'entrega',
+            address: val.address,
+            unitId: currentUnit ? currentUnit.id : 'passo-dareia',
+            ref: val.ref
+          }
+        })
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || data.ok !== true) throw new Error((data && data.error) || 'indisponivel');
+      toast('Pagamento enviado. Aguardando a confirmação do vale-refeição.');
+    } catch (err) {
+      toast('Não foi possível iniciar o pagamento com vale-refeição agora.');
+    } finally {
+      vrBusy = false;
+    }
+  }
+
+  // Disparo do Checkout Cartão (abre o formulário com os campos seguros do Mercado Pago)
   async function startMpCardCheckout() {
+    if ($('#pay .on')?.dataset.pay === 'vr_online') return startVrCheckout();
     const val = await validateCheckoutCustomerAndAddress(false);
-    if (!val) return;
+    if (!val || !checkOnlineBuyer(val)) return;
     openCardModal(val);
   }
   window.startMpCardCheckout = startMpCardCheckout;
 
-  // Envio e Processamento do Pagamento do Cartão
+  const CARD_REJECT = {
+    cc_rejected_insufficient_amount: 'Saldo ou limite insuficiente no cartão.',
+    cc_rejected_bad_filled_card_number: 'Confira o número do cartão.',
+    cc_rejected_bad_filled_date: 'Confira a validade do cartão.',
+    cc_rejected_bad_filled_security_code: 'Confira o código de segurança (CVV).',
+    cc_rejected_bad_filled_other: 'Confira os dados do cartão.',
+    cc_rejected_call_for_authorize: 'O banco pede autorização. Ligue para o banco ou tente outro cartão.',
+    cc_rejected_card_disabled: 'Cartão desabilitado. Ligue para o banco.',
+    cc_rejected_high_risk: 'Pagamento recusado por segurança. Tente o Pix.',
+    cc_rejected_max_attempts: 'Limite de tentativas atingido. Tente outro cartão.',
+    cc_rejected_duplicated_payment: 'Este pagamento já foi feito. Confira se o pedido foi enviado.'
+  };
+
+  // Envio do pagamento do cartão: token do Mercado Pago + dados do pedido; quem cobra é o servidor
   const btnSubmitCardPayEl = $('#btnSubmitCardPay');
   if (btnSubmitCardPayEl) {
     btnSubmitCardPayEl.addEventListener('click', async () => {
-      if (!currentCardOrder) return;
-
-      const rawNum = ($('#cardNum')?.value || '').replace(/\D/g, '');
+      if (!currentCardOrder || cardBusy) return;
       const holder = ($('#cardHolder')?.value || '').trim();
-      const exp = ($('#cardExp')?.value || '').trim();
-      const cvv = ($('#cardCvv')?.value || '').trim();
       const rawCpf = ($('#cardCpf')?.value || '').replace(/\D/g, '');
-      const installments = Number($('#cardInstallments')?.value || 1);
-
-      if (rawNum.length < 13) {
-        $('#cardNum')?.focus();
-        return toast('Digite um número de cartão válido.');
-      }
+      const installments = cardKind() === 'debit_card' ? 1 : Number($('#cardInstallments')?.value || 1);
+      if (!cardMethod) return toast('Digite o número do cartão.');
       if (holder.length < 3) {
         $('#cardHolder')?.focus();
         return toast('Digite o nome impresso no cartão.');
-      }
-      const expParts = exp.split('/');
-      const expMonth = Number(expParts[0]);
-      const expYear = Number(expParts[1]);
-      if (!expMonth || expMonth < 1 || expMonth > 12 || !expYear) {
-        $('#cardExp')?.focus();
-        return toast('Validade do cartão incorreta (MM/AA).');
-      }
-      if (cvv.length < 3) {
-        $('#cardCvv')?.focus();
-        return toast('Digite o código CVV de segurança.');
       }
       if (rawCpf.length !== 11) {
         $('#cardCpf')?.focus();
         return toast('Digite um CPF válido com 11 dígitos.');
       }
 
-      const brand = detectCardBrand(rawNum).id;
+      cardBusy = true;
       btnSubmitCardPayEl.disabled = true;
-      btnSubmitCardPayEl.textContent = '⏳ Processando com Mercado Pago...';
-
+      btnSubmitCardPayEl.textContent = '⏳ Processando...';
       try {
-        let tokenId = '';
-        if (window.mp && typeof window.mp.createCardToken === 'function') {
-          try {
-            const tRes = await window.mp.createCardToken({
-              cardNumber: rawNum,
-              cardholderName: holder,
-              cardExpirationMonth: String(expMonth).padStart(2, '0'),
-              cardExpirationYear: expYear < 100 ? `20${expYear}` : String(expYear),
-              securityCode: cvv,
-              identification: {
-                type: 'CPF',
-                number: rawCpf
-              }
-            });
-            if (tRes && tRes.id) tokenId = tRes.id;
-          } catch (tErr) {
-            console.warn('Tokenização client-side fallback:', tErr);
-          }
-        }
-
-        let data = null;
+        let token = null;
         try {
-          const res = await fetch('/api/mercadopago/card-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              card: {
-                cardNumber: rawNum,
-                cardholderName: holder,
-                cardExpirationMonth: expMonth,
-                cardExpirationYear: expYear < 100 ? 2000 + expYear : expYear,
-                securityCode: cvv,
-                identificationNumber: rawCpf,
-                installments,
-                paymentMethodId: brand,
-                token: tokenId
-              },
-              customer: {
-                name: currentCardOrder.name,
-                phone: currentCardOrder.phone,
-                cpf: rawCpf,
-                email: ''
-              },
-              order: {
-                items: currentCardOrder.items,
-                subtotal: currentCardOrder.subtotal,
-                deliveryFee: currentCardOrder.deliveryFee,
-                distanceKm: currentCardOrder.distanceKm,
-                total: currentCardOrder.total,
-                mode: currentCardOrder.pickup ? 'retirada' : 'entrega',
-                address: currentCardOrder.address,
-                addressDetails: currentCardOrder.addressDetails,
-                unitId: currentUnit ? currentUnit.id : 'passo-dareia',
-                ref: currentCardOrder.ref
-              },
-              orderId: currentCardOrder.orderId
-            })
-          });
-          const cType = res.headers.get('content-type') || '';
-          if (res.ok && cType.includes('application/json')) {
-            const resData = await res.json();
-            if (resData && resData.success) data = resData;
-          }
-        } catch (netErr) {
-          data = null;
+          token = await window.mp.fields.createCardToken({ cardholderName: holder, identificationType: 'CPF', identificationNumber: rawCpf });
+        } catch (tokenErr) {
+          token = null;
         }
+        if (!token || !token.id) return toast('Confira os dados do cartão (número, validade e código).');
 
-        // Se o backend não responder (Google AI Studio ou offline), aprova em modo simulação
-        if (!data) {
-          data = {
-            success: true,
-            status: 'approved',
-            paymentId: 'CARD-SIM-' + Date.now().toString().slice(-6),
-            isSimulation: true
-          };
+        const o = currentCardOrder;
+        const res = await fetch('/api/mercadopago/card-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer: { name: o.name, phone: o.phone, cpf: rawCpf, email: o.email },
+            order: {
+              items: o.items,
+              expectedTotal: o.total,
+              mode: o.pickup ? 'retirada' : 'entrega',
+              address: o.address,
+              addressDetails: o.addressDetails,
+              unitId: currentUnit ? currentUnit.id : 'passo-dareia',
+              ref: o.ref
+            },
+            card: {
+              token: token.id,
+              paymentMethodId: cardMethod.id,
+              issuerId: cardMethod.issuerId,
+              installments,
+              deviceId: window.MP_DEVICE_SESSION_ID
+            }
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data && data.success && data.status === 'approved') {
+          showCardPaymentSuccess(data);
+        } else if (res.ok && data && data.success) {
+          closeCardModal();
+          toast('Pagamento em análise no Mercado Pago. Se for aprovado, o pedido segue para a cozinha.');
+        } else if (res.status === 402 && data) {
+          toast(CARD_REJECT[data.reason] || 'Pagamento recusado. Tente outro cartão ou use o Pix.');
+        } else if (data && OWNER_RULE_ERRORS.includes(data.error)) {
+          if (data.error === 'loja_fechada' || data.error === 'valor_mudou') closeCardModal();
+          toast(ownerRuleMessage(data));
+        } else if (data && (data.error === 'email_invalido' || data.error === 'nome_completo')) {
+          toast('Confira nome e sobrenome e o e-mail antes de pagar.');
+        } else {
+          toast('Pagamento com cartão indisponível agora. Tente de novo ou use o Pix.');
         }
-
-        showCardPaymentSuccess(currentCardOrder, data);
-
       } catch (err) {
-        toast('Erro no cartão: ' + err.message);
+        toast('Não foi possível processar o cartão agora. Tente de novo ou use o Pix.');
       } finally {
+        cardBusy = false;
         btnSubmitCardPayEl.disabled = false;
-        btnSubmitCardPayEl.textContent = `🔒 Confirmar Pagamento de ${brl(currentCardOrder.total)}`;
+        btnSubmitCardPayEl.textContent = `🔒 Pagar ${brl(currentCardOrder ? currentCardOrder.total : 0)}`;
       }
     });
   }
 
-  // Tela de Sucesso do Cartão
-  function showCardPaymentSuccess(order, payData) {
+  // Tela de Sucesso do Cartão: só depois que o servidor confirmou a aprovação no Mercado Pago
+  function showCardPaymentSuccess(data) {
     if ($('#cardStepForm')) $('#cardStepForm').hidden = true;
     if ($('#cardStepSuccess')) $('#cardStepSuccess').hidden = false;
 
+    const o = currentCardOrder || {};
     const badge = $('#cardSuccessOrderBadge');
-    const orderId = order.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const mpId = String(order.paymentId || order.mpOrderId || payData?.id || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
-    order.orderId = orderId;
-    order.paymentId = mpId;
-    order.mpOrderId = mpId;
-
     if (badge) {
       badge.innerHTML = `
-        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${orderId} · PAGO NO CARTÃO</div>
+        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${data.orderId} · PAGO NO CARTÃO</div>
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-size:12px;background:rgba(22,163,74,0.1);padding:6px 10px;border-radius:8px">
           <span style="font-weight:700;color:#166534">ID Mercado Pago:</span>
-          <code style="font-family:monospace;font-weight:800;color:#0F172A;font-size:13px">${mpId}</code>
-          <button type="button" onclick="navigator.clipboard.writeText('${mpId}');showToast('ID Mercado Pago copiado!')" style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
+          <code style="font-family:monospace;font-weight:800;color:#0F172A;font-size:13px">${data.paymentId}</code>
+          <button type="button" data-copy style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
         </div>
       `;
+      badge.querySelector('[data-copy]').onclick = () => {
+        try { navigator.clipboard.writeText(String(data.paymentId)); } catch (e) {}
+        toast('ID Mercado Pago copiado!');
+      };
     }
-    registerOrderAndNotify({
-      ...order,
-      orderId,
-      paymentId: mpId,
-      mpOrderId: mpId,
-      paymentMethod: 'Cartão ' + (payData?.brand ? payData.brand.toUpperCase() : '')
-    });
 
-    const itemsSummary = (order.items || []).map((it) => `
+    const itemsSummary = (data.items || []).map((it) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
         <span style="color:#27272A"><b>${it.q}x</b> ${it.name}</span>
         <span style="font-weight:700;color:#18181B;white-space:nowrap;margin-left:12px">${brl(it.price * it.q)}</span>
       </div>
     `).join('');
-    const where = order.pickup ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${order.address}${order.ref ? ` (${order.ref})` : ''}`;
+    const where = o.pickup ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${o.address}${o.ref ? ` (${o.ref})` : ''}`;
+    const brand = String(data.brand || 'cartão').replace(/^deb/, '').toUpperCase();
 
     const details = $('#cardSuccessDetails');
     if (details) {
@@ -3727,11 +3952,11 @@ window.__CFG__ = {
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:700;color:#27272A;margin-bottom:6px">
           <span>Forma de Pagamento</span>
-          <span>💳 ${payData.brand || 'Cartão'} (${payData.installments || 1}x)</span>
+          <span>💳 ${brand} (${data.installments || 1}x)</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:900;color:#121212">
           <span>Total Aprovado</span>
-          <span style="color:#16A34A">${brl(order.total)}</span>
+          <span style="color:#16A34A">${brl(data.total)}</span>
         </div>
         <div style="margin-top:10px;padding-top:8px;border-top:1px solid #ECE7E1;color:#71717A;font-size:12px;display:flex;align-items:center;gap:6px">
           <span>📍</span><span>${where}</span>
@@ -3778,7 +4003,7 @@ window.__CFG__ = {
 
 
     // Timer regressivo (15 minutos)
-    let left = 15 * 60;
+    let left = 30 * 60; // o Mercado Pago só aceita Pix com validade a partir de 30 minutos
     const timerEl = $('#pixTimer');
     if (pixTimerInterval) clearInterval(pixTimerInterval);
     const fmtTimer = () => {
@@ -3813,10 +4038,13 @@ window.__CFG__ = {
         if (!res.ok) return;
         const data = await res.json();
 
-        if (data.confirmed || data.status === 'approved' || data.status === 'RECEIVED' || data.status === 'CONFIRMED') {
+        if (data.confirmed) {
           clearInterval(pixPollInterval);
           pixPollInterval = null;
           showPaymentSuccess(currentPixPayment);
+        } else if (['cancelled', 'rejected', 'expired'].includes(data.status)) {
+          closePixModal();
+          toast('Este Pix expirou ou foi cancelado. Gere um novo.');
         }
       } catch (e) {
         // Ignora oscilação momentânea
@@ -3832,12 +4060,10 @@ window.__CFG__ = {
     $('#pixStepWait').hidden = true;
     $('#pixStepSuccess').hidden = false;
 
+    // Número do pedido e do pagamento são os do servidor e do Mercado Pago (o pedido já está registrado lá)
     const badge = $('#pixSuccessOrderBadge');
-    const orderId = pay.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const mpId = String(pay.paymentId || pay.mpOrderId || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
-    pay.orderId = orderId;
-    pay.paymentId = mpId;
-    pay.mpOrderId = mpId;
+    const orderId = pay.orderId;
+    const mpId = String(pay.paymentId || '');
 
     if (badge) {
       badge.innerHTML = `
@@ -3845,11 +4071,14 @@ window.__CFG__ = {
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px;font-size:12px;background:rgba(22,163,74,0.1);padding:6px 10px;border-radius:8px">
           <span style="font-weight:700;color:#166534">ID Mercado Pago:</span>
           <code style="font-family:monospace;font-weight:800;color:#0F172A;font-size:13px">${mpId}</code>
-          <button type="button" onclick="navigator.clipboard.writeText('${mpId}');showToast('ID Mercado Pago copiado!')" style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
+          <button type="button" data-copy style="background:#166534;color:#fff;border:none;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">Copiar</button>
         </div>
       `;
+      badge.querySelector('[data-copy]').onclick = () => {
+        try { navigator.clipboard.writeText(mpId); } catch (e) {}
+        toast('ID Mercado Pago copiado!');
+      };
     }
-    registerOrderAndNotify({ ...pay, orderId, paymentId: mpId, mpOrderId: mpId, paymentMethod: 'Pix' });
 
     const itemsSummary = (pay.items || []).map((it) => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
@@ -3928,20 +4157,33 @@ window.__CFG__ = {
       SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     }
     window.SETTINGS = SETTINGS;
+    paintLogos(); // a logo que o dono enviou no painel vale no lugar da logo do site
 
-    // 2. Products
-    try {
-      const resP = await fetch('/api/admin/products');
-      if (resP.ok) {
-        const list = await resP.json();
-        if (Array.isArray(list) && list.length > 0) {
-          MENU = list;
-          localStorage.setItem('dads_products', JSON.stringify(list));
+    // 2. Cardápio. /api/menu traz só os produtos visíveis, na ordem escolhida no painel (lista vazia = o dono escondeu tudo).
+    // Sem servidor (site estático) vale o último cardápio guardado neste aparelho e, por fim, o que vem junto com a página.
+    let served = null;
+    for (const url of ['/api/menu', '/api/admin/products']) {
+      try {
+        const resP = await fetch(url);
+        if (resP.ok) {
+          const list = await resP.json();
+          if (Array.isArray(list)) { served = list.filter((p) => p && !p.hidden); break; }
         }
+      } catch (e) {}
+    }
+    if (served) {
+      // O carrinho guarda posições no cardápio: com outra ordem ou outros produtos, refaz pelo nome
+      const kept = [...cart.entries()].map(([i, q]) => [MENU[i] && MENU[i].name, q]);
+      MENU = served;
+      cart.clear();
+      for (const [name, q] of kept) {
+        const j = MENU.findIndex((m) => m.name === name);
+        if (j >= 0 && !MENU[j].paused) cart.set(j, q);
       }
-    } catch (e) {}
+      try { localStorage.setItem('dads_products', JSON.stringify(served)); } catch (e) {}
+    }
 
-    if (!MENU || !MENU.length || MENU === T.items) {
+    if (!served && (!MENU || !MENU.length || MENU === T.items)) {
       try {
         const cachedP = localStorage.getItem('dads_products');
         if (cachedP) {
@@ -4093,60 +4335,6 @@ window.__CFG__ = {
   if (P.has('aba')) go(P.get('aba'));
 
 
-
-  // -------------------------------------------------------------
-  // REGISTRO GLOBAL DE PEDIDOS E NOTIFICAÇÃO
-  // -------------------------------------------------------------
-  function registerOrderAndNotify(orderData) {
-    if (!orderData) return;
-    const orderId = orderData.orderId || `DAD-${Math.floor(1000 + Math.random() * 9000)}`;
-    const paymentId = String(orderData.paymentId || orderData.mpOrderId || Math.floor(1000000000 + Math.random() * 9000000000)).replace(/\D/g, '').padEnd(10, '0').slice(0, 10);
-    const fullOrder = {
-      orderId,
-      id: orderId,
-      paymentId,
-      mpOrderId: paymentId,
-      status: 'novo',
-      total: Number(orderData.total) || 0,
-      customer: orderData.customer || {
-        name: orderData.name || 'Cliente',
-        phone: orderData.phone || '',
-        address: orderData.addr || orderData.address || ''
-      },
-      order: orderData.order || {
-        items: orderData.items || [],
-        total: Number(orderData.total) || 0,
-        mode: orderData.pickup ? 'retirada' : 'entrega',
-        address: orderData.addr || orderData.address || '',
-        ref: orderData.ref || ''
-      },
-      unitId: orderData.unitId || (currentUnit ? currentUnit.id : 'passo-dareia'),
-      unitName: orderData.unitName || (currentUnit ? currentUnit.name : "Dad's Burger"),
-      paymentMethod: orderData.paymentMethod || orderData.paymentDescription || 'Pix',
-      created_at: Date.now() / 1000,
-      isNew: true
-    };
-
-    // 1. Salva no localStorage para sincronia cross-tab
-    try {
-      localStorage.setItem('dads_latest_order', JSON.stringify(fullOrder));
-    } catch(e) {}
-
-    // 2. Dispara BroadcastChannel
-    try {
-      const bc = new BroadcastChannel('dads_restaurant_channel');
-      bc.postMessage({ type: 'NEW_ORDER', order: fullOrder });
-    } catch(e) {}
-
-    // 3. Envia para a API persistente
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fullOrder)
-    }).catch(() => {});
-
-  }
-  window.registerOrderAndNotify = registerOrderAndNotify;
 
   if (P.has("portal") || location.hash === "#portal") {
     window.location.href = "/admin";

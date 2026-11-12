@@ -6,6 +6,12 @@ coverage/
 *.log
 .env*
 !.env.example
+# pedidos reais (nome, telefone e endereço de clientes): não vão para o repositório público
+orders.json
 __pycache__/
 *.pyc
 .legacy_folders_backup/
+
+# fotos enviadas pelo painel (ficam só no servidor, nunca no repositório) e arquivos temporários de gravação
+uploads/
+*.tmp
