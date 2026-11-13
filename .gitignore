@@ -15,3 +15,7 @@ __pycache__/
 # fotos enviadas pelo painel (ficam só no servidor, nunca no repositório) e arquivos temporários de gravação
 uploads/
 *.tmp
+
+# pasta de dados local (DATA_DIR=./dados): pedidos de clientes, fotos e o cardápio em uso ficam só no servidor
+dados/
+data/

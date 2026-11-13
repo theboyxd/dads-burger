@@ -1,4 +1,4 @@
-// Mercado Pago e consulta de CEP de mentira, só para os testes (porta 3099, só em 127.0.0.1).
+// Mercado Pago e consulta de CEP de mentira, só para os testes (só em 127.0.0.1; porta em MOCK_PORT, padrão 3099).
 // Registra o que o servidor envia e simula as respostas: idempotência (repete a resposta como o Mercado Pago),
 // busca por external_reference, erro 5xx, resposta lenta (com ou sem criar o pagamento), devolução e contestação.
 import http from 'http';
@@ -74,4 +74,4 @@ http.createServer((req, res) => {
     if (req.method === 'GET' && g) { log.push({ get: g[1], auth }); const p = pays.get(g[1]); return p ? json(res, 200, p) : json(res, 404, { message: 'not found', status: 404 }); }
     json(res, 404, { message: 'no route', status: 404 });
   });
-}).listen(3099, '127.0.0.1', () => console.log('mock MP on 127.0.0.1:3099'));
+}).listen(Number(process.env.MOCK_PORT) || 3099, '127.0.0.1', function () { console.log(`mock MP on 127.0.0.1:${this.address().port}`); });

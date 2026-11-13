@@ -6,7 +6,23 @@ import dotenv from 'dotenv';
 import crypto from 'crypto';
 import { MercadoPagoConfig, Payment } from 'mercadopago';
 
-dotenv.config();
+dotenv.config({ quiet: true });
+
+// Onde o servidor escuta. Por padrão só esta máquina enxerga o servidor (127.0.0.1): nenhuma porta fica aberta para a rede
+// nem para a internet. Para hospedar de verdade, a hospedagem define HOST=0.0.0.0 no ambiente dela.
+const HOST = (process.env.HOST || '').trim() || '127.0.0.1';
+const EXPOSED = !(/^127\./.test(HOST) || ['localhost', '::1', '[::1]'].includes(HOST));
+
+// Servidor aberto para a rede sem senha própria no painel: não liga. A senha antiga (dads123) está escrita na página
+// publicada no GitHub, então qualquer um que a leia entraria no painel. (Só em 127.0.0.1 ela ainda vale, com aviso.)
+const PUBLISHED_PASSWORDS = ['dads123', 'admin123', 'dads2026'];
+if (EXPOSED) {
+  const pw = (process.env.ADMIN_PASSWORD || '').trim();
+  if (!pw || PUBLISHED_PASSWORDS.includes(pw.toLowerCase())) {
+    console.error(`ERRO: o servidor ficaria aberto para a rede (HOST=${HOST}), mas ADMIN_PASSWORD ${pw ? 'é uma senha que já foi publicada' : 'não está definida'}. Defina uma senha própria e longa em ADMIN_PASSWORD, no ambiente da hospedagem, e inicie de novo.`);
+    process.exit(1);
+  }
+}
 
 // Processador das fotos enviadas pelo painel. Se não carregar neste servidor, só o envio de fotos fica indisponível:
 // a loja, os pedidos e os pagamentos continuam funcionando.
@@ -24,6 +40,65 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Pasta de dados: cardápio (products.json), configurações (settings.json), pedidos (orders.json) e fotos (uploads/).
+// Sem DATA_DIR ficam ao lado do server.js, como sempre. Na hospedagem, DATA_DIR aponta para o disco persistente (ex.: /data):
+// o que está nele sobrevive a reinício e a nova publicação; o que fica na pasta do programa some.
+const DATA_DIR = path.resolve((process.env.DATA_DIR || '').trim() || __dirname);
+const CUSTOM_DATA_DIR = DATA_DIR !== __dirname;
+const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const PRODUCTS_FILE = path.join(DATA_DIR, 'products.json');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
+
+// Cria a pasta e as que faltam acima dela, um nível por vez. (O mkdir recursivo do Node pode ficar preso para sempre em
+// caminhos que o sistema não deixa criar, como /proc: aqui o primeiro nível que falhar já dá o erro.)
+function makeDirs(dir) {
+  const missing = [];
+  for (let cur = dir; !fs.existsSync(cur); cur = path.dirname(cur)) {
+    missing.push(cur);
+    if (path.dirname(cur) === cur) break;
+  }
+  for (const d of missing.reverse()) fs.mkdirSync(d);
+}
+
+function prepareDataDir() {
+  const fail = (msg) => { console.error(`ERRO: ${msg}`); process.exit(1); };
+  // 1. Tem que existir e aceitar gravação (teste de verdade: criar e apagar um arquivo). Sem isso o servidor não liga,
+  //    em vez de rodar "sem disco" e perder pedidos.
+  try {
+    makeDirs(UPLOADS_DIR); // cria a pasta de dados junto
+    const probe = path.join(DATA_DIR, `.teste-de-gravacao-${process.pid}.tmp`);
+    fs.writeFileSync(probe, 'ok');
+    fs.unlinkSync(probe);
+  } catch (e) {
+    fail(`não consegui gravar na pasta de dados (DATA_DIR=${DATA_DIR}): ${e.message}. Confira se o disco persistente está conectado nesse caminho e se o servidor tem permissão de escrita nele.`);
+  }
+  // 2. No mesmo disco do programa = disco temporário do container, que se perde na próxima troca.
+  //    REQUIRE_VOLUME=1 transforma o aviso em recusa de iniciar (a imagem Docker já vem com isso ligado).
+  try {
+    if (fs.statSync(DATA_DIR).dev === fs.statSync(__dirname).dev) {
+      const msg = `a pasta de dados (${DATA_DIR}) está no mesmo disco do programa. Num container ou numa hospedagem com disco temporário, pedidos, fotos e cardápio somem no próximo reinício ou publicação: conecte o disco persistente nesse caminho.`;
+      if (['1', 'true', 'sim'].includes(String(process.env.REQUIRE_VOLUME || '').trim().toLowerCase())) fail(`${msg} (REQUIRE_VOLUME está ligada)`);
+      console.warn(`Aviso: ${msg} Defina REQUIRE_VOLUME=1 para o servidor se recusar a iniciar assim.`);
+    }
+  } catch (e) { /* sem como comparar os discos: segue */ }
+  // 3. Primeira vez numa pasta vazia: o cardápio e as configurações que vêm com o programa são o ponto de partida.
+  //    Nada que já exista é sobrescrito (nem em reinício, nem em publicação nova); os pedidos começam vazios.
+  for (const f of ['products.json', 'settings.json']) {
+    try { fs.copyFileSync(path.join(__dirname, f), path.join(DATA_DIR, f), fs.constants.COPYFILE_EXCL); } catch (e) {
+      if (e.code !== 'EEXIST' && e.code !== 'ENOENT') fail(`não consegui criar ${f} na pasta de dados: ${e.message}`);
+    }
+  }
+  try { fs.writeFileSync(ORDERS_FILE, '{}', { flag: 'wx' }); } catch (e) {
+    if (e.code !== 'EEXIST') fail(`não consegui criar orders.json na pasta de dados: ${e.message}`);
+  }
+  // 4. Restos de gravações interrompidas (arquivo temporário que não chegou a virar o definitivo)
+  for (const n of fs.readdirSync(DATA_DIR)) {
+    if (/\.json\.\d+\.tmp$/.test(n)) { try { fs.unlinkSync(path.join(DATA_DIR, n)); } catch (e) { /* segue */ } }
+  }
+}
+if (CUSTOM_DATA_DIR) prepareDataDir();
+
 // Foto de produto chega em JSON (base64): só essa rota aceita corpo grande; as outras ficam no limite padrão
 app.use('/api/admin/upload', express.json({ limit: '9mb' }));
 // A lista inteira do cardápio vai de uma vez: cabe folgado em 2 MB, o limite padrão (100 KB) cortaria um cardápio grande
@@ -33,6 +108,17 @@ app.use(express.json());
 app.use((err, req, res, next) => {
   if (err && err.type === 'entity.too.large') return res.status(413).json({ success: false, error: req.path === '/api/admin/upload' ? 'imagem_grande_demais' : 'corpo_grande_demais' });
   next(err);
+});
+// Verificação de saúde para a hospedagem: sem dados e sem login. Responde 503 se a pasta de dados deixou de aceitar
+// gravação (disco desconectado): a hospedagem então reinicia o servidor em vez de deixá-lo perder pedidos.
+app.get('/healthz', (req, res) => {
+  res.set('Cache-Control', 'no-store').type('text/plain');
+  try {
+    fs.accessSync(DATA_DIR, fs.constants.W_OK);
+    res.send('ok');
+  } catch (e) {
+    res.status(503).send('pasta de dados indisponivel');
+  }
 });
 // Pedidos (dados de clientes) e código do servidor não saem como arquivo estático; o site em si, sim.
 // products.json também não: ele guarda os produtos escondidos pelo dono, e o cliente lê o cardápio em /api/menu.
@@ -46,11 +132,15 @@ app.use('/uploads', (req, res, next) => {
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   next();
 });
+// As fotos saem da pasta de dados (no disco persistente, quando há DATA_DIR). Foto que não existe dá 404: nunca a página inicial.
+app.use('/uploads', express.static(UPLOADS_DIR, { index: false }));
+app.use('/uploads', (req, res) => res.status(404).end());
+// Pasta de dados dentro da pasta do programa (ex.: DATA_DIR=./dados) nunca sai como arquivo estático: tem os pedidos dos clientes.
+const dataRel = path.relative(__dirname, DATA_DIR);
+if (CUSTOM_DATA_DIR && dataRel && !dataRel.startsWith('..') && !path.isAbsolute(dataRel)) {
+  app.use(`/${dataRel.split(path.sep)[0]}`, (req, res) => res.status(404).end());
+}
 app.use(express.static(__dirname));
-
-const ORDERS_FILE = path.join(__dirname, 'orders.json');
-const SETTINGS_FILE = path.join(__dirname, 'settings.json');
-const PRODUCTS_FILE = path.join(__dirname, 'products.json');
 
 let ORDERS = {};
 if (fs.existsSync(ORDERS_FILE)) {
@@ -61,17 +151,27 @@ if (fs.existsSync(ORDERS_FILE)) {
   }
 }
 
+// Os pedidos são o dado mais importante: gravação inteira de uma vez (arquivo temporário na mesma pasta + troca de nome)
+// e, se o disco recusar, um erro bem visível no registro do servidor em vez de silêncio.
 function saveOrders() {
-  try {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify(ORDERS, null, 2), 'utf-8');
-  } catch {}
+  if (!writeJson(ORDERS_FILE, ORDERS)) console.error(`ERRO: não consegui gravar ${ORDERS_FILE}: os pedidos novos não ficaram salvos no disco.`);
+}
+
+// Pagamento presencial (maquininha na loja, type "pickup") não existe: um arquivo de configurações antigo que ainda o tenha
+// perde essas formas ao carregar, e o painel nunca as grava de volta
+function dropCounterPayments(s) {
+  const pays = s && s.payments;
+  if (pays && typeof pays === 'object' && !Array.isArray(pays)) {
+    for (const [k, p] of Object.entries(pays)) if (p && p.type === 'pickup') delete pays[k];
+  }
+  return s;
 }
 
 let SETTINGS = {};
 function loadSettings() {
   if (fs.existsSync(SETTINGS_FILE)) {
     try {
-      SETTINGS = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+      SETTINGS = dropCounterPayments(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8')));
     } catch {
       SETTINGS = {};
     }
@@ -253,29 +353,9 @@ app.get('/api/cep/:cep', async (req, res) => {
 // Adicional fixo plataforma por pedido: R$ 1,50
 // Total split plataforma = Sobra do frete + R$ 1,50
 // -------------------------------------------------------------
-function calculateDeliveryAndSplit(distanceKm = 0, mode = 'entrega', subtotal = 0) {
-  const isRetirada = mode === 'retirada' || mode === 'pickup';
+function calculateDeliveryAndSplit(distanceKm = 0, subtotal = 0) {
   const sub = Number(subtotal) || 0;
   const fixedPlatformFee = 1.50; // Adicional fixo da plataforma por pedido
-
-  if (isRetirada) {
-    const platformFee = fixedPlatformFee;
-    const customerTotal = sub;
-    const restaurantAmount = Math.max(0, customerTotal - platformFee);
-
-    return {
-      mode: 'retirada',
-      distanceKm: 0,
-      deliveryFee: 0,
-      restaurantDeliveryFee: 0,
-      deliveryLeftover: 0,
-      fixedPlatformFee,
-      platformFee,
-      restaurantAmount: Math.round(restaurantAmount * 100) / 100,
-      customerTotal: Math.round(customerTotal * 100) / 100,
-      subtotal: sub
-    };
-  }
 
   const dist = Number(distanceKm) || 0;
   let deliveryFee = 15.50;
@@ -441,10 +521,10 @@ app.post('/api/delivery/validate', async (req, res) => {
   loadSettings();
   const chk = await deliveryCheck(addressDetails, unitId);
   if (!chk.verified) {
-    return res.json({ valid: false, allowed: false, error: 'Não conseguimos localizar este endereço pelo CEP. Confira o CEP ou escolha retirada.' });
+    return res.json({ valid: false, allowed: false, error: 'Não conseguimos localizar este endereço pelo CEP. Confira o CEP.' });
   }
   const { store, matchedCoord, distanceKm, maxRadius, allowed } = chk;
-  const split = calculateDeliveryAndSplit(distanceKm, 'entrega', subtotal || 0);
+  const split = calculateDeliveryAndSplit(distanceKm, subtotal || 0);
 
   // Calcula unidade mais próxima se a atual estiver distante
   let closestUnit = {
@@ -682,10 +762,10 @@ app.post('/api/admin/settings', requireAdmin, (req, res) => {
   const bad = checkSettingsPatch(req.body);
   if (bad) return res.status(400).json({ success: false, error: bad });
   loadSettings();
-  SETTINGS = {
+  SETTINGS = dropCounterPayments({
     ...SETTINGS,
     ...(req.body || {})
-  };
+  });
   if (!saveSettings()) return res.status(500).json({ success: false, error: 'nao_foi_possivel_salvar' });
   res.json({ success: true, settings: SETTINGS });
 });
@@ -719,7 +799,6 @@ app.post('/api/admin/products', requireAdmin, (req, res) => {
 // nem pelo tipo que o navegador diz. O servidor nunca guarda o arquivo recebido: decodifica, gira conforme a câmera,
 // reduz (produto até 1400 px, logo até 640 px) e grava uma imagem WEBP nova com nome aleatório. Isso tira tudo o que
 // não é imagem (código escondido no arquivo) e os metadados (EXIF: local, aparelho, data).
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 const UPLOAD_MAX_PIXELS = 40_000_000; // acima disso é recusada: um arquivo pequeno pode abrir como uma imagem de gigabytes
 const UPLOAD_SIDE = { product: 1400, logo: 640 };
@@ -944,21 +1023,19 @@ async function priceOrder(order = {}) {
   }
   if (!items.length) return { error: 'pedido_vazio' };
   const subtotal = cents / 100;
-  const pickup = order.mode === 'retirada' || order.pickup === true;
-  let distanceKm = 0;
-  if (!pickup) {
-    const chk = await deliveryCheck(order.addressDetails, order.unitId);
-    if (!chk.verified) return { error: 'endereco_nao_confirmado' };
-    if (!chk.allowed) return { error: 'fora_do_raio' };
-    distanceKm = chk.distanceKm;
-  }
-  const split = calculateDeliveryAndSplit(distanceKm, pickup ? 'retirada' : 'entrega', subtotal);
+  // A loja não recebe pagamento presencial (tudo é pago online), então não existe retirada no balcão: só entrega
+  if (order.mode === 'retirada' || order.mode === 'pickup' || order.pickup === true) return { error: 'so_entrega' };
+  const chk = await deliveryCheck(order.addressDetails, order.unitId);
+  if (!chk.verified) return { error: 'endereco_nao_confirmado' };
+  if (!chk.allowed) return { error: 'fora_do_raio' };
+  const distanceKm = chk.distanceKm;
+  const split = calculateDeliveryAndSplit(distanceKm, subtotal);
   return {
     items,
     subtotal,
     deliveryFee: split.deliveryFee,
     distanceKm,
-    mode: pickup ? 'retirada' : 'entrega',
+    mode: 'entrega',
     total: split.customerTotal,
     split
   };
@@ -966,7 +1043,7 @@ async function priceOrder(order = {}) {
 
 function buildOrder(oid, priced, customer, order, paymentMethod, extra) {
   const unit = DADS_STORES[order.unitId] || DADS_STORES['passo-dareia'];
-  const address = priced.mode === 'retirada' ? '' : String(order.address || '').slice(0, 300);
+  const address = String(order.address || '').slice(0, 300);
   const created = Date.now() / 1000;
   return {
     orderId: oid,
@@ -990,7 +1067,7 @@ function buildOrder(oid, priced, customer, order, paymentMethod, extra) {
     customer: {
       name: String(customer.name || 'Cliente').slice(0, 80),
       phone: onlyDigits(customer.phone).slice(0, 13),
-      address: address || 'Retirada no balcão'
+      address
     },
     order: {
       items: priced.items,
@@ -1000,7 +1077,7 @@ function buildOrder(oid, priced, customer, order, paymentMethod, extra) {
       total: priced.total,
       mode: priced.mode,
       address,
-      addressDetails: priced.mode === 'retirada' ? undefined : order.addressDetails,
+      addressDetails: order.addressDetails,
       ref: String(order.ref || '').slice(0, 120),
       unitId: unit.id
     },
@@ -1258,9 +1335,9 @@ app.post('/api/vr/charges', (req, res) => {
 // -------------------------------------------------------------
 // PORTAL DO RESTAURANTE - GESTÃO DE PEDIDOS
 // -------------------------------------------------------------
-// Pedido de verdade = pago e confirmado pelo Mercado Pago, ou feito para pagar no balcão na retirada.
+// Pedido de verdade = pago e confirmado pelo Mercado Pago (a loja não recebe pagamento presencial).
 // Cobrança sem pagamento, recusada, de simulação ou de teste não aparece no quadro (fica só no arquivo).
-const isRealOrder = (o) => Boolean(o && (o.paymentConfirmed === true || o.payAt === 'balcao'));
+const isRealOrder = (o) => Boolean(o && o.paymentConfirmed === true);
 
 app.get('/api/orders', requireAdmin, (req, res) => {
   if (fs.existsSync(ORDERS_FILE)) {
@@ -1288,31 +1365,6 @@ app.get('/api/orders', requireAdmin, (req, res) => {
   }
   list.sort((a, b) => (Number(b.created_at) || 0) - (Number(a.created_at) || 0));
   res.json({ success: true, count: list.length, orders: list });
-});
-
-// Pedido para pagar no balcão (só retirada). O pago online nasce em /api/mercadopago/*.
-// Itens, frete e total são recalculados aqui; a forma de pagamento vem das configurações da loja.
-app.post('/api/orders', async (req, res) => {
-  if (!shopGate(res, null)) return;
-  const { customer = {}, order = {}, payMode } = req.body || {};
-  const pay = SETTINGS.payments && SETTINGS.payments[payMode];
-  if (!pay || pay.type !== 'pickup' || pay.enabled === false) {
-    return res.status(400).json({ success: false, error: 'forma_invalida' });
-  }
-  if (order.mode !== 'retirada') return res.status(400).json({ success: false, error: 'so_retirada' });
-  if (String(customer.name || '').trim().length < 2 || onlyDigits(customer.phone).length < 10) {
-    return res.status(400).json({ success: false, error: 'dados_do_cliente' });
-  }
-  const priced = await priceOrder(order);
-  if (priced.error) return res.status(400).json({ success: false, error: priced.error, detail: priced.detail });
-
-  const oid = newOrderId();
-  const rec = buildOrder(oid, priced, customer, order, pay.name, { payAt: 'balcao', paymentKind: 'balcao', paymentConfirmed: false });
-  rec.status = 'novo';
-  rec.history = [{ status: 'novo', at: rec.created_at }]; // pedido para pagar no balcão já nasce recebido, sem etapa de pagamento
-  ORDERS[oid] = rec;
-  saveOrders();
-  res.status(201).json({ success: true, orderId: oid, trackToken: rec.trackToken, order: rec });
 });
 
 app.patch('/api/orders/:id', requireAdmin, (req, res) => {
@@ -1396,11 +1448,10 @@ app.get('/api/track/:token', (req, res) => {
     success: true,
     orderId: o.orderId,
     status: String(o.status || 'novo'),
-    mode: o.order && o.order.mode === 'retirada' ? 'retirada' : 'entrega',
     paid,
-    pay: o.payAt === 'balcao' ? 'balcao' : String(o.paymentKind || ''),
+    pay: String(o.paymentKind || ''),
     // Pix que passou da validade sem ser pago: o cliente precisa saber que o pedido não vale mais
-    expired: !paid && o.payAt !== 'balcao' && o.status === 'aguardando_pagamento' && Boolean(o.expires_at) && Date.parse(o.expires_at) < Date.now(),
+    expired: !paid && o.status === 'aguardando_pagamento' && Boolean(o.expires_at) && Date.parse(o.expires_at) < Date.now(),
     refunded: Boolean(o.refunded),
     unitId: o.unitId || '',
     unitName: o.unitName || '',
@@ -1415,6 +1466,9 @@ app.get('/api/track/:token', (req, res) => {
     now: Date.now() / 1000
   });
 });
+
+// Rota de API que não existe: resposta JSON 404, e não a página inicial do site
+app.use('/api', (req, res) => res.status(404).json({ success: false, error: 'rota_nao_encontrada' }));
 
 // Portal do Restaurante / Admin (Desktop)
 app.get(['/admin', '/admin/*'], (req, res) => {
@@ -1436,19 +1490,36 @@ setInterval(async () => {
 }, Number(process.env.MP_RECONCILE_MS) || 20000);
 
 if (!(process.env.ADMIN_PASSWORD || '').trim()) {
+  // (com o servidor aberto para a rede isto nem chega aqui: ele se recusa a iniciar, no começo do arquivo)
   console.warn('Aviso: ADMIN_PASSWORD não está configurada no .env. O painel usa a senha antiga (dads123): troque antes de abrir o site para os clientes.');
+}
+
+if (EXPOSED && !(process.env.SESSION_SECRET || '').trim()) {
+  console.warn('Aviso: SESSION_SECRET não está configurada. Quem entrou no painel precisa entrar de novo a cada reinício do servidor.');
 }
 
 if (mpToken() && !mpWebhookSecret()) {
   console.warn('Aviso: MERCADOPAGO_WEBHOOK_SECRET não está configurado. Os avisos do webhook ficam sem a assinatura conferida (o status do pagamento continua vindo da API do Mercado Pago).');
 }
 
-// Por padrão só esta máquina enxerga o servidor (127.0.0.1): nenhuma porta fica aberta para a rede nem para a internet.
-// Para hospedar de verdade, a hospedagem define HOST=0.0.0.0 no ambiente dela.
-const HOST = (process.env.HOST || '').trim() || '127.0.0.1';
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log(`🍔 Dad's Burger App rodando em http://localhost:${PORT}`);
-  if (HOST !== '127.0.0.1' && HOST !== 'localhost') {
+  console.log(`Pasta de dados: ${DATA_DIR}${CUSTOM_DATA_DIR ? '' : ' (ao lado do server.js)'}`);
+  if (EXPOSED) {
     console.warn(`Aviso: o servidor está aberto em ${HOST}: qualquer aparelho que alcance esta máquina pela rede consegue acessá-lo.`);
   }
 });
+server.on('error', (e) => {
+  console.error(e.code === 'EADDRINUSE' ? `ERRO: a porta ${PORT} já está em uso por outro programa. Use outra porta (variável PORT) ou feche o outro programa.` : `ERRO: o servidor não conseguiu escutar em ${HOST}:${PORT}: ${e.message}`);
+  process.exit(1);
+});
+
+// A hospedagem (Docker, "reiniciar", "publicar de novo") pede para encerrar com SIGTERM: termina o que está em andamento e sai.
+// Sem isto, um servidor que é o processo 1 do container ignoraria o pedido e seria morto à força depois de alguns segundos.
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    console.log(`Recebi ${sig}: encerrando o servidor.`);
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 5000).unref();
+  });
+}

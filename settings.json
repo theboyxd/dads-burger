@@ -70,22 +70,6 @@
       "provider": "",
       "type": "online",
       "icon": "🥗"
-    },
-    "balcao_vr": {
-      "id": "balcao_vr",
-      "name": "Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)",
-      "description": "Apenas para Retirada no Balcão: maquininha Point física com VR Refeição, Pluxee/Sodexo, Alelo e Ticket",
-      "enabled": true,
-      "type": "pickup",
-      "icon": "🥗"
-    },
-    "balcao_cartao": {
-      "id": "balcao_cartao",
-      "name": "Cartão Crédito/Débito no Balcão (Maquininha)",
-      "description": "Apenas para Retirada no Balcão: pagamento presencial na maquininha Point da loja",
-      "enabled": true,
-      "type": "pickup",
-      "icon": "💳"
     }
   }
 }

@@ -848,6 +848,10 @@
   }
 
   /* TOAST DE FEEDBACK */
+  /* Prévia sem servidor (GitHub Pages): o painel abre só para ver, nada é gravado */
+  .preview-banner { background: #FEF3C7; color: #78350F; border-bottom: 1px solid #FCD34D; padding: 10px 16px; font-size: 13px; line-height: 1.45; text-align: center; }
+  .preview-banner[hidden] { display: none; }
+
   .toast {
     position: fixed;
     bottom: 24px;
@@ -1970,6 +1974,11 @@
 </head>
 <body>
 
+<!-- AVISO DA PRÉVIA: aparece só quando esta página está num endereço sem servidor (ex.: GitHub Pages) -->
+<div class="preview-banner" id="previewBanner" hidden role="status">
+  <b>🔎 Prévia sem servidor.</b> Esta página só mostra como é o painel: fotos, preços, horários e pedidos só funcionam no site com servidor. Nada aqui é salvo.
+</div>
+
 <!-- OVERLAY DE AUTENTICAÇÃO POR SENHA (a senha é conferida no servidor) -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card">
@@ -2244,7 +2253,7 @@
             <span class="nav-icon">💳</span>
             <div>
               <span class="nav-title">Formas de Pagamento</span>
-              <span class="nav-sub">Pix, cartões e dinheiro</span>
+              <span class="nav-sub">Pix e cartões</span>
             </div>
           </button>
 
@@ -2465,18 +2474,18 @@
             <div style="margin:16px 0;padding:12px 16px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;display:flex;align-items:flex-start;gap:12px;color:#1E40AF;font-size:12.5px;line-height:1.5">
               <span style="font-size:20px;line-height:1">🛵</span>
               <div>
-                <b>Entrega Terceirizada (API 99):</b> Motoristas parceiros da 99 não recebem dinheiro e não transportam maquininha. Todos os pedidos com entrega a domicílio são 100% pré-pagos online via Mercado Pago (Pix ou Cartão). <u>Dinheiro em espécie na entrega foi totalmente desativado</u>.
+                <b>Entrega Terceirizada (API 99):</b> Motoristas parceiros da 99 não recebem dinheiro e não transportam maquininha. Todos os pedidos com entrega a domicílio são 100% pré-pagos online via Mercado Pago (Pix ou Cartão). <u>Dinheiro, maquininha e retirada no balcão não existem: todo pedido é entrega e pago online</u>.
               </div>
             </div>
 
             <div style="margin:0 0 16px;padding:12px 16px;background:#FEFCE8;border:1px solid #FEF08A;border-radius:12px;display:flex;align-items:flex-start;gap:12px;color:#854D0E;font-size:12.5px;line-height:1.5">
               <span style="font-size:20px;line-height:1">ℹ️</span>
               <div>
-                <b>Vale-Refeição e Alimentação no Mercado Pago:</b> Devido à regulamentação do PAT no Brasil, o Mercado Pago aceita vouchers (Alelo, Ticket, Sodexo/Pluxee, VR) <u>exclusivamente nas maquininhas físicas Point</u> vinculadas ao CNPJ do restaurante. A API online do Mercado Pago não processa vales de terceiros na web. Por isso, pagamentos com VR ficam habilitados para Retirada no Balcão.
+                <b>Vale-Refeição e Alimentação:</b> o Mercado Pago só aceita vales (Alelo, Ticket, Sodexo/Pluxee, VR) nas maquininhas físicas Point, e a loja não recebe pagamento presencial. Para aceitar VR/VA pelo site é preciso conectar outro provedor; até lá o checkout mostra "Em breve".
               </div>
             </div>
 
-            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">🌐 Pagamento Online Integrado (Mercado Pago - Entrega & Retirada)</h4>
+            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:16px 0 10px;letter-spacing:0.5px">🌐 Pagamento online (Mercado Pago)</h4>
             <div class="payments-cards-grid">
               <div class="payment-card-item enabled" id="payCard_pix_online">
                 <div class="payment-card-left">
@@ -2531,31 +2540,6 @@
                   </div>
                 </div>
                 <input type="checkbox" id="chkPay_vr_online" disabled style="width:20px;height:20px;accent-color:var(--brand);cursor:not-allowed" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_vr_online')">
-              </div>
-            </div>
-
-            <h4 style="font-size:13.5px;font-weight:800;text-transform:uppercase;color:var(--brand);margin:24px 0 10px;letter-spacing:0.5px">🏪 Retirada no Balcão (Maquininha Point na Loja)</h4>
-            <div class="payments-cards-grid">
-              <div class="payment-card-item enabled" id="payCard_balcao_vr">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">🥗</div>
-                  <div>
-                    <div class="payment-card-title">Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)</div>
-                    <div class="payment-card-type">Cliente paga na maquininha Point física da loja (VR Refeição, Sodexo/Pluxee, Alelo e Ticket)</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_balcao_vr" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_balcao_vr')">
-              </div>
-
-              <div class="payment-card-item enabled" id="payCard_balcao_cartao">
-                <div class="payment-card-left">
-                  <div class="payment-card-icon">💳</div>
-                  <div>
-                    <div class="payment-card-title">Cartão Crédito/Débito no Balcão (Maquininha Point)</div>
-                    <div class="payment-card-type">Cliente paga por aproximação ou chip na maquininha Point do caixa na retirada</div>
-                  </div>
-                </div>
-                <input type="checkbox" id="chkPay_balcao_cartao" checked style="width:20px;height:20px;accent-color:var(--brand);cursor:pointer" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_balcao_cartao')">
               </div>
             </div>
           </div>
@@ -2918,6 +2902,10 @@
 
   // Chamada que exige login: se o servidor responder 401 (sessão vencida), volta para a tela da senha
   async function adminFetch(url, opts) {
+    // Prévia sem servidor: nada se grava; quem chamou recebe a recusa e mostra o motivo
+    if (window.PREVIEW_MODE && opts && opts.method && opts.method !== 'GET') {
+      return new Response(JSON.stringify({ success: false, error: 'sem_servidor' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+    }
     const res = await fetch(url, opts);
     if (res.status === 401) {
       showLock(true);
@@ -2931,10 +2919,21 @@
   function startPanel() {
     if (panelStarted) return;
     panelStarted = true;
-    loadStoreCoordinates();
+    if (!window.PREVIEW_MODE) loadStoreCoordinates();
     SettingsEngine.load();
     CatalogEngine.load();
     AdminApp.init();
+  }
+
+  // Página servida sem o servidor (ex.: GitHub Pages): mostra o painel só para ver, sem gravar nada
+  function startPreview() {
+    window.PREVIEW_MODE = true;
+    showLock(false);
+    const bar = document.getElementById('previewBanner');
+    if (bar) bar.hidden = false;
+    const out = document.getElementById('btnLogout');
+    if (out) out.style.display = 'none';
+    startPanel();
   }
 
   // As unidades e o centro do círculo do raio vêm do servidor: é de lá que sai a conta da distância de cada pedido
@@ -3537,6 +3536,7 @@
       if (window.PrinterEngine) window.PrinterEngine.loadConfig();
       this.setupEventListeners();
       this.setupCrossTab();
+      if (window.PREVIEW_MODE) { this.render(); return; } // sem servidor não há pedidos para buscar
       this.loadOrders();
 
       if (this.pollInterval) clearInterval(this.pollInterval);
@@ -4446,13 +4446,12 @@
       cartao_online: { id: "cartao_online", name: "Cartão de Crédito Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
       cartao_debito_online: { id: "cartao_debito_online", name: "Cartão de Débito Virtual / Online (Mercado Pago)", enabled: true, type: "online", icon: "💳" },
       mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo Mercado Pago / Mercado Crédito", enabled: true, connected: false, type: "online", icon: "📱" },
-      vr_online: { id: "vr_online", name: "Vale-Refeição Online (VR / Pluxee / Ticket)", enabled: false, connected: false, provider: "", type: "online", icon: "🥗" },
-      balcao_vr: { id: "balcao_vr", name: "Vale-Refeição no Balcão (VR / Sodexo / Alelo / Ticket)", enabled: true, type: "pickup", icon: "🥗" },
-      balcao_cartao: { id: "balcao_cartao", name: "Cartão Crédito/Débito no Balcão (Maquininha Point)", enabled: true, type: "pickup", icon: "💳" }
+      vr_online: { id: "vr_online", name: "Vale-Refeição Online (VR / Pluxee / Ticket)", enabled: false, connected: false, provider: "", type: "online", icon: "🥗" }
     }
   };
 
   const API_ERRORS = {
+    sem_servidor: 'Prévia sem servidor: esta página só mostra o painel.',
     raio_invalido: 'O raio de entrega precisa estar entre 0,5 e 100 km.',
     faixas_invalidas: 'Confira as faixas de taxa: km e valor precisam ser números.',
     frete_gratis_invalido: 'Confira o valor do frete grátis.',
@@ -4476,6 +4475,15 @@
     settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
 
     async load() {
+      // Prévia sem servidor: o settings.json publicado junto com o painel (o que está em cache do aparelho não vale)
+      if (window.PREVIEW_MODE) {
+        try {
+          const r = await fetch('settings.json');
+          if (r.ok) this.settings = { ...this.settings, ...(await r.json()) };
+        } catch (e) {}
+        this.updateStorePill();
+        return;
+      }
       // Tenta buscar do backend primeiro
       try {
         const res = await fetch('/api/admin/settings');
@@ -4503,7 +4511,7 @@
 
     // Grava no servidor (é de lá que o site e os pedidos leem). Só devolve true se o servidor aceitou; senão avisa.
     async save() {
-      localStorage.setItem('dads_settings', JSON.stringify(this.settings));
+      if (!window.PREVIEW_MODE) localStorage.setItem('dads_settings', JSON.stringify(this.settings));
       let ok = false;
       try {
         const res = await adminFetch('/api/admin/settings', {
@@ -4533,6 +4541,7 @@
     // E dentro do horário da grade (quando "abrir e fechar sozinha" está ligado)
     status: null,
     async refreshStatus() {
+      if (window.PREVIEW_MODE) { this.updateStorePill(); return; }
       try {
         const res = await fetch('/api/store/status');
         if (res.ok) this.status = await res.json();
@@ -4566,6 +4575,12 @@
         statusLabel.textContent = open ? 'Loja aberta: recebendo pedidos agora'
           : (outOfHours ? 'Fora do horário da grade: a loja abre sozinha no próximo horário'
             : 'Loja pausada: não recebe pedidos até você ligar de novo');
+      }
+      // Na prévia não existe estado real da loja: não mostra "aberta" nem "fechada"
+      if (window.PREVIEW_MODE) {
+        if (pill) pill.classList.remove('open', 'closed');
+        if (text) text.textContent = 'Prévia sem servidor';
+        if (statusLabel) statusLabel.textContent = 'Prévia: o estado real da loja só aparece no site com servidor';
       }
     },
 
@@ -4909,6 +4924,15 @@
 
     async load() {
       await this.flush(); // não busca no servidor antes de gravar o que acabou de mudar
+      // Prévia sem servidor: o cardápio publicado (products.json), nunca uma cópia antiga guardada no aparelho
+      if (window.PREVIEW_MODE) {
+        try {
+          const pj = await fetch('products.json');
+          if (pj.ok) { this.products = this.normalize(await pj.json()); this.normalizeOrder(); return; }
+        } catch (e) {}
+        this.products = [];
+        return;
+      }
       try {
         const res = await adminFetch('/api/admin/products');
         if (res.ok) {
@@ -4943,7 +4967,7 @@
     },
 
     async saveNow() {
-      try { localStorage.setItem('dads_products', JSON.stringify(this.products)); } catch (e) {}
+      if (!window.PREVIEW_MODE) { try { localStorage.setItem('dads_products', JSON.stringify(this.products)); } catch (e) {} }
       this.setSaveState('Salvando…');
       let ok = false;
       this.lastError = '';
@@ -5508,9 +5532,14 @@
   fetch('/api/admin/settings').then((r) => (r.ok ? r.json() : null)).then((d) => applyStoreLogo(d && d.store && d.store.logo)).catch(() => {});
 
   // Inicia aplicação: só abre o painel se o servidor já reconhece a sessão; senão mostra a tela da senha
-  fetch('/api/admin/session').then((r) => r.json()).then((d) => {
+  // O servidor de verdade responde sempre em JSON. Uma resposta que não é JSON (a página 404 do GitHub Pages, por exemplo)
+  // quer dizer que esta página está num endereço sem servidor: abre a prévia, e não uma tela de senha que nunca entra.
+  fetch('/api/admin/session').then((r) => {
+    if (!(r.headers.get('content-type') || '').includes('json')) throw new Error('sem_servidor');
+    return r.json();
+  }).then((d) => {
     if (d.authenticated) { showLock(false); startPanel(); warnDefaultPassword(); } else { showLock(true); }
-  }).catch(() => showLock(true));
+  }).catch((e) => { if (e && e.message === 'sem_servidor') startPreview(); else showLock(true); });
 })();
 </script>
 </body>

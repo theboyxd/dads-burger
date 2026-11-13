@@ -1012,6 +1012,51 @@
     color: #F5F5F4 !important;
     opacity: 0.5;
   }
+
+  /* ACOMPANHAR PEDIDO: faixa na tela inicial e página do pedido (abre pelo link privado, atualiza sozinha) */
+  .trk-banner { display: flex; align-items: center; gap: 12px; width: 100%; margin: 12px 0 4px; padding: 12px 14px; border-radius: 18px; background: #18181B; color: #fff; text-align: left; border: 0; cursor: pointer; box-shadow: 0 8px 22px rgba(11,7,5,.18); font: inherit; }
+  .trk-banner[hidden] { display: none; }
+  .trk-banner .trk-ico { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: var(--brand-text); display: grid; place-items: center; font-size: 20px; flex: none; }
+  .trk-banner b { display: block; font-size: 14px; }
+  .trk-banner small { display: block; font-size: 12.5px; opacity: .82; margin-top: 1px; }
+  .trk-banner .trk-go { margin-left: auto; font-weight: 800; font-size: 13px; color: var(--brand); white-space: nowrap; }
+  .trk-status { text-align: center; padding: 16px 12px; border-radius: 20px; background: #F9F7F5; border: 1px solid #EDE8E3; margin: 8px 0 16px; }
+  .trk-status.ok { background: #F0FDF4; border-color: #BBF7D0; }
+  .trk-status.wait { background: #FFFBEB; border-color: #FDE68A; }
+  .trk-status.bad { background: #FEF2F2; border-color: #FECACA; }
+  .trk-emoji { font-size: 38px; line-height: 1; }
+  .trk-status h4 { margin: 8px 0 3px; font-size: 19px; font-weight: 800; color: #121212; }
+  .trk-status p { margin: 0; font-size: 13px; color: #52525B; line-height: 1.45; }
+  .trk-eta { margin-top: 10px; display: inline-block; padding: 4px 12px; border-radius: 99px; background: #fff; border: 1px solid #E4DED7; font-size: 12px; font-weight: 800; color: #3F3F46; }
+  .trk-steps { list-style: none; margin: 0 0 16px; padding: 0 4px; }
+  .trk-step { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 0 0 18px; }
+  .trk-step:last-child { padding-bottom: 0; }
+  .trk-step::before { content: ''; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: #E4DED7; }
+  .trk-step:last-child::before { display: none; }
+  .trk-step.done::before { background: #16A34A; }
+  .trk-dot { width: 28px; height: 28px; border-radius: 50%; background: #EDE8E3; color: #8C827A; display: grid; place-items: center; font-size: 13px; font-weight: 800; flex: none; position: relative; z-index: 1; }
+  .trk-step.done .trk-dot { background: #16A34A; color: #fff; }
+  .trk-step.now .trk-dot { background: var(--brand); color: var(--brand-text); box-shadow: 0 0 0 5px color-mix(in srgb, var(--brand) 25%, transparent); animation: trkPulse 1.6s ease-in-out infinite; }
+  @keyframes trkPulse { 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--brand) 8%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { .trk-step.now .trk-dot { animation: none; } }
+  .trk-t { flex: 1; min-width: 0; padding-top: 4px; }
+  .trk-t b { display: block; font-size: 14px; color: #8C827A; }
+  .trk-step.done .trk-t b, .trk-step.now .trk-t b { color: #121212; }
+  .trk-t small { display: block; font-size: 12.5px; color: #71717A; margin-top: 1px; }
+  .trk-time { font-size: 12px; font-weight: 700; color: #71717A; white-space: nowrap; padding-top: 6px; }
+  .trk-row { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 13px; color: #27272A; }
+  .trk-row span:last-child { font-weight: 700; white-space: nowrap; }
+  .trk-line { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #52525B; margin-top: 6px; }
+  .trk-total { font-size: 15px; font-weight: 900; color: #121212; }
+  .trk-total span:last-child { color: #16A34A; }
+  .trk-where { margin-top: 10px; padding-top: 8px; border-top: 1px solid #ECE7E1; color: #71717A; font-size: 12px; }
+  .trk-actions { display: grid; gap: 8px; margin-top: 14px; }
+  .trk-actions .pix-btn-wa { text-decoration: none; margin-bottom: 0; }
+  .trk-alt { background: #F4F0EC; color: #18181B; }
+  .trk-foot { margin-top: 12px; text-align: center; font-size: 11.5px; color: #8C827A; min-height: 1.3em; }
+  .trk-foot.err { color: #B45309; font-weight: 700; }
+  .pix-btn-track { width: 100%; padding: 14px 18px; border-radius: 14px; background: var(--brand); color: var(--brand-text); font-size: 14.5px; font-weight: 800; border: 0; cursor: pointer; margin-bottom: 8px; box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 35%, transparent); }
+  .pix-btn-track[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -1041,6 +1086,7 @@
   </div>
 
   <div data-tab="home">
+  <button type="button" class="trk-banner" id="trackBanner" hidden aria-label="Acompanhar meu pedido"></button>
   <h1 data-name></h1>
   <p class="lead" id="tagline"></p>
   <span class="status" id="status" hidden><i></i><span id="statusText"></span></span>
@@ -1105,7 +1151,6 @@
         </div>
         <div class="up-row" id="upList"></div>
       </div>
-      <div class="seg" id="mode"><button type="button" class="on" data-mode="entrega">Entrega</button><button type="button" data-mode="retirada">Retirar no local</button></div>
       <div id="addrBox" class="panel" style="margin-top:12px;padding:14px;background:#fff;border:1px solid #E5DDD6;border-radius:18px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <b style="font-size:13px;color:#0B0705;letter-spacing:0.3px;">📍 Endereço de entrega</b>
@@ -1236,7 +1281,6 @@
 
       <button type="button" class="cta" id="btnPayPix">Pagar com Pix</button>
       <button type="button" class="cta" id="btnPayCardMp" style="display:none">Pagar com cartão</button>
-      <button type="button" class="cta" id="btnPayDelivery" style="display:none">Confirmar pedido</button>
       <button type="button" class="ghost" data-clear>Limpar pedido</button>
     </div>
   </div>
@@ -1308,7 +1352,7 @@
   <div class="unit-sheet">
     <div class="unit-head">
       <h2>Escolha sua Unidade</h2>
-      <p class="unit-sub">Onde você deseja receber ou retirar seu pedido?</p>
+      <p class="unit-sub">Onde você deseja receber seu pedido?</p>
     </div>
 
     <!-- LISTA DAS 6 UNIDADES COM NOMES POR ZONA/BAIRRO -->
@@ -1390,6 +1434,7 @@
       </div>
 
       <div class="pix-success-actions">
+        <button class="pix-btn-track" id="btnTrackOrder" type="button" hidden>📍 Acompanhar meu pedido</button>
         <button class="pix-btn-done" id="btnDoneOrder" type="button" style="width:100%">
           Voltar ao Cardápio
         </button>
@@ -1511,11 +1556,27 @@
         </div>
       </div>
       <div class="pix-success-actions">
+        <button class="pix-btn-track" id="btnTrackOrderCard" type="button" hidden>📍 Acompanhar meu pedido</button>
         <button class="pix-btn-done" id="btnDoneOrderCard" type="button" style="width:100%">
           Voltar ao Cardápio
         </button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ACOMPANHAR PEDIDO: página privada do cliente (abre com o código secreto do pedido) e atualiza sozinha -->
+<div class="pix-modal" id="trackModal" hidden>
+  <div class="pix-backdrop" id="trackBackdrop"></div>
+  <div class="pix-sheet" role="dialog" aria-modal="true" aria-labelledby="trackTitle">
+    <button class="pix-close" id="trackClose" type="button" aria-label="Fechar">✕</button>
+    <div class="pix-head">
+      <div class="logo" data-shop-logo style="margin:0 auto 10px"></div>
+      <div class="pix-badge" id="trackOrderTag">PEDIDO</div>
+      <h3 id="trackTitle">Acompanhe seu pedido</h3>
+    </div>
+    <div id="trackBody"></div>
+    <div class="trk-foot" id="trackFoot"></div>
   </div>
 </div>
 
@@ -1720,9 +1781,7 @@ window.__CFG__ = {
       cartao_online: { id: "cartao_online", name: "Crédito Online", enabled: true, icon: "💳", type: "online" },
       cartao_debito_online: { id: "cartao_debito_online", name: "Débito Online", enabled: true, icon: "💳", type: "online" },
       mercadopago_saldo: { id: "mercadopago_saldo", name: "Saldo MP", enabled: true, connected: false, icon: "📱", type: "online" },
-      vr_online: { id: "vr_online", name: "Vale-refeição", enabled: false, connected: false, provider: "", icon: "🥗", type: "online" },
-      balcao_vr: { id: "balcao_vr", name: "Vale-refeição no balcão", enabled: true, icon: "🥗", type: "pickup" },
-      balcao_cartao: { id: "balcao_cartao", name: "Cartão no balcão", enabled: true, icon: "💳", type: "pickup" }
+      vr_online: { id: "vr_online", name: "Vale-refeição", enabled: false, connected: false, provider: "", icon: "🥗", type: "online" }
     }
   };
   let SETTINGS = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -2039,60 +2098,46 @@ window.__CFG__ = {
     const subtotal = items.reduce((s, [i, q]) => s + unitPrice(MENU[i]) * q, 0);
     const qty = items.reduce((s, [, q]) => s + q, 0);
 
-    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     let deliveryFee = 0;
 
-    if (pickup) {
+    if ($('#modeLabel')) $('#modeLabel').textContent = 'Taxa de entrega';
+    if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'flex';
+    updateDeliveryTiersHint();
+
+    const isFreeDelivery = subtotal > 0 && SETTINGS?.delivery?.freeDeliveryThreshold > 0 && subtotal >= SETTINGS.delivery.freeDeliveryThreshold;
+
+    if (isFreeDelivery) {
       deliveryFee = 0;
-      if ($('#modeLabel')) $('#modeLabel').textContent = 'Retirada no balcão';
       if ($('#modeFee')) $('#modeFee').textContent = 'Grátis';
       if ($('#modeFeeBadge')) {
-        $('#modeFeeBadge').textContent = 'No local';
-        $('#modeFeeBadge').style.background = '#F3F4F6';
-        $('#modeFeeBadge').style.color = '#4B5563';
+        $('#modeFeeBadge').textContent = 'Frete Grátis!';
+        $('#modeFeeBadge').style.background = '#DCFCE7';
+        $('#modeFeeBadge').style.color = '#15803D';
         $('#modeFeeBadge').style.display = 'inline-block';
       }
-      if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'none';
+    } else if (lastValidationResult && typeof lastValidationResult.deliveryFee === 'number') {
+      deliveryFee = lastValidationResult.deliveryFee;
+      const dStr = lastValidationResult.distanceKm ? `${lastValidationResult.distanceKm} km` : 'Calculado';
+      if ($('#modeFee')) $('#modeFee').textContent = brl(deliveryFee);
+      if ($('#modeFeeBadge')) {
+        $('#modeFeeBadge').textContent = dStr;
+        $('#modeFeeBadge').style.background = '#E8F5E9';
+        $('#modeFeeBadge').style.color = '#2E7D32';
+        $('#modeFeeBadge').style.display = 'inline-block';
+      }
     } else {
-      if ($('#modeLabel')) $('#modeLabel').textContent = 'Taxa de entrega';
-      if ($('#deliveryFeeTiersHint')) $('#deliveryFeeTiersHint').style.display = 'flex';
-      updateDeliveryTiersHint();
-
-      const isFreeDelivery = subtotal > 0 && SETTINGS?.delivery?.freeDeliveryThreshold > 0 && subtotal >= SETTINGS.delivery.freeDeliveryThreshold;
-
-      if (isFreeDelivery) {
-        deliveryFee = 0;
-        if ($('#modeFee')) $('#modeFee').textContent = 'Grátis';
-        if ($('#modeFeeBadge')) {
-          $('#modeFeeBadge').textContent = 'Frete Grátis!';
-          $('#modeFeeBadge').style.background = '#DCFCE7';
-          $('#modeFeeBadge').style.color = '#15803D';
-          $('#modeFeeBadge').style.display = 'inline-block';
-        }
-      } else if (lastValidationResult && typeof lastValidationResult.deliveryFee === 'number') {
-        deliveryFee = lastValidationResult.deliveryFee;
-        const dStr = lastValidationResult.distanceKm ? `${lastValidationResult.distanceKm} km` : 'Calculado';
-        if ($('#modeFee')) $('#modeFee').textContent = brl(deliveryFee);
-        if ($('#modeFeeBadge')) {
-          $('#modeFeeBadge').textContent = dStr;
-          $('#modeFeeBadge').style.background = '#E8F5E9';
-          $('#modeFeeBadge').style.color = '#2E7D32';
-          $('#modeFeeBadge').style.display = 'inline-block';
-        }
-      } else {
-        const baseFee = (SETTINGS?.delivery?.tiers && SETTINGS.delivery.tiers[0]) ? SETTINGS.delivery.tiers[0].fee : 7.50;
-        deliveryFee = baseFee;
-        if ($('#modeFee')) $('#modeFee').textContent = `A partir de ${brl(baseFee)}`;
-        if ($('#modeFeeBadge')) {
-          $('#modeFeeBadge').textContent = 'Por distância';
-          $('#modeFeeBadge').style.background = '#FEF3C7';
-          $('#modeFeeBadge').style.color = '#92400E';
-          $('#modeFeeBadge').style.display = 'inline-block';
-        }
+      const baseFee = (SETTINGS?.delivery?.tiers && SETTINGS.delivery.tiers[0]) ? SETTINGS.delivery.tiers[0].fee : 7.50;
+      deliveryFee = baseFee;
+      if ($('#modeFee')) $('#modeFee').textContent = `A partir de ${brl(baseFee)}`;
+      if ($('#modeFeeBadge')) {
+        $('#modeFeeBadge').textContent = 'Por distância';
+        $('#modeFeeBadge').style.background = '#FEF3C7';
+        $('#modeFeeBadge').style.color = '#92400E';
+        $('#modeFeeBadge').style.display = 'inline-block';
       }
     }
 
-    const finalTotal = qty > 0 ? (pickup ? subtotal : (subtotal + deliveryFee)) : 0;
+    const finalTotal = qty > 0 ? subtotal + deliveryFee : 0;
 
     const totalOriginal = items.reduce((s, [i, q]) => s + (origPrice(MENU[i]) || unitPrice(MENU[i])) * q, 0);
     const totalSavings = Math.max(0, totalOriginal - subtotal);
@@ -2218,11 +2263,9 @@ window.__CFG__ = {
     cartao_online: { logos: ['visa', 'master', 'elo', 'amex'], title: 'Cartão de crédito', sub: 'à vista ou parcelado' },
     cartao_debito_online: { logos: ['elo'], title: 'Cartão de débito', sub: 'só débito Elo' },
     mercadopago_saldo: { logos: ['mp'], title: 'Mercado Pago', sub: 'Saldo em conta' },
-    vr_online: { logos: ['vr', 'alelo', 'pluxee', 'ticket'], title: 'Vale-refeição e alimentação', sub: 'pelo site' },
-    balcao_vr: { logos: ['vr', 'alelo', 'pluxee', 'ticket'], title: 'Vale-refeição e alimentação', sub: 'na maquininha' },
-    balcao_cartao: { logos: ['visa', 'master', 'elo'], title: 'Crédito ou débito', sub: 'na maquininha' }
+    vr_online: { logos: ['vr', 'alelo', 'pluxee', 'ticket'], title: 'Vale-refeição e alimentação', sub: 'pelo site' }
   };
-  const PAY_GROUP = { online: 'Pague pelo site', pickup: 'Pague na retirada', delivery: 'Pague na entrega' };
+  const PAY_GROUP = { online: 'Pague pelo site' };
 
   // Cada forma de pagamento é um quadro só com o logo no centro (como os botões da referência). O nome fica no rótulo
   // acessível, na dica ao passar o mouse e na legenda embaixo da grade. Sem marca (ex.: dinheiro) usa um ícone limpo
@@ -2255,23 +2298,20 @@ window.__CFG__ = {
     return btn;
   }
 
-  // Pagamento: Dinâmico estilo iFood (Online Mercado Pago para Entrega 99 / Opção de Balcão para Retirada)
+  // Pagamento: só online, no estilo iFood (o motoboy da 99 não recebe valores e a loja não tem maquininha)
   function paintPaymentMethods() {
     const payContainer = $('#pay');
     if (!payContainer) return;
 
-    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const payments = SETTINGS?.payments || DEFAULT_SETTINGS.payments;
 
-    // Para Entrega 99: apenas pagamentos online Mercado Pago (o motoboy não recebe valores)
-    // Para Retirada no Balcão: online + pagamento presencial na maquininha Point
-    // Forma com provedor ainda não conectado (connected: false) aparece como "em breve" e não dá para escolher
+    // Forma com provedor ainda não conectado (connected: false) aparece como "em breve" e não dá para escolher.
+    // Pagamento presencial (type: 'pickup') não existe mais: se um arquivo de configurações antigo ainda tiver, é ignorado
     const isSoon = (p) => 'connected' in p && !p.connected;
     const enabledList = Object.values(payments).filter((p) => {
+      if (p.type === 'pickup') return false;
       if (isSoon(p)) return true;
-      if (p.enabled === false) return false;
-      if (!pickup && p.type === 'pickup') return false;
-      return true;
+      return p.enabled !== false;
     });
     const pickable = enabledList.filter((p) => !isSoon(p));
 
@@ -2327,7 +2367,6 @@ window.__CFG__ = {
     const payMode = on ? on.dataset.pay : 'pix_online';
     const isPixOnline = payMode === 'pix_online' || payMode === 'pix';
     const isCardOnline = ['cartao_online', 'cartao', 'cartao_debito_online', 'vr_online'].includes(payMode);
-    const isPickupPay = ['balcao_vr', 'balcao_cartao'].includes(payMode);
     document.querySelectorAll('#pay button').forEach((b) => {
       const sel = b.classList.contains('on');
       b.setAttribute('aria-checked', String(sel));
@@ -2350,10 +2389,6 @@ window.__CFG__ = {
         vr_online: 'Pagar com vale-refeição'
       };
       setCta($('#btnPayCardMp'), cardLabels[payMode] || 'Pagar com cartão', ICON.lock);
-    }
-    if ($('#btnPayDelivery')) {
-      $('#btnPayDelivery').style.display = isPickupPay ? 'flex' : 'none';
-      setCta($('#btnPayDelivery'), 'Confirmar pedido', ICON.check);
     }
 
     if ($('#custCpfFld')) $('#custCpfFld').style.display = isPixOnline ? 'block' : 'none';
@@ -2634,17 +2669,6 @@ window.__CFG__ = {
     if (t.hasAttribute('data-talk')) {
       wa(`Olá! Estou no site da unidade *${currentUnit ? currentUnit.shortZone : "Dad's Burger"}* e gostaria de uma informação.`);
     }
-    if (t.dataset.mode) {
-      document.querySelectorAll('#mode button').forEach((b) => b.classList.toggle('on', b === t));
-      const pickup = t.dataset.mode === 'retirada';
-      $('#addrBox').hidden = pickup;
-      $('#modeLabel').textContent = pickup ? 'Retirada' : 'Entrega';
-      if ($('#delivery99Notice')) $('#delivery99Notice').style.display = pickup ? 'none' : 'flex';
-      paintPaymentMethods();
-      paintCart();
-      paintPay();
-      if (typeof checkDeliveryRadius === 'function') checkDeliveryRadius(false);
-    }
     if (t.dataset.pay) {
       document.querySelectorAll('#pay button').forEach((b) => b.classList.toggle('on', b === t));
       $('#payFld').classList.remove('miss');
@@ -2696,20 +2720,18 @@ window.__CFG__ = {
 
   function updateDeliveryButtonsState(allowed) {
     const isStoreOpen = isStoreOpenBySettings();
-    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const btnPix = $('#btnPayPix');
     const btnCardMp = $('#btnPayCardMp');
-    const btnDelivery = $('#btnPayDelivery');
-    const enabled = isStoreOpen && (pickup || allowed);
+    const enabled = isStoreOpen && allowed;
 
-    [btnPix, btnCardMp, btnDelivery].forEach((btn) => {
+    [btnPix, btnCardMp].forEach((btn) => {
       if (btn) {
         btn.disabled = !enabled;
         btn.style.opacity = enabled ? '1' : '0.45';
         btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
         if (!isStoreOpen) {
           btn.title = 'Loja Fechada: ' + (SETTINGS?.store?.closedNotice || 'pedidos desativados no momento.');
-        } else if (!pickup && !allowed) {
+        } else if (!allowed) {
           btn.title = `Endereço fora do raio de entrega de ${maxRadiusKm()} km`;
         } else {
           btn.title = '';
@@ -2864,17 +2886,9 @@ window.__CFG__ = {
   }
 
   async function checkDeliveryRadius(showLoading = false) {
-    const addrBox = $('#addrBox');
-    const pickup = addrBox ? addrBox.hidden : false;
     const s = getStructuredAddress();
     const statusBox = $('#distanceStatus');
     const cleanCep = s.cep.replace(/\D/g, '');
-
-    if (pickup) {
-      if (statusBox) statusBox.style.display = 'none';
-      updateDeliveryButtonsState(true);
-      return { allowed: true, valid: true };
-    }
 
     if (!cleanCep || cleanCep.length < 8) {
       if (statusBox) statusBox.style.display = 'none';
@@ -2935,7 +2949,7 @@ window.__CFG__ = {
 
       // Sem resposta do servidor não dá para confirmar a distância (e o servidor confere o pedido de novo): entrega bloqueada
       if (!data) {
-        data = { valid: false, allowed: false, error: 'Não foi possível validar o endereço agora. Tente de novo ou escolha retirada.' };
+        data = { valid: false, allowed: false, error: 'Não foi possível validar o endereço agora. Tente de novo em instantes.' };
       } else if (typeof data.deliveryFee !== 'number' && data.distanceKm) {
         data.deliveryFee = getDeliveryFeeByDistance(data.distanceKm);
       }
@@ -3009,7 +3023,7 @@ window.__CFG__ = {
         } else {
           switchHtml = `
             <div style="margin-top:8px;font-size:12px;color:#B91C1C;">
-              💡 Dica: Altere a opção acima para <strong>"Retirar no local"</strong> ou escolha outro endereço até ${maxRadiusKm()} km.
+              💡 Dica: escolha um endereço de entrega até ${maxRadiusKm()} km da unidade.
             </div>
           `;
         }
@@ -3211,7 +3225,6 @@ window.__CFG__ = {
     const phone = ($('#custPhone')?.value || '').trim();
     const cpf = ($('#custCpf')?.value || '').trim();
     const email = ($('#custEmail')?.value || '').trim();
-    const pickup = $('#addrBox') ? $('#addrBox').hidden : false;
     const ref = ($('#delRef')?.value || '').trim();
 
     $('#custNameFld')?.classList.toggle('miss', !name);
@@ -3240,78 +3253,71 @@ window.__CFG__ = {
     }
 
     let radCheck = null;
-    if (!pickup) {
-      const s = getStructuredAddress();
-      const cleanCep = s.cep.replace(/\D/g, '');
+    const s = getStructuredAddress();
+    const cleanCep = s.cep.replace(/\D/g, '');
 
-      $('#delCepFld')?.classList.toggle('miss', cleanCep.length !== 8);
-      if (cleanCep.length !== 8) {
-        $('#delCep')?.focus();
-        toast('Digite um CEP válido com 8 dígitos.');
-        return null;
-      }
+    $('#delCepFld')?.classList.toggle('miss', cleanCep.length !== 8);
+    if (cleanCep.length !== 8) {
+      $('#delCep')?.focus();
+      toast('Digite um CEP válido com 8 dígitos.');
+      return null;
+    }
 
-      // Validação do CEP via API Correios / ViaCEP
-      const cepData = await lookupCepOnServer(cleanCep, true);
-      if (!cepData || !cepData.valid) {
-        $('#delCep')?.focus();
-        toast('CEP não encontrado nos Correios. Verifique os números.');
-        return null;
-      }
+    // Validação do CEP via API Correios / ViaCEP
+    const cepData = await lookupCepOnServer(cleanCep, true);
+    if (!cepData || !cepData.valid) {
+      $('#delCep')?.focus();
+      toast('CEP não encontrado nos Correios. Verifique os números.');
+      return null;
+    }
 
-      $('#delRuaFld')?.classList.toggle('miss', !s.rua || s.rua.length < 2);
-      if (!s.rua || s.rua.length < 2) {
-        $('#delRua')?.focus();
-        toast('Informe a rua ou avenida de entrega.');
-        return null;
-      }
+    $('#delRuaFld')?.classList.toggle('miss', !s.rua || s.rua.length < 2);
+    if (!s.rua || s.rua.length < 2) {
+      $('#delRua')?.focus();
+      toast('Informe a rua ou avenida de entrega.');
+      return null;
+    }
 
-      $('#delNumFld')?.classList.toggle('miss', !s.numero);
-      if (!s.numero) {
-        $('#delNum')?.focus();
-        toast('Informe o número do endereço de entrega.');
-        return null;
-      }
+    $('#delNumFld')?.classList.toggle('miss', !s.numero);
+    if (!s.numero) {
+      $('#delNum')?.focus();
+      toast('Informe o número do endereço de entrega.');
+      return null;
+    }
 
-      $('#delBairroFld')?.classList.toggle('miss', !s.bairro);
-      if (!s.bairro) {
-        $('#delBairro')?.focus();
-        toast('Informe o bairro de entrega.');
-        return null;
-      }
+    $('#delBairroFld')?.classList.toggle('miss', !s.bairro);
+    if (!s.bairro) {
+      $('#delBairro')?.focus();
+      toast('Informe o bairro de entrega.');
+      return null;
+    }
 
-      $('#delCidadeFld')?.classList.toggle('miss', !s.cidade);
-      if (!s.cidade) {
-        $('#delCidade')?.focus();
-        toast('Informe a cidade de entrega.');
-        return null;
-      }
+    $('#delCidadeFld')?.classList.toggle('miss', !s.cidade);
+    if (!s.cidade) {
+      $('#delCidade')?.focus();
+      toast('Informe a cidade de entrega.');
+      return null;
+    }
 
-      radCheck = await checkDeliveryRadius(true);
-      if (!radCheck || !radCheck.valid) {
-        toast(radCheck?.error || 'Endereço não localizado no mapa.');
-        return null;
-      }
-      if (!radCheck.allowed) {
-        const d = (radCheck && radCheck.distanceKm) ? ` (${radCheck.distanceKm} km)` : '';
-        const maxKm = parseFloat(SETTINGS?.delivery?.maxRadiusKm || 15.0);
-        toast(`Entrega não permitida${d}: o limite máximo é de ${maxKm} km.`);
-        return null;
-      }
+    radCheck = await checkDeliveryRadius(true);
+    if (!radCheck || !radCheck.valid) {
+      toast(radCheck?.error || 'Endereço não localizado no mapa.');
+      return null;
+    }
+    if (!radCheck.allowed) {
+      const d = (radCheck && radCheck.distanceKm) ? ` (${radCheck.distanceKm} km)` : '';
+      const maxKm = parseFloat(SETTINGS?.delivery?.maxRadiusKm || 15.0);
+      toast(`Entrega não permitida${d}: o limite máximo é de ${maxKm} km.`);
+      return null;
     }
 
     const subtotal = [...cart.entries()].reduce((sum, [i, q]) => sum + unitPrice(MENU[i]) * q, 0);
-    let deliveryFee = 0;
-    let distanceKm = 0;
+    const distanceKm = (radCheck && radCheck.distanceKm) ? radCheck.distanceKm : 2.8;
+    const deliveryFee = (radCheck && typeof radCheck.deliveryFee === 'number')
+      ? radCheck.deliveryFee
+      : getDeliveryFeeByDistance(distanceKm);
 
-    if (!pickup) {
-      distanceKm = (radCheck && radCheck.distanceKm) ? radCheck.distanceKm : 2.8;
-      deliveryFee = (radCheck && typeof radCheck.deliveryFee === 'number')
-        ? radCheck.deliveryFee
-        : getDeliveryFeeByDistance(distanceKm);
-    }
-
-    const total = Math.round((pickup ? subtotal : (subtotal + deliveryFee)) * 100) / 100;
+    const total = Math.round((subtotal + deliveryFee) * 100) / 100;
     const items = [...cart.entries()].map(([i, q]) => ({
       ...(MENU[i].id ? { id: MENU[i].id } : {}),
       name: MENU[i].name,
@@ -3324,9 +3330,8 @@ window.__CFG__ = {
       email,
       phone: cleanPhone,
       cpf: cleanCpf,
-      pickup,
       ref,
-      address: pickup ? '' : getFullDeliveryAddress(),
+      address: getFullDeliveryAddress(),
       addressDetails: getStructuredAddress(),
       subtotal,
       deliveryFee,
@@ -3336,149 +3341,12 @@ window.__CFG__ = {
     };
   }
 
-  // Finalização de Pedido com Pagamento na Entrega (Dinheiro, Maquininha Cartão, Pix na entrega)
-  async function startDeliveryCheckout() {
-    if (!isStoreOpenBySettings()) {
-      toast('Loja fechada no momento: ' + (SETTINGS?.store?.closedNotice || 'Não estamos aceitando novos pedidos agora.'));
-      return;
-    }
-
-    const val = await validateCheckoutCustomerAndAddress(false);
-    if (!val) return;
-
-    const on = $('#pay .on');
-    const payMode = on ? on.dataset.pay : 'balcao_cartao';
-
-    // Pedido para pagar no balcão: o servidor confere itens e total, escolhe a forma pelas configurações e dá o número do pedido
-    let created = null;
-    try {
-      const res = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payMode,
-          customer: { name: val.name, phone: val.phone },
-          order: {
-            items: val.items,
-            mode: 'retirada',
-            unitId: currentUnit ? currentUnit.id : 'passo-dareia',
-            ref: val.ref
-          }
-        })
-      });
-      const data = await res.json().catch(() => null);
-      if (res.ok && data && data.success && data.order) created = data.order;
-    } catch (netErr) {
-      created = null;
-    }
-    if (!created) return toast('Não foi possível enviar o pedido agora. Tente de novo em instantes.');
-
-    openDeliverySuccessModal(created);
-  }
-  window.startDeliveryCheckout = startDeliveryCheckout;
-
-  function openDeliverySuccessModal(order) {
-    const modal = $('#pixModal');
-    if (!modal) return;
-
-    if (pixPollInterval) { clearInterval(pixPollInterval); pixPollInterval = null; }
-    if (pixTimerInterval) { clearInterval(pixTimerInterval); pixTimerInterval = null; }
-
-    $('#pixStepWait').hidden = true;
-    $('#pixStepSuccess').hidden = false;
-
-    const badge = $('#pixSuccessOrderBadge');
-    if (badge) {
-      badge.innerHTML = `
-        <div style="font-size:14px;font-weight:900;color:#15803D">Pedido #${order.orderId} · RECEBIDO</div>
-        <div style="margin-top:6px;font-size:12.5px;font-weight:700;color:#166534">
-          💳 Forma de Pagamento: <u>${order.paymentMethod}</u>
-        </div>
-      `;
-    }
-
-    const itemsSummary = (order.order.items || []).map((it) => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px">
-        <span style="color:#27272A"><b>${it.q}x</b> ${it.name}</span>
-        <span style="font-weight:700;color:#18181B;white-space:nowrap;margin-left:12px">${brl(it.price * it.q)}</span>
-      </div>
-    `).join('');
-    const where = order.order.mode === 'retirada' ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${order.order.address}${order.order.ref ? ` (${order.order.ref})` : ''}`;
-
-    const details = $('#pixSuccessDetails');
-    if (details) {
-      details.innerHTML = `
-        <div style="font-size:11px;font-weight:800;color:#71717A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Resumo do Pedido</div>
-        <div style="border-bottom:1px dashed #E4DED7;padding-bottom:8px;margin-bottom:10px">
-          ${itemsSummary}
-        </div>
-        ${order.order.mode !== 'retirada' ? `
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#52525B;margin-bottom:6px">
-          <span>Taxa de Entrega (${order.order.distanceKm ? `${order.order.distanceKm} km` : 'distância'})</span>
-          <span>${order.order.deliveryFee ? brl(order.order.deliveryFee) : 'Grátis'}</span>
-        </div>` : ''}
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:900;color:#121212">
-          <span>Total a Pagar na Entrega</span>
-          <span style="color:#16A34A">${brl(order.total)}</span>
-        </div>
-        <div style="margin-top:10px;padding-top:8px;border-top:1px solid #ECE7E1;color:#71717A;font-size:12px;display:flex;align-items:center;gap:6px">
-          <span>📍</span><span>${where}</span>
-        </div>
-      `;
-    }
-
-    const autoWaEl = $('#pixAutoWaStore');
-    const unit = currentUnit || DADS_UNITS[0];
-    if (autoWaEl) {
-      autoWaEl.textContent = `Registrado na cozinha da unidade ${unit.zoneTitle} (${unit.cleanAddress}). O pagamento será feito no momento da entrega!`;
-    }
-
-    const linesTxt = (order.order.items || []).map((it) => `• ${it.q}x ${it.name} - ${brl(it.price * it.q)}`).join('\n');
-    const waMsg = `🍔 *NOVO PEDIDO #${order.orderId} - DAD'S BURGER*\n` +
-      `👤 *Cliente:* ${order.customer.name} (${order.customer.phone})\n` +
-      `📍 *Destino:* ${where}\n\n` +
-      `📋 *Itens:*\n${linesTxt}\n\n` +
-      (order.order.deliveryFee ? `🛵 *Taxa de Entrega:* ${brl(order.order.deliveryFee)}\n` : '') +
-      `💰 *Total:* ${brl(order.total)}\n` +
-      `💳 *Pagamento:* ${order.paymentMethod}\n\n` +
-      `_Pedido transmitido para a cozinha pelo cardápio digital!_`;
-
-    const targetPhone = (unit && unit.whats) ? unit.whats.replace(/\D/g, '') : '5551993248655';
-    const waUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(waMsg)}`;
-
-    let waWrap = $('#deliveryWaBtnWrap');
-    if (!waWrap) {
-      waWrap = el('div', { id: 'deliveryWaBtnWrap', style: 'margin-bottom:10px' });
-      const actions = $('#pixStepSuccess .pix-success-actions');
-      if (actions) actions.parentNode.insertBefore(waWrap, actions);
-    }
-    waWrap.innerHTML = `
-      <a href="${waUrl}" target="_blank" rel="noopener" class="pill brand wide" style="background:#25D366;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;padding:12px 16px;border-radius:12px;font-size:14px;box-shadow:0 4px 14px rgba(37,211,102,0.3);margin-bottom:10px">
-        <span>📱 Abrir WhatsApp com o Restaurante</span>
-      </a>
-    `;
-
-    const doneBtn = $('#btnDoneOrder');
-    if (doneBtn) {
-      doneBtn.onclick = () => {
-        cart.clear();
-        paintCart();
-        paintMenu();
-        closePixModal();
-        go('home');
-        toast('Pedido confirmado! Acompanhe o preparo.');
-      };
-    }
-
-    modal.hidden = false;
-  }
-
   // Respostas do servidor sobre as regras do dono (horário, raio, pagamento ligado, valor que mudou)
   const OWNER_RULE_ERRORS = ['loja_fechada', 'fora_do_raio', 'endereco_nao_confirmado', 'forma_desativada', 'valor_mudou'];
   function ownerRuleMessage(d) {
     if (d.error === 'loja_fechada') { loadSettingsAndProducts(); return d.notice || 'A loja está fechada no momento.'; }
     if (d.error === 'fora_do_raio') return 'Endereço fora da área de entrega.';
-    if (d.error === 'endereco_nao_confirmado') return 'Não conseguimos confirmar o endereço pelo CEP. Confira o CEP ou escolha retirada.';
+    if (d.error === 'endereco_nao_confirmado') return 'Não conseguimos confirmar o endereço pelo CEP. Confira o CEP.';
     if (d.error === 'forma_desativada') { loadSettingsAndProducts(); return 'Esta forma de pagamento não está disponível agora. Escolha outra.'; }
     if (d.error === 'valor_mudou') {
       loadSettingsAndProducts().then(() => checkDeliveryRadius(true));
@@ -3532,7 +3400,7 @@ window.__CFG__ = {
           order: {
             items: val.items,
             expectedTotal: val.total,
-            mode: val.pickup ? 'retirada' : 'entrega',
+            mode: 'entrega',
             address: val.address,
             addressDetails: val.addressDetails,
             unitId: currentUnit ? currentUnit.id : 'passo-dareia',
@@ -3557,7 +3425,8 @@ window.__CFG__ = {
     }
     if (!data) return toast(msg);
 
-    currentPixPayment = { ...data, name: val.name, phone: val.phone, pickup: val.pickup, addr: val.address, ref: val.ref };
+    currentPixPayment = { ...data, name: val.name, phone: val.phone, addr: val.address, ref: val.ref };
+    trackStore.add(data.trackToken, data.orderId);
     openPixModal(currentPixPayment);
     // O pedido só chega ao quadro do restaurante depois que o Mercado Pago confirmar o pagamento (feito pelo servidor)
   }
@@ -3778,7 +3647,7 @@ window.__CFG__ = {
   const vrLive = () => { const v = SETTINGS?.payments?.vr_online; return Boolean(v && v.enabled && v.connected); };
   let vrBusy = false;
   async function startVrCheckout() {
-    if (!vrLive()) return toast('Vale-refeição pelo site ainda não está disponível. Use Pix, cartão ou pague no balcão.');
+    if (!vrLive()) return toast('Vale-refeição pelo site ainda não está disponível. Use Pix ou cartão.');
     if (vrBusy) return;
     vrBusy = true;
     try {
@@ -3793,7 +3662,7 @@ window.__CFG__ = {
             items: val.items,
             deliveryFee: val.deliveryFee,
             distanceKm: val.distanceKm,
-            mode: val.pickup ? 'retirada' : 'entrega',
+            mode: 'entrega',
             address: val.address,
             unitId: currentUnit ? currentUnit.id : 'passo-dareia',
             ref: val.ref
@@ -3871,7 +3740,7 @@ window.__CFG__ = {
             order: {
               items: o.items,
               expectedTotal: o.total,
-              mode: o.pickup ? 'retirada' : 'entrega',
+              mode: 'entrega',
               address: o.address,
               addressDetails: o.addressDetails,
               unitId: currentUnit ? currentUnit.id : 'passo-dareia',
@@ -3891,6 +3760,8 @@ window.__CFG__ = {
           showCardPaymentSuccess(data);
         } else if (res.ok && data && data.success) {
           closeCardModal();
+          trackStore.add(data.trackToken, data.orderId);
+          paintTrackBanner();
           toast('Pagamento em análise no Mercado Pago. Se for aprovado, o pedido segue para a cozinha.');
         } else if (res.status === 402 && data) {
           toast(CARD_REJECT[data.reason] || 'Pagamento recusado. Tente outro cartão ou use o Pix.');
@@ -3940,7 +3811,7 @@ window.__CFG__ = {
         <span style="font-weight:700;color:#18181B;white-space:nowrap;margin-left:12px">${brl(it.price * it.q)}</span>
       </div>
     `).join('');
-    const where = o.pickup ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${o.address}${o.ref ? ` (${o.ref})` : ''}`;
+    const where = `Entrega em: ${o.address}${o.ref ? ` (${o.ref})` : ''}`;
     const brand = String(data.brand || 'cartão').replace(/^deb/, '').toUpperCase();
 
     const details = $('#cardSuccessDetails');
@@ -3982,6 +3853,8 @@ window.__CFG__ = {
         toast('Pedido confirmado! Acompanhe o preparo.');
       };
     }
+    trackStore.add(data.trackToken, data.orderId);
+    wireTrackButton('#btnTrackOrderCard', data.trackToken, closeCardModal);
   }
 
   // Abertura do Modal Pix e Inicialização de Polling/Timer
@@ -4086,7 +3959,7 @@ window.__CFG__ = {
         <span style="font-weight:700;color:#18181B;white-space:nowrap;margin-left:12px">${brl(it.price * it.q)}</span>
       </div>
     `).join('');
-    const where = pay.pickup ? 'Retirada no balcão da hamburgueria' : `Entrega em: ${pay.addr}${pay.ref ? ` (${pay.ref})` : ''}`;
+    const where = `Entrega em: ${pay.addr}${pay.ref ? ` (${pay.ref})` : ''}`;
 
     const details = $('#pixSuccessDetails');
     if (details) {
@@ -4123,6 +3996,7 @@ window.__CFG__ = {
         toast('Pedido confirmado! Acompanhe o preparo.');
       };
     }
+    wireTrackButton('#btnTrackOrder', pay.trackToken, closePixModal);
   }
 
   const btnPayPixEl = $('#btnPayPix');
@@ -4131,8 +4005,243 @@ window.__CFG__ = {
   const btnPayCardMpEl = $('#btnPayCardMp');
   if (btnPayCardMpEl) btnPayCardMpEl.addEventListener('click', startMpCardCheckout);
 
-  const btnPayDeliveryEl = $('#btnPayDelivery');
-  if (btnPayDeliveryEl) btnPayDeliveryEl.addEventListener('click', startDeliveryCheckout);
+  // =============================================================
+  // ACOMPANHAR PEDIDO: depois de pedir, o cliente vê o andamento (recebido, em preparo, saiu para entrega, entregue)
+  // pelo link privado /?pedido=CÓDIGO. A página atualiza sozinha. O servidor só devolve o andamento, sem dados pessoais.
+  // =============================================================
+  const TRACK_KEY = 'dads_orders';
+  const TRACK_RE = /^[A-Za-z0-9_-]{22}$/;
+  const trackStore = {
+    list() {
+      try {
+        const l = JSON.parse(localStorage.getItem(TRACK_KEY) || '[]');
+        return Array.isArray(l) ? l.filter((x) => x && TRACK_RE.test(String(x.t))) : [];
+      } catch (e) { return []; }
+    },
+    save(l) { try { localStorage.setItem(TRACK_KEY, JSON.stringify(l.slice(0, 8))); } catch (e) {} },
+    add(t, id) {
+      if (!TRACK_RE.test(String(t || ''))) return;
+      this.save([{ t, id: String(id || ''), at: Date.now() }, ...this.list().filter((x) => x.t !== t)]);
+    },
+    remove(t) { this.save(this.list().filter((x) => x.t !== t)); }
+  };
+  const trackLink = (t) => `${location.origin}${location.pathname}?pedido=${encodeURIComponent(t)}`;
+  const hhmm = (sec) => new Date(sec * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  // As etapas que o cliente vê (o restaurante usa novo → preparando → entrega → concluído no painel)
+  const TRACK_FLOW = {
+    entrega: [
+      { s: 'novo', label: 'Pedido recebido' },
+      { s: 'preparando', label: 'Em preparo' },
+      { s: 'entrega', label: 'Saiu para entrega' },
+      { s: 'concluido', label: 'Entregue' }
+    ]
+  };
+
+  // Título, texto e cor da situação atual do pedido
+  function trackView(d) {
+    if (d.status === 'cancelado') return { emoji: '❌', title: 'Pedido cancelado', text: 'Este pedido foi cancelado. Se tiver dúvida, fale com a loja.', tone: 'bad' };
+    if (d.status === 'aguardando_pagamento') {
+      if (d.expired) return { emoji: '⌛', title: 'Pix expirado', text: 'O tempo para pagar acabou e o pedido não foi confirmado. Volte ao cardápio e faça um novo pedido.', tone: 'bad' };
+      return { emoji: '⏳', title: 'Aguardando o pagamento', tone: 'wait',
+        text: d.pay === 'cartao' ? 'Estamos esperando o Mercado Pago confirmar o pagamento do cartão.' : 'Assim que o Pix for confirmado, o restaurante recebe o seu pedido. Esta tela atualiza sozinha.' };
+    }
+    const steps = TRACK_FLOW.entrega;
+    const i = Math.max(0, steps.findIndex((x) => x.s === d.status));
+    const note = [
+      { emoji: '🧾', text: 'O restaurante recebeu o seu pedido e vai aceitar em instantes.' },
+      { emoji: '👨‍🍳', text: 'A cozinha está preparando o seu pedido.' },
+      { emoji: '🛵', text: 'O pedido está a caminho do endereço informado.' },
+      { emoji: '✅', text: 'Bom apetite!' }
+    ][i];
+    return { emoji: note.emoji, title: steps[i].label, text: note.text, tone: d.status === 'concluido' ? 'ok' : '' };
+  }
+
+  // Previsão de preparo (tempo que a loja informa nas configurações), contada a partir do recebimento
+  function trackEta(d) {
+    if (!['novo', 'preparando'].includes(d.status) || !(d.prepMax > 0)) return '';
+    const base = (d.history.find((h) => h.status === 'novo') || {}).at || d.createdAt;
+    const from = base + d.prepMin * 60;
+    const to = base + d.prepMax * 60;
+    if (d.now > to + 300) return 'Está levando um pouco mais que o previsto';
+    return `Previsão de preparo: ${hhmm(from)} – ${hhmm(to)}`;
+  }
+
+  const trackFinal = (d) => d.status === 'concluido' || d.status === 'cancelado' || d.expired;
+  async function trackFetch(token) {
+    const r = await fetch(`/api/track/${encodeURIComponent(token)}`, { cache: 'no-store' });
+    if (r.status === 404) return { gone: true };
+    if (!r.ok) throw new Error(`http ${r.status}`);
+    return r.json();
+  }
+
+  function renderTrack(d) {
+    const v = trackView(d);
+    const unit = DADS_UNITS.find((u) => u.id === d.unitId) || currentUnit || DADS_UNITS[0];
+    $('#trackOrderTag').textContent = `PEDIDO #${d.orderId}`;
+    document.title = `${v.title} · Pedido #${d.orderId}`;
+    const kids = [];
+
+    const status = el('div', { className: `trk-status ${v.tone}` }, el('div', { className: 'trk-emoji', textContent: v.emoji }), el('h4', { textContent: v.title }), el('p', { textContent: v.text }));
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const eta = trackEta(d);
+    if (eta) status.append(el('div', { className: 'trk-eta', textContent: eta }));
+    kids.push(status);
+
+    // Linha do tempo: só depois que o restaurante recebeu o pedido, e não em pedido cancelado
+    if (!['aguardando_pagamento', 'cancelado'].includes(d.status)) {
+      const steps = TRACK_FLOW.entrega;
+      const cur = steps.findIndex((x) => x.s === d.status);
+      kids.push(el('ol', { className: 'trk-steps' }, ...steps.map((s, i) => {
+        const at = (d.history.find((h) => h.status === s.s) || {}).at;
+        const state = d.status === 'concluido' || i < cur ? 'done' : (i === cur ? 'now' : '');
+        return el('li', { className: `trk-step ${state}` },
+          el('span', { className: 'trk-dot', textContent: state === 'done' ? '✓' : String(i + 1) }),
+          el('div', { className: 'trk-t' }, el('b', { textContent: s.label })),
+          ...(at && state ? [el('span', { className: 'trk-time', textContent: hhmm(at) })] : []));
+      })));
+    }
+
+    // Resumo: o que foi pedido, quanto, forma de pagamento e onde (nada de nome, telefone ou endereço do cliente)
+    const payTxt = `${d.pay === 'pix' ? 'Pix' : d.pay === 'cartao' ? 'Cartão' : 'Pagamento'} · ${d.paid ? 'pago' : 'aguardando'}`;
+    const where = '📍 Entrega no endereço informado no pedido';
+    kids.push(el('div', { className: 'pix-receipt-box' },
+      ...d.items.map((it) => el('div', { className: 'trk-row' }, el('span', {}, el('b', { textContent: `${it.q}x ` }), it.name), el('span', { textContent: brl(it.price * it.q) }))),
+      ...(d.deliveryFee > 0 ? [el('div', { className: 'trk-line' }, el('span', { textContent: 'Taxa de entrega' }), el('span', { textContent: brl(d.deliveryFee) }))] : []),
+      el('div', { className: 'trk-line trk-total' }, el('span', { textContent: 'Total' }), el('span', { textContent: brl(d.total) })),
+      el('div', { className: 'trk-line' }, el('span', { textContent: payTxt }), el('span', { textContent: d.refunded ? 'Pagamento devolvido' : '' })),
+      el('div', { className: 'trk-where', textContent: where })));
+
+    const actions = el('div', { className: 'trk-actions' });
+    if (unit && unit.whats) {
+      actions.append(el('a', { className: 'pix-btn-wa', target: '_blank', rel: 'noopener', textContent: '📱 Falar com a loja',
+        href: `https://wa.me/${unit.whats.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Estou acompanhando o pedido #${d.orderId}.`)}` }));
+    }
+    actions.append(
+      el('button', { className: 'pix-btn-done trk-alt', type: 'button', textContent: '🔗 Copiar link do pedido', onclick: async () => {
+        try { await navigator.clipboard.writeText(trackLink(trackOpen.token)); toast('Link copiado. Quem tiver o link vê o andamento do pedido.'); }
+        catch (e) { prompt('Copie o link:', trackLink(trackOpen.token)); }
+      } }),
+      el('button', { className: 'pix-btn-done', type: 'button', textContent: 'Voltar ao cardápio', onclick: closeTracking }));
+    kids.push(actions);
+    $('#trackBody').replaceChildren(...kids);
+  }
+
+  function renderTrackMessage(emoji, title, text) {
+    $('#trackOrderTag').textContent = 'PEDIDO';
+    const box = el('div', { className: 'trk-status bad' }, el('div', { className: 'trk-emoji', textContent: emoji }), el('h4', { textContent: title }), el('p', { textContent: text }));
+    $('#trackBody').replaceChildren(box, el('div', { className: 'trk-actions' }, el('button', { className: 'pix-btn-done', type: 'button', textContent: 'Voltar ao cardápio', onclick: closeTracking })));
+  }
+
+  const trackOpen = { token: null, timer: null, busy: false, last: null, sig: '', title: '' };
+  const setTrackFoot = (text, err) => { const f = $('#trackFoot'); if (f) { f.textContent = text; f.classList.toggle('err', Boolean(err)); } };
+
+  async function pollTrack() {
+    if (!trackOpen.token || trackOpen.busy || document.hidden) return;
+    trackOpen.busy = true;
+    const mine = trackOpen.token;
+    try {
+      const d = await trackFetch(mine);
+      if (mine !== trackOpen.token) return;
+      if (d.gone) {
+        trackStore.remove(mine);
+        stopTrackPolling();
+        renderTrackMessage('🔎', 'Não encontramos esse pedido', 'Confira se o link está completo. Se o problema continuar, fale com a loja.');
+        setTrackFoot('');
+        return;
+      }
+      const sig = JSON.stringify([d.status, d.paid, d.expired, d.refunded, d.history.length, d.total]);
+      const changed = trackOpen.last && trackOpen.last.status !== d.status;
+      trackOpen.last = d;
+      if (sig !== trackOpen.sig) { trackOpen.sig = sig; renderTrack(d); }
+      if (changed) {
+        toast(`Pedido #${d.orderId}: ${trackView(d).title}`);
+        try { navigator.vibrate && navigator.vibrate(180); } catch (e) {}
+      }
+      trackStore.add(mine, d.orderId);
+      setTrackFoot(trackFinal(d) ? `Pedido encerrado · ${hhmm(d.updatedAt || d.now)}` : `Atualizado às ${hhmm(d.now)} · esta página atualiza sozinha`);
+      if (trackFinal(d)) stopTrackPolling();
+    } catch (e) {
+      setTrackFoot('Sem conexão. Tentando de novo…', true);
+    } finally {
+      trackOpen.busy = false;
+    }
+  }
+
+  function stopTrackPolling() {
+    if (trackOpen.timer) { clearInterval(trackOpen.timer); trackOpen.timer = null; }
+  }
+
+  function openTracking(token) {
+    const modal = $('#trackModal');
+    if (!modal) return;
+    token = String(token || '');
+    stopTrackPolling();
+    Object.assign(trackOpen, { token: TRACK_RE.test(token) ? token : null, busy: false, last: null, sig: '', title: trackOpen.title || document.title });
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('#trackClose').focus();
+    if (!trackOpen.token) {
+      renderTrackMessage('🔎', 'Link do pedido incompleto', 'Confira se o link foi copiado inteiro. Se o problema continuar, fale com a loja.');
+      setTrackFoot('');
+      return;
+    }
+    $('#trackOrderTag').textContent = 'PEDIDO';
+    $('#trackBody').replaceChildren(el('p', { className: 'pix-sub', textContent: 'Carregando seu pedido…', style: 'text-align:center;padding:24px 0' }));
+    setTrackFoot('');
+    pollTrack();
+    trackOpen.timer = setInterval(pollTrack, 8000);
+  }
+
+  function closeTracking() {
+    const modal = $('#trackModal');
+    if (modal) modal.hidden = true;
+    document.body.style.overflow = '';
+    stopTrackPolling();
+    trackOpen.token = null;
+    if (trackOpen.title) { document.title = trackOpen.title; trackOpen.title = ''; }
+    try {
+      const u = new URL(location.href);
+      if (u.searchParams.has('pedido')) { u.searchParams.delete('pedido'); history.replaceState(null, '', u.pathname + (u.search || '') + u.hash); }
+    } catch (e) {}
+    paintTrackBanner();
+  }
+  window.openTracking = openTracking;
+  $('#trackClose')?.addEventListener('click', closeTracking);
+  $('#trackBackdrop')?.addEventListener('click', closeTracking);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#trackModal') && !$('#trackModal').hidden) closeTracking(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollTrack(); paintTrackBanner(); } });
+
+  // Faixa na tela inicial: o último pedido deste aparelho ainda em andamento (ou encerrado há pouco) leva ao acompanhamento
+  async function paintTrackBanner() {
+    const b = $('#trackBanner');
+    if (!b) return;
+    for (const it of trackStore.list()) {
+      let d;
+      try { d = await trackFetch(it.t); } catch (e) { return; } // sem conexão: deixa a faixa como está
+      if (d.gone) { trackStore.remove(it.t); continue; }
+      if (trackFinal(d) && d.now - (d.updatedAt || d.createdAt) > 3600) { trackStore.remove(it.t); continue; }
+      const v = trackView(d);
+      b.replaceChildren(
+        el('span', { className: 'trk-ico', textContent: v.emoji }),
+        el('span', {}, el('b', { textContent: `Pedido #${d.orderId}` }), el('small', { textContent: v.title })),
+        el('span', { className: 'trk-go', textContent: 'Acompanhar ›' }));
+      b.onclick = () => openTracking(it.t);
+      b.hidden = false;
+      return;
+    }
+    b.hidden = true;
+  }
+  setInterval(() => { if (!document.hidden && $('#trackModal') && $('#trackModal').hidden) paintTrackBanner(); }, 30000);
+
+  // Botão "Acompanhar meu pedido" das telas de pedido confirmado: faz o mesmo que "Voltar ao Cardápio" (limpa o carrinho) e abre o acompanhamento
+  function wireTrackButton(sel, token, close) {
+    const btn = $(sel);
+    if (!btn) return;
+    btn.hidden = !TRACK_RE.test(String(token || ''));
+    btn.onclick = () => { cart.clear(); paintCart(); paintMenu(); close(); go('home'); openTracking(token); };
+  }
 
   async function loadSettingsAndProducts() {
     // 1. Settings
@@ -4304,14 +4413,17 @@ window.__CFG__ = {
     setUnit(savedUnit, false);
   } else {
     // Primeira visita: o cliente decide a unidade logo ao entrar no site!
+    // (quem abre o link de um pedido já feito vai direto ao acompanhamento, sem escolher unidade)
     setUnit(DADS_UNITS[0].id, false);
-    setTimeout(() => { openUnitModal(); }, 180);
+    if (!P.get('pedido')) setTimeout(() => { openUnitModal(); }, 180);
   }
 
   if (P.has('trocar_unidade') || P.has('unidades')) {
     setTimeout(() => { openUnitModal(); }, 180);
   }
   if (P.has('add')) { const idx = Number(P.get('add')); if (!isNaN(idx) && MENU[idx]) change(idx, 1); }
+  paintTrackBanner();
+  if (P.get('pedido')) openTracking(P.get('pedido')); // link privado do pedido (/?pedido=CÓDIGO)
   if (P.has('mp_status') || P.has('collection_status')) {
     const st = P.get('mp_status') || P.get('collection_status');
     const orderId = P.get('order_id') || P.get('external_reference') || 'ONLINE';
