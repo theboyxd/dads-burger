@@ -358,6 +358,45 @@ check('no counter payment: an old settings file that still has one is never serv
 baseline()
 check('no counter payment: the shipped settings.json has only online methods', all(p.get('type') == 'online' for p in json.load(open(SITE + '/settings.json', encoding='utf-8'))['payments'].values()))
 
+# ============================================================ SALDO/CRÉDITO DO MERCADO PAGO E DEVOLUÇÃO AO CANCELAR
+def wallet(order=None, c=None, **kw): return call(B, 'POST', '/api/mercadopago/wallet', {'customer': c or cust, 'order': order or order1, **kw})
+def pref_of(oid): return orders_file()[oid]['preferenceId']
+def wallet_paid(**kw):
+    c, w = wallet(); p = call(MP, 'GET', f"/__walletpay/{pref_of(w['orderId'])}" + ('?' + '&'.join(f'{k}={v}' for k, v in kw.items()) if kw else ''))[1]; return w, p
+def refunds(): return [x for x in mp_log() if x.get('refund')]
+baseline(); reset()
+check('wallet: the settings tile turns on by itself where the server has a key and an https APP_URL, and stays off without a key', get_settings()['payments']['mercadopago_saldo']['connected'] is True and call(B0, 'GET', '/api/admin/settings')[1]['payments']['mercadopago_saldo']['connected'] is False)
+c, w = wallet(); prefs = [x for x in mp_log() if x.get('preference')]; pb = prefs[-1]['body'] if prefs else {}
+check('wallet: a Mercado Pago preference is created (purpose wallet_purchase, order number as external_reference, https notification and back URLs to the tracking page, amount = server total)', c == 200 and w.get('initPoint', '').startswith('https://mock.mercadopago.test/') and pb.get('purpose') == 'wallet_purchase' and pb.get('external_reference') == w['orderId'] and abs(sum(i['unit_price'] * i['quantity'] for i in pb['items']) - w['total']) < 0.005 and pb['notification_url'] == 'https://dads.example.test/api/mercadopago/webhook' and pb['back_urls']['success'] == 'https://dads.example.test/?pedido=' + w['trackToken'] and pb['auto_return'] == 'approved' and pb['payer']['email'] == EMAIL, (c, w, pb))
+check('wallet: the order is not on the restaurant board until Mercado Pago confirms a payment', board(w['orderId']) is None)
+p = call(MP, 'GET', f"/__walletpay/{pref_of(w['orderId'])}")[1]; webhook(p['id'])
+o = until(lambda: board(w['orderId']))
+check('wallet: after the payment appears at Mercado Pago, the webhook ties it to the order by external_reference and the order is paid on the board', o and o['paymentConfirmed'] is True and o['paymentId'] == str(p['id']) and o['status'] == 'novo', o)
+w2, p2 = wallet_paid(amount='1'); webhook(p2['id'])
+check('wallet: a payment with another amount never confirms the order', board(w2['orderId']) is None)
+w3, p3 = wallet_paid(status='rejected'); webhook(p3['id'])
+check('wallet: a rejected payment never confirms the order', board(w3['orderId']) is None)
+w4, p4 = wallet_paid()
+check('wallet: with no webhook at all, the safety loop finds the payment by order number', until(lambda: board(w4['orderId']), 10) is not None)
+pay('mercadopago_saldo', False); off = wallet()[1].get('error'); pay('mercadopago_saldo', True)
+check('wallet: refused cases: shown total too low (409), pick-up (400 so_entrega), no e-mail (400), payment switched off (403 forma_desativada), no key (503)',
+      wallet({**order1, 'expectedTotal': 1})[0] == 409 and wallet({**order1, 'mode': 'retirada'})[1].get('error') == 'so_entrega' and wallet(c={**cust, 'email': ''})[1].get('error') == 'email_invalido'
+      and off == 'forma_desativada' and call(B0, 'POST', '/api/mercadopago/wallet', {'customer': cust, 'order': order1})[1].get('error') == 'mp_nao_configurado', off)
+reset()
+r = acall(B, 'PATCH', f"/api/orders/{w['orderId']}", {'status': 'cancelado'})
+rf = refunds(); o = board(w['orderId'])
+check('refund: cancelling a paid order refunds it at Mercado Pago once (fixed idempotency key) and marks the order refunded', r[0] == 200 and r[1].get('refund', {}).get('done') is True and len(rf) == 1 and rf[0]['refund'] == str(p['id']) and rf[0]['idem'] == 'refund-' + w['orderId'] and o['refunded'] is True and o['status'] == 'cancelado', (r, rf))
+acall(B, 'PATCH', f"/api/orders/{w['orderId']}", {'status': 'cancelado'})
+check('refund: cancelling again never refunds twice', len(refunds()) == 1)
+c_, px_ = pix(order1); approve_id = px_['paymentId']; call(MP, 'GET', f'/__approve/{approve_id}'); call(B, 'GET', f'/api/mercadopago/payment/{approve_id}/status')
+call(MP, 'GET', '/__refundfail?on=1'); r = acall(B, 'PATCH', f"/api/orders/{px_['orderId']}", {'status': 'cancelado'}); o = board(px_['orderId'])
+check('refund: if Mercado Pago refuses, the order is still cancelled and shows the error so the owner refunds by hand', r[0] == 200 and r[1]['refund']['done'] is False and o['status'] == 'cancelado' and o.get('refunded') is not True and o.get('refundError'), (r, o))
+call(MP, 'GET', '/__refundfail?on=0'); r = acall(B, 'PATCH', f"/api/orders/{px_['orderId']}", {'status': 'cancelado'}); o = board(px_['orderId'])
+check('refund: cancelling again after the refusal retries and succeeds', r[1]['refund']['done'] is True and o['refunded'] is True and not o.get('refundError'))
+c_, pu = pix(order1); n_r = len(refunds())
+check('refund: cancelling an order that was never paid asks for no refund (it is not even on the board)', acall(B, 'PATCH', f"/api/orders/{pu['orderId']}", {'status': 'cancelado'})[0] == 404 and len(refunds()) == n_r)
+baseline()
+
 # ============================================================ ACOMPANHAR PEDIDO (link privado do cliente)
 import urllib.parse as uparse
 TOKEN_RE = re.compile(r'^[A-Za-z0-9_-]{22}$')
@@ -395,6 +434,99 @@ check('track: every order gets its own random code', len(set(toks)) == len(toks)
 leaks = ''.join(json.dumps(call(B, 'GET', p)[1]) for p in ['/api/menu', '/api/admin/settings', '/api/stores', '/api/store/status', '/api/mercadopago/config'])
 check('track: the code is in no other public answer, and the order list still needs the login', tok1 not in leaks and call(B, 'GET', '/api/orders')[0] == 401)
 
+# ============================================================ CONTAS, 2FA, RASPADINHA E PREVISÃO DE ENTREGA
+import struct, base64, hmac as _hmac
+def totp_py(secret, at=None):
+    key = base64.b32decode(secret + '=' * (-len(secret) % 8)); h = _hmac.new(key, struct.pack('>Q', int((at or time.time()) // 30)), 'sha1').digest(); o = h[-1] & 15
+    return str((struct.unpack('>I', h[o:o + 4])[0] & 0x7fffffff) % 1000000).zfill(6)
+def mkcpf(n):
+    d = [int(x) for x in str(100000000 + n)]
+    for k in (9, 10):
+        d.append((sum(v * (k + 1 - i) for i, v in enumerate(d)) * 10 % 11) % 10)
+    return ''.join(map(str, d))
+def jar_of(hd):
+    out = {}
+    for c in hd.get_all('Set-Cookie') or []:
+        k, v = c.split(';')[0].split('=', 1); out[k] = v
+    return out
+def ck(jar, keep=None): return '; '.join(f'{k}={v}' for k, v in jar.items() if v and (keep is None or k in keep))
+def ac(method, path, body=None, jar=None):
+    c, d, hd = rcall(B, method, path, body, {'Cookie': ck(jar)} if jar else None); return c, d, hd
+def reg(name, cpf, email, pw='senha-forte-1'):
+    c, d, hd = ac('POST', '/api/account/register', {'name': name, 'cpf': cpf, 'email': email, 'phone': '51988776655', 'password': pw}); return c, d, jar_of(hd)
+def login(email, pw='senha-forte-1', code=None):
+    c, d, hd = ac('POST', '/api/account/login', {'email': email, 'password': pw, **({'code': code} if code else {})}); return c, d, jar_of(hd)
+def pix_as(jar, order=None):
+    c, d, _ = rcall(B, 'POST', '/api/mercadopago/pix', {'customer': cust, 'order': order or order1}, {'Cookie': ck(jar)}); return c, d
+def paid_as(jar, order=None):
+    c, d = pix_as(jar, order); approve(d['paymentId']); return d['orderId']
+set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': [{'id': 't', 'name': 'Brinde de teste', 'weight': 1}]}))
+QR = acall(B, 'GET', '/api/admin/raspadinha')[1]['url'].split('raspadinha=')[1]
+check('accounts: bad data refused (one-word name, bad CPF, short phone, bad e-mail, short password)', all(ac('POST', '/api/account/register', b)[0] == 400 for b in [
+    {'name': 'Ana', 'cpf': mkcpf(1), 'email': 'x@x.com', 'phone': '51988776655', 'password': 'senha-forte-1'}, {'name': 'Ana Lima', 'cpf': '11111111111', 'email': 'x@x.com', 'phone': '51988776655', 'password': 'senha-forte-1'},
+    {'name': 'Ana Lima', 'cpf': mkcpf(1), 'email': 'x@x.com', 'phone': '1', 'password': 'senha-forte-1'}, {'name': 'Ana Lima', 'cpf': mkcpf(1), 'email': 'xx', 'phone': '51988776655', 'password': 'senha-forte-1'},
+    {'name': 'Ana Lima', 'cpf': mkcpf(1), 'email': 'x@x.com', 'phone': '51988776655', 'password': 'curta'}]))
+c, d, A = reg('Ana Souza Lima', mkcpf(11), 'ana@example.com')
+check('accounts: register works, logs in at once (a remembered cookie plus a session-only one) and gives one welcome scratch card', c == 201 and 'dads_user' in A and 'dads_fresh' in A and d['account']['tickets'] == 1 and d['account']['fresh'] is True and d['account']['cpf'].startswith('***'), (c, d))
+check('accounts: same CPF or same e-mail again is refused (409)', reg('Outra Pessoa', mkcpf(11), 'o@example.com')[0] == 409 and reg('Outra Pessoa', mkcpf(12), 'ANA@example.com')[0] == 409)
+check('accounts: wrong password -> 401 without saying which part is wrong; unknown e-mail the same', login('ana@example.com', 'errada-errada')[0] == 401 and login('ninguem@example.com')[0] == 401 and login('ana@example.com')[0] == 200)
+RA = {'dads_user': A['dads_user']}
+c, d, _ = ac('GET', '/api/account/me', None, RA)
+check('sessions: the remembered cookie alone shows the account but is not "fresh"', c == 200 and d['authenticated'] and d['account']['fresh'] is False)
+oidA0 = paid_as(RA); aid = A['dads_user'].split('.')[0]
+check('sessions: a remembered session can order and the order belongs to the account', orders_file()[oidA0].get('accountId') == aid)
+check('raspadinha: a remembered session (no fresh login) can not touch it', ac('POST', '/api/account/raspadinha/code', {'qr': QR}, RA)[0] == 401 and ac('POST', '/api/account/raspadinha/scratch', {'code': 'AAAAAAAA'}, RA)[0] == 401 and ac('POST', '/api/account/raspadinha/code', {'qr': QR})[0] == 401)
+check('raspadinha: wrong QR token refused', ac('POST', '/api/account/raspadinha/code', {'qr': 'nada'}, A)[0] == 400)
+c, d, _ = ac('POST', '/api/account/raspadinha/code', {'qr': QR}, A); code = d.get('code', '')
+check('raspadinha: reading the counter QR gives a 10-minute code', c == 200 and len(code) == 8 and d['expiresInSec'] == 600, (c, d))
+check('raspadinha: a wrong code does nothing', ac('POST', '/api/account/raspadinha/scratch', {'code': 'ZZZZZZZZ'}, A)[0] == 400)
+c, d, _ = ac('POST', '/api/account/raspadinha/scratch', {'code': code}, A)
+check('raspadinha: scratching the welcome card gives the configured prize; the code works once', c == 200 and d['prize']['name'] == 'Brinde de teste' and ac('POST', '/api/account/raspadinha/scratch', {'code': code}, A)[0] == 400, (c, d))
+c, d, _ = ac('GET', '/api/account/me', None, A)
+check('raspadinha: the order made before the scratch left one card (welcome used); the prize is waiting for the next order', d['account']['tickets'] == 1 and [p['name'] for p in d['account']['prizes']] == ['Brinde de teste'], d)
+c, d, _ = ac('POST', '/api/account/raspadinha/code', {'qr': QR}, A); ac('POST', '/api/account/raspadinha/scratch', {'code': d.get('code', '')}, A)
+check('raspadinha: no card left -> 409 sem_raspadinha', ac('POST', '/api/account/raspadinha/code', {'qr': QR}, A)[1].get('error') == 'sem_raspadinha')
+cB, dB, B1 = reg('ana souza lima', mkcpf(13), 'b@example.com')
+check('anti-fraud: another account with the same name (any capitals) is blocked, and the attempt is logged for the owner', ac('POST', '/api/account/raspadinha/code', {'qr': QR}, B1)[1].get('error') == 'raspadinha_bloqueada' and any(b['reason'] == 'nome' for b in acall(B, 'GET', '/api/admin/raspadinha')[1]['blocked']))
+cC, dC, C1 = reg('Carlos Pereira Dias', mkcpf(14), 'c@example.com')
+c, d, _ = ac('POST', '/api/account/raspadinha/code', {'qr': QR}, C1)
+check('anti-fraud: an unrelated account gets its welcome card normally', c == 200 and ac('POST', '/api/account/raspadinha/scratch', {'code': d.get('code', '')}, C1)[0] == 200)
+oidA = paid_as(A); a_items = orders_file()[oidA]['order']['items']
+check('bonus: the prize is added to the next paid order as a free item (price 0, total unchanged) and the order earns a new card', a_items[-1]['name'] == '🎁 Brinde: Brinde de teste' and a_items[-1]['price'] == 0 and ac('GET', '/api/account/me', None, A)[1]['account']['tickets'] == 1)
+ac('POST', '/api/account/raspadinha/scratch', {'code': ac('POST', '/api/account/raspadinha/code', {'qr': QR}, A)[1]['code']}, A)
+oidC = paid_as(C1)
+check('anti-fraud: a second account whose order has the same delivery location as an already-claimed one is blocked', ac('POST', '/api/account/raspadinha/code', {'qr': QR}, C1)[1].get('error') == 'raspadinha_bloqueada' and any(b['reason'] == 'local' for b in acall(B, 'GET', '/api/admin/raspadinha')[1]['blocked']))
+cE, dE, E1 = reg('Eva Martins Rocha', mkcpf(15), 'eva@example.com'); oidE = paid_as(E1, deliv('91000003'))
+n_before = ac('GET', '/api/account/me', None, E1)[1]['account']['tickets']; acall(B, 'PATCH', f'/api/orders/{oidE}', {'status': 'cancelado'})
+check('bonus: an order that was cancelled (and refunded) no longer counts as a scratch card', n_before == 2 and ac('GET', '/api/account/me', None, E1)[1]['account']['tickets'] == 1)
+# 2FA
+c, d, _ = ac('POST', '/api/account/2fa/setup', {'password': 'errada'}, C1)
+check('2FA: setup needs the account password', c == 401)
+c, d, _ = ac('POST', '/api/account/2fa/setup', {'password': 'senha-forte-1'}, C1); sec = d.get('secret', '')
+check('2FA: setup gives a key and an otpauth link for the authenticator app, not yet active (login still works without a code)', c == 200 and len(sec) == 32 and d['uri'].startswith('otpauth://totp/') and login('c@example.com')[0] == 200)
+check('2FA: enabling needs a correct 6-digit code', ac('POST', '/api/account/2fa/enable', {'code': '000000'}, C1)[0] == 401 and ac('POST', '/api/account/2fa/enable', {'code': totp_py(sec)}, C1)[0] == 200)
+c, d, _ = login('c@example.com')
+check('2FA: login with only the password now asks for the code (401 codigo_2fa) and sets no cookie', c == 401 and d['error'] == 'codigo_2fa' and not _)
+check('2FA: a wrong code is refused; the right code from the authenticator app logs in', login('c@example.com', code='123456')[0] == 401 and login('c@example.com', code=totp_py(sec))[0] == 200 and login('c@example.com', code=totp_py(sec, time.time() - 30))[0] == 200)
+check('2FA: a code from 3 minutes ago does not work', login('c@example.com', code=totp_py(sec, time.time() - 180))[0] == 401)
+codes5 = [login('c@example.com', code='%06d' % (100000 + i))[0] for i in range(6)]
+check('2FA: after 5 wrong codes the account waits (429), even for the right code', 429 in codes5 and login('c@example.com', code=totp_py(sec))[0] == 429, codes5)
+# account management
+c, d, hd = ac('POST', '/api/account/email', {'email': 'eva2@example.com', 'password': 'senha-forte-1'}, E1)
+check('manage: e-mail can change (with the password), duplicates refused', c == 200 and d['account']['email'] == 'eva2@example.com' and ac('POST', '/api/account/email', {'email': 'ana@example.com', 'password': 'senha-forte-1'}, E1)[0] == 409 and ac('POST', '/api/account/email', {'email': 'novo@example.com', 'password': 'errada'}, E1)[0] == 401)
+old = dict(E1); c, d, hd = ac('POST', '/api/account/password', {'current': 'senha-forte-1', 'next': 'outra-senha-2'}, E1); E2 = jar_of(hd)
+check('manage: changing the password logs the other sessions out and the new password works', c == 200 and ac('GET', '/api/account/me', None, old)[1]['authenticated'] is False and ac('GET', '/api/account/me', None, E2)[1]['authenticated'] is True and login('eva2@example.com', 'outra-senha-2')[0] == 200 and login('eva2@example.com')[0] == 401)
+check('manage: name, CPF and phone have no way to be changed', all(ac('POST', f'/api/account/{p}', {'name': 'X Y', 'cpf': mkcpf(99), 'phone': '5199999999'}, E2)[0] == 404 for p in ('name', 'cpf', 'phone', 'profile')) and ac('GET', '/api/account/me', None, E2)[1]['account']['name'] == 'Eva Martins Rocha')
+ac('POST', '/api/account/logout', {}, E2)
+check('accounts: private files are never served', all(rcall(B, 'GET', p)[0] == 404 for p in ('/accounts.json', '/account.key', '/ACCOUNTS.JSON')))
+# previsão de entrega ao vivo
+t_before = track(orders_file()[oidA]['trackToken'])[1]
+check('ETA: a paid order starts with an estimate (store max prep time) and the tracking answer carries it', t_before['etaAt'] > time.time() + 60 * 30)
+check('ETA: only the owner can change it, 0 to 300 minutes', call(B, 'POST', f'/api/orders/{oidA}/eta', {'minutes': 10})[0] == 401 and acall(B, 'POST', f'/api/orders/{oidA}/eta', {'minutes': 999})[0] == 400 and acall(B, 'POST', '/api/orders/DAD-0000/eta', {'minutes': 10})[0] == 404)
+acall(B, 'POST', f'/api/orders/{oidA}/eta', {'minutes': 12})
+check('ETA: a change by the restaurant shows on the customer tracking page at once (about 12 minutes from now)', abs(track(orders_file()[oidA]['trackToken'])[1]['etaAt'] - (time.time() + 720)) < 10)
+baseline()
+
 # ============================================================ HOSPEDAGEM: PASTA DE DADOS (DATA_DIR), SENHA OBRIGATÓRIA E SAÚDE
 import subprocess, tempfile, shutil, socket, hashlib, atexit
 def free_port():
@@ -413,7 +545,7 @@ atexit.register(_cleanup_hosting)
 
 # Cópia do programa SEM nenhum arquivo de dados (como a imagem Docker): é daqui que o servidor parte
 APP2 = HOSTED + '/app'; os.makedirs(APP2)
-for f in ('server.js', 'package.json', 'index.html', 'admin.html', 'logo.png', 'products.json'): shutil.copy(f'{SITE}/{f}', f'{APP2}/{f}')
+for f in ('server.js', 'accounts.js', 'package.json', 'index.html', 'admin.html', 'logo.png', 'products.json'): shutil.copy(f'{SITE}/{f}', f'{APP2}/{f}')
 seed = json.load(open(f'{SITE}/settings.json', encoding='utf-8')); seed['store'].update({'isOpenManual': True, 'autoSchedule': False})
 json.dump(seed, open(f'{APP2}/settings.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 os.symlink(f'{SITE}/node_modules', f'{APP2}/node_modules')

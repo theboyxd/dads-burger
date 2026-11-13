@@ -3,7 +3,8 @@
 // busca por external_reference, erro 5xx, resposta lenta (com ou sem criar o pagamento), devolução e contestação.
 import http from 'http';
 let seq = (Date.now() % 900000) * 10, log = [], failNext = false, fail5xx = 0, slow = { n: 0, ms: 0, create: true };
-const pays = new Map();
+const pays = new Map(), prefs = new Map();
+let refundFail = false;
 const idem = new Map();
 // lat/lng de CEPs conhecidos (a loja Passo d'Areia fica em -30.01758, -51.15570)
 const geo = { '91350050': { lat: '-30.0178258', lng: '-51.1583857' }, '90430181': { lat: '-30.0325456', lng: '-51.2040873' }, '80000000': { lat: '-25.4284', lng: '-49.2733' } };
@@ -70,6 +71,32 @@ http.createServer((req, res) => {
       const results = [...pays.values()].filter((p) => !ref || p.external_reference === ref).reverse().slice(0, Number(q.get('limit') || 30));
       return json(res, 200, { paging: { total: results.length, limit: Number(q.get('limit') || 30), offset: 0 }, results });
     }
+    // Preferência (saldo/crédito do Mercado Pago) e devolução de pagamento
+    if (req.method === 'POST' && /^\/checkout\/preferences\/?$/.test(url.pathname)) {
+      log.push({ preference: true, auth, idem: req.headers['x-idempotency-key'] || null, body });
+      if (auth !== 'Bearer TESTTOKEN') return json(res, 401, { message: 'invalid token', status: 401 });
+      const id = 'PREF-' + (++seq);
+      prefs.set(id, body);
+      return json(res, 201, { id, init_point: 'https://mock.mercadopago.test/checkout?pref_id=' + id, sandbox_init_point: 'https://sandbox.mock.mercadopago.test/checkout?pref_id=' + id });
+    }
+    const wp = url.pathname.match(/^\/__walletpay\/(PREF-\d+)$/); // o cliente pagou no Mercado Pago: nasce o pagamento
+    if (wp) {
+      const b = prefs.get(wp[1]); if (!b) return json(res, 404, {});
+      const id = String(1000000000 + ++seq);
+      const amount = Math.round(b.items.reduce((t, i) => t + i.unit_price * i.quantity, 0) * 100) / 100;
+      const p = { id: Number(id), transaction_amount: q.get('amount') ? Number(q.get('amount')) : amount, external_reference: b.external_reference, payment_method_id: 'account_money', status: q.get('status') || 'approved', currency_id: 'BRL', transaction_amount_refunded: 0 };
+      pays.set(id, p);
+      return json(res, 200, p);
+    }
+    const rf = url.pathname.match(/^\/v1\/payments\/(\d+)\/refunds$/);
+    if (req.method === 'POST' && rf) {
+      log.push({ refund: rf[1], auth, idem: req.headers['x-idempotency-key'] || null, body });
+      const p = pays.get(rf[1]); if (!p) return json(res, 404, { message: 'not found', status: 404 });
+      if (refundFail) return json(res, 400, { message: 'refund not allowed', error: 'bad_request', status: 400 });
+      p.status = 'refunded'; p.transaction_amount_refunded = p.transaction_amount;
+      return json(res, 201, { id: 7000000 + (++seq), payment_id: Number(rf[1]), amount: p.transaction_amount, status: 'approved' });
+    }
+    if (url.pathname === '/__refundfail') { refundFail = q.get('on') !== '0'; return json(res, 200, {}); }
     const g = url.pathname.match(/^\/v1\/payments\/(\d+)$/);
     if (req.method === 'GET' && g) { log.push({ get: g[1], auth }); const p = pays.get(g[1]); return p ? json(res, 200, p) : json(res, 404, { message: 'not found', status: 404 }); }
     json(res, 404, { message: 'no route', status: 404 });

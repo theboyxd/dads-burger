@@ -23,7 +23,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # Só o que o servidor usa. Nada de .env, pedidos, fotos, testes nem rascunhos entra na imagem (veja .dockerignore):
 # products.json e settings.json vão como ponto de partida, copiados para /data só na primeira vez.
-COPY server.js index.html admin.html logo.png products.json settings.json ./
+COPY server.js accounts.js index.html admin.html logo.png products.json settings.json ./
 COPY assets ./assets
 COPY vendor ./vendor
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

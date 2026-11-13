@@ -19,7 +19,7 @@ while [ "$TEST_PORT_MOCK" = "$TEST_PORT_MAIN" ] || [ "$TEST_PORT_MOCK" = "$TEST_
 export TEST_PORT_MAIN TEST_PORT_NOCRED TEST_PORT_MOCK
 
 mkdir -p "$TMP/site"
-for f in server.js index.html admin.html products.json settings.json package.json package-lock.json logo.png; do [ -e "$SITE/$f" ] && cp "$SITE/$f" "$TMP/site/$f"; done
+for f in server.js accounts.js index.html admin.html products.json settings.json package.json package-lock.json logo.png; do [ -e "$SITE/$f" ] && cp "$SITE/$f" "$TMP/site/$f"; done
 [ -d "$SITE/assets" ] && cp -r "$SITE/assets" "$TMP/site/assets"
 [ -d "$SITE/vendor" ] && cp -r "$SITE/vendor" "$TMP/site/vendor"
 ln -s "$SITE/node_modules" "$TMP/site/node_modules"

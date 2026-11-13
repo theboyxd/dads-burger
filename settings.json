@@ -55,7 +55,7 @@
     "mercadopago_saldo": {
       "id": "mercadopago_saldo",
       "name": "Saldo Mercado Pago / Mercado Crédito",
-      "description": "Pagamento usando o saldo direto em conta do Mercado Pago ou linha Mercado Crédito. Ainda não disponível: exige o Checkout Pro do Mercado Pago (cliente entra na conta dele); com connected false aparece como em breve.",
+      "description": "Pagamento usando o saldo direto em conta do Mercado Pago ou linha Mercado Crédito. O cliente entra na conta dele no Mercado Pago e volta para o site. Liga sozinho quando o servidor tem a chave do Mercado Pago e APP_URL em https; até lá aparece como em breve.",
       "enabled": true,
       "connected": false,
       "type": "online",

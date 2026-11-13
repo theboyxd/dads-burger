@@ -19,3 +19,7 @@ uploads/
 # pasta de dados local (DATA_DIR=./dados): pedidos de clientes, fotos e o cardápio em uso ficam só no servidor
 dados/
 data/
+
+# contas de clientes (dados pessoais) e a chave que protege os segredos do 2FA: só no servidor
+accounts.json
+account.key

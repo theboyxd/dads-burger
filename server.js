@@ -4,7 +4,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
-import { MercadoPagoConfig, Payment } from 'mercadopago';
+import { mountAccounts } from './accounts.js';
+import { MercadoPagoConfig, Payment, Preference, PaymentRefund } from 'mercadopago';
 
 dotenv.config({ quiet: true });
 
@@ -122,7 +123,7 @@ app.get('/healthz', (req, res) => {
 });
 // Pedidos (dados de clientes) e código do servidor não saem como arquivo estático; o site em si, sim.
 // products.json também não: ele guarda os produtos escondidos pelo dono, e o cliente lê o cardápio em /api/menu.
-app.use((req, res, next) => (/^\/(orders\.json|products\.json|server\.js|vite\.config\.ts|package(-lock)?\.json|tsconfig\.json|\.env.*)$/i.test(req.path) ? res.status(404).end() : next()));
+app.use((req, res, next) => (/^\/(orders\.json|accounts\.json|account\.key|products\.json|server\.js|vite\.config\.ts|package(-lock)?\.json|tsconfig\.json|\.env.*)$/i.test(req.path) ? res.status(404).end() : next()));
 // Fotos enviadas pelo painel: só os arquivos feitos pelo servidor (nome aleatório, .webp), o navegador não pode tratar
 // nenhum como outro tipo de arquivo, e o nome nunca se repete, então o navegador pode guardar a foto por um ano.
 app.use('/uploads', (req, res, next) => {
@@ -755,6 +756,8 @@ function cleanProducts(list) {
 
 app.get('/api/admin/settings', (req, res) => {
   loadSettings();
+  const pays = SETTINGS.payments;
+  if (pays && pays.mercadopago_saldo) pays.mercadopago_saldo = { ...pays.mercadopago_saldo, connected: walletReady() };
   res.json(SETTINGS);
 });
 
@@ -872,10 +875,15 @@ const mpNotificationUrl = () => {
 // (chave de idempotência, id do dispositivo) dentro do próprio cliente, e um cliente compartilhado repetiria a chave
 // de um pagamento no pagamento do cliente seguinte. Em erro de rede ou 5xx o SDK tenta mais uma vez com a MESMA chave
 // de idempotência, então o Mercado Pago devolve o mesmo pagamento em vez de cobrar duas vezes.
-const mpPayments = () => new Payment(new MercadoPagoConfig({
+const mpCfg = () => new MercadoPagoConfig({
   accessToken: mpToken(),
   options: { timeout: Number(process.env.MP_TIMEOUT_MS) || 12000, maxRetries: 1, initialDelay: 500 }
-}));
+});
+const mpPayments = () => new Payment(mpCfg());
+
+// Pagar com saldo ou crédito do Mercado Pago: o cliente entra na conta dele no Mercado Pago e volta para o site. Precisa de
+// endereço https público (volta e aviso de pagamento), então só fica disponível quando o servidor tem chave e APP_URL https.
+const walletReady = () => Boolean(mpToken() && mpNotificationUrl());
 
 // O SDK lança erro quando o Mercado Pago recusa a chamada; aqui vira { ok, status, data }, o formato que o resto do servidor usa
 async function mpCall(fn) {
@@ -1101,9 +1109,16 @@ function setStatus(order, status, at = Date.now() / 1000) {
   order.history = [...(Array.isArray(order.history) ? order.history : []), { status, at }];
 }
 
+let accountsApi = null; // contas de clientes e raspadinha (accounts.js), ligado mais abaixo
+const acctOf = (req) => { const a = accountsApi && accountsApi.accountOf(req); return a ? a.id : undefined; };
+
 function markPaid(order, mpPayment) {
   order.paymentConfirmed = true;
   order.paid_at = Date.now() / 1000;
+  // Previsão inicial: o tempo máximo de preparo da loja; o restaurante ajusta ao vivo no painel
+  const prepMax = Number(SETTINGS.store && SETTINGS.store.preparationTimeMax) || 45;
+  if (!order.etaAt) order.etaAt = order.paid_at + prepMax * 60;
+  if (accountsApi) accountsApi.onPaid(order, mpPayment);
   setStatus(order, 'novo', order.paid_at);
   order.mpStatus = mpPayment.status;
   order.isNew = true;
@@ -1124,10 +1139,20 @@ function noteAfterSale(order, p) {
 
 // refresh: consulta de novo mesmo com o pedido já pago (aviso do webhook), para registrar devolução ou contestação.
 async function reconcilePayment(paymentId, { refresh = false } = {}) {
-  const order = Object.values(ORDERS).find((o) => String(o.paymentId) === String(paymentId));
-  if (!order) return { status: 'desconhecido', confirmed: false };
+  let order = Object.values(ORDERS).find((o) => String(o.paymentId) === String(paymentId));
+  let fetched = null;
+  if (!order) {
+    // Pagamento de saldo/crédito: o Mercado Pago cria o pagamento depois do clique, então o pedido ainda não conhece o número.
+    // Liga os dois pelo número do pedido (external_reference); um pedido já pago nunca troca de pagamento.
+    fetched = await mpCall(() => mpPayments().get({ id: paymentId }));
+    const ref = fetched.ok && fetched.data ? String(fetched.data.external_reference || '') : '';
+    const cand = ref && ORDERS[ref];
+    if (!cand || cand.paymentKind !== 'wallet' || cand.paymentConfirmed) return { status: 'desconhecido', confirmed: false };
+    cand.paymentId = String(fetched.data.id);
+    order = cand;
+  }
   if (order.paymentConfirmed && !refresh) return { status: 'approved', confirmed: true };
-  const r = await mpCall(() => mpPayments().get({ id: paymentId }));
+  const r = fetched || await mpCall(() => mpPayments().get({ id: paymentId }));
   if (!r.ok || !r.data) return order.paymentConfirmed ? { status: 'approved', confirmed: true } : { status: 'pending', confirmed: false };
   const p = r.data;
   if (order.paymentConfirmed) {
@@ -1209,6 +1234,7 @@ app.post('/api/mercadopago/pix', async (req, res) => {
   }
 
   ORDERS[oid] = buildOrder(oid, priced, customer, order, 'Pix', {
+    accountId: acctOf(req),
     paymentId: String(r.data.id),
     mpOrderId: String(r.data.id),
     paymentKind: 'pix',
@@ -1284,6 +1310,7 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
   }
 
   const rec = buildOrder(oid, priced, customer, order, 'Cartão', {
+    accountId: acctOf(req),
     paymentId: String(p.id),
     mpOrderId: String(p.id),
     paymentKind: 'cartao',
@@ -1312,6 +1339,77 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
 app.get('/api/mercadopago/payment/:id/status', async (req, res) => {
   res.json(await reconcilePayment(req.params.id));
 });
+
+// Saldo ou crédito do Mercado Pago: cria uma preferência (purpose wallet_purchase) e devolve o endereço do Mercado Pago, onde o
+// cliente entra na conta dele e paga. A volta é a página de acompanhamento; quem confirma o pagamento é o Mercado Pago
+// (aviso ou conferência do servidor), nunca o navegador.
+app.post('/api/mercadopago/wallet', async (req, res) => {
+  if (!mpToken()) return res.status(503).json({ success: false, error: 'mp_nao_configurado' });
+  if (!walletReady()) return res.status(503).json({ success: false, error: 'carteira_indisponivel' });
+  const { customer = {}, order = {} } = req.body || {};
+  if (!shopGate(res, 'mercadopago_saldo')) return;
+  const buyerErr = checkBuyer(customer);
+  if (buyerErr) return res.status(400).json({ success: false, error: buyerErr });
+  const priced = await priceOrder(order);
+  if (priced.error) return res.status(400).json({ success: false, error: priced.error, detail: priced.detail });
+  const changed = totalMismatch(order, priced);
+  if (changed) return res.status(409).json(changed);
+
+  const oid = newOrderId();
+  const rec = buildOrder(oid, priced, customer, order, 'Mercado Pago (saldo ou crédito)', {
+    accountId: acctOf(req),
+    paymentKind: 'wallet',
+    paymentConfirmed: false,
+    expires_at: mpExpiry(30)
+  });
+  const parts = nameParts(customer);
+  const back = `${envFirst('APP_URL').replace(/\/+$/, '')}/?pedido=${rec.trackToken}`;
+  const items = priced.items.map((it) => ({ id: it.id, title: it.name, quantity: it.q, unit_price: it.price, currency_id: 'BRL' }));
+  if (priced.deliveryFee > 0) items.push({ id: 'entrega', title: 'Taxa de entrega', quantity: 1, unit_price: priced.deliveryFee, currency_id: 'BRL' });
+  const exp = new Date(Date.now() + 30 * 60000);
+  const r = await mpCall(() => new Preference(mpCfg()).create({
+    body: {
+      items,
+      purpose: 'wallet_purchase',
+      external_reference: oid,
+      statement_descriptor: 'DADS BURGER',
+      notification_url: mpNotificationUrl(),
+      back_urls: { success: back, pending: back, failure: back },
+      auto_return: 'approved',
+      payer: { name: parts[0], surname: parts.slice(1).join(' '), email: String(customer.email).trim() },
+      expires: true,
+      expiration_date_to: exp.toISOString(),
+      metadata: { order_id: oid, unit_id: order.unitId || '' }
+    },
+    requestOptions: { idempotencyKey: `${oid}-${crypto.randomUUID()}` }
+  }));
+  if (!r.ok || !r.data || !r.data.id || !r.data.init_point) {
+    console.warn('Mercado Pago não criou o pagamento por saldo/crédito:', r.status, (r.data && (r.data.message || r.data.error)) || r.error || '');
+    return res.status(502).json({ success: false, error: 'mp_recusou' });
+  }
+  rec.preferenceId = String(r.data.id);
+  ORDERS[oid] = rec;
+  saveOrders();
+  res.json({ success: true, orderId: oid, initPoint: r.data.init_point, total: priced.total, trackToken: rec.trackToken });
+});
+
+// Devolve ao cliente o valor de um pedido pago que o restaurante cancelou. A chave de idempotência é fixa por pedido:
+// repetir o cancelamento nunca devolve duas vezes. Se o Mercado Pago recusar, o pedido fica cancelado com o aviso
+// (refundError) e o painel manda devolver à mão no Mercado Pago.
+async function refundOrder(order) {
+  if (!order || !order.paymentConfirmed || !order.paymentId) return { done: false, reason: 'sem_pagamento' };
+  if (order.refunded) return { done: true, already: true };
+  const r = await mpCall(() => new PaymentRefund(mpCfg()).create({ payment_id: order.paymentId, body: {}, requestOptions: { idempotencyKey: `refund-${order.orderId}` } }));
+  if (r.ok) {
+    Object.assign(order, { refunded: true, refundedAmount: Number(order.total) || 0, mpStatus: 'refunded', refundError: undefined, refundId: String((r.data && r.data.id) || '') });
+  } else {
+    order.refundError = String((r.data && r.data.message) || r.error || 'erro').slice(0, 200);
+    console.warn(`Devolução do pedido ${order.orderId} falhou:`, r.status, order.refundError);
+  }
+  ORDERS[order.orderId] = order;
+  saveOrders();
+  return r.ok ? { done: true } : { done: false, reason: 'mp_recusou' };
+}
 
 // Webhook do Mercado Pago: o corpo não é confiado, só serve para saber qual pagamento consultar
 app.post(['/api/mercadopago/webhook', '/api/webhook'], async (req, res) => {
@@ -1367,7 +1465,7 @@ app.get('/api/orders', requireAdmin, (req, res) => {
   res.json({ success: true, count: list.length, orders: list });
 });
 
-app.patch('/api/orders/:id', requireAdmin, (req, res) => {
+app.patch('/api/orders/:id', requireAdmin, async (req, res) => {
   const rawId = decodeURIComponent(req.params.id || '').trim();
   const id = rawId.replace(/^#/, '');
   // O painel só muda o andamento do pedido; pagamento e valores não se alteram por aqui
@@ -1423,7 +1521,14 @@ app.patch('/api/orders/:id', requireAdmin, (req, res) => {
 
   saveOrders();
 
-  res.json({ success: true, order: updatedOrder });
+  // Pedido pago que o restaurante cancela: o valor volta para o cliente na mesma hora
+  let refund;
+  if (updatedOrder && updates.status === 'cancelado' && updatedOrder.paymentConfirmed) {
+    refund = await refundOrder(ORDERS[updatedOrder.orderId] || updatedOrder);
+    updatedOrder = ORDERS[updatedOrder.orderId] || updatedOrder;
+  }
+
+  res.json({ success: true, order: updatedOrder, ...(refund ? { refund } : {}) });
 });
 
 // -------------------------------------------------------------
@@ -1461,10 +1566,31 @@ app.get('/api/track/:token', (req, res) => {
     createdAt: Number(o.created_at) || 0,
     updatedAt: Number(o.updated_at || o.paid_at || o.created_at) || 0,
     history: (Array.isArray(o.history) ? o.history : []).map((h) => ({ status: String(h.status), at: Number(h.at) || 0 })),
+    etaAt: Number(o.etaAt) || 0,
     prepMin: Number(st.preparationTimeMin) || 0,
     prepMax: Number(st.preparationTimeMax) || 0,
     now: Date.now() / 1000
   });
+});
+
+// O restaurante muda a previsão de entrega ao vivo: "minutes" = quantos minutos faltam a partir de agora
+app.post('/api/orders/:id/eta', requireAdmin, (req, res) => {
+  const min = Number((req.body || {}).minutes);
+  if (!(min >= 0 && min <= 300)) return res.status(400).json({ success: false, error: 'minutos_invalidos' });
+  const o = ORDERS[String(req.params.id || '').replace(/^#/, '')];
+  if (!o || !isRealOrder(o)) return res.status(404).json({ success: false, error: 'Pedido não encontrado' });
+  o.etaAt = Date.now() / 1000 + Math.round(min) * 60;
+  o.updated_at = Date.now() / 1000;
+  saveOrders();
+  res.json({ success: true, order: o });
+});
+
+// Contas de clientes, 2FA e raspadinha
+accountsApi = mountAccounts(app, {
+  DATA_DIR, SESSION_SECRET, readCookie, isHttps, writeJson, validCpf, requireAdmin,
+  getOrders: () => ORDERS,
+  getSettings: () => { loadSettings(); return SETTINGS; },
+  appUrl: () => envFirst('APP_URL').replace(/\/+$/, '')
 });
 
 // Rota de API que não existe: resposta JSON 404, e não a página inicial do site
@@ -1487,6 +1613,13 @@ setInterval(async () => {
   const now = Date.now() / 1000;
   const open = Object.values(ORDERS).filter((o) => o.paymentId && o.paymentConfirmed === false && o.status === 'aguardando_pagamento' && now - Number(o.created_at) < 40 * 60);
   for (const o of open) await reconcilePayment(o.paymentId);
+  // Saldo/crédito: o pedido ainda não tem número de pagamento; procura pelo número do pedido
+  const wallets = Object.values(ORDERS).filter((o) => o.paymentKind === 'wallet' && !o.paymentId && o.paymentConfirmed === false && o.status === 'aguardando_pagamento' && now - Number(o.created_at) < 40 * 60);
+  for (const o of wallets) {
+    const f = await mpCall(() => mpPayments().search({ options: { external_reference: o.orderId, sort: 'date_created', criteria: 'desc', limit: 1 } }));
+    const hit = f.ok && f.data && Array.isArray(f.data.results) ? f.data.results[0] : null;
+    if (hit && hit.id) await reconcilePayment(hit.id);
+  }
 }, Number(process.env.MP_RECONCILE_MS) || 20000);
 
 if (!(process.env.ADMIN_PASSWORD || '').trim()) {

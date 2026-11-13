@@ -2794,6 +2794,17 @@
       <span class="ticket-status-pill novo" id="ticketStatusPill">Novo</span>
     </div>
 
+    <!-- PREVISÃO DE ENTREGA: o cliente vê a mudança na hora, na página de acompanhamento -->
+    <div id="ticketEtaBox" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 10px;padding:10px 12px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;font-size:12.5px;color:#1E40AF">
+      <span>⏱ Previsão: <b id="ticketEtaText">-</b></span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:4px">
+        <button type="button" onclick="window.AdminApp.adjustEta(-5)" style="padding:4px 9px;border:1px solid #93C5FD;border-radius:8px;background:#fff;font-weight:800;cursor:pointer">−5</button>
+        <button type="button" onclick="window.AdminApp.adjustEta(5)" style="padding:4px 9px;border:1px solid #93C5FD;border-radius:8px;background:#fff;font-weight:800;cursor:pointer">+5</button>
+        <input type="number" id="ticketEtaMin" min="0" max="300" style="width:58px;padding:4px 6px;border:1px solid #93C5FD;border-radius:8px" aria-label="Minutos que faltam">
+        <button type="button" onclick="window.AdminApp.setEta()" style="padding:4px 10px;border:0;border-radius:8px;background:#2563EB;color:#fff;font-weight:800;cursor:pointer">Definir</button>
+      </span>
+    </div>
+
     <div class="ticket-scrollable">
       <!-- CLIENTE & ENTREGA -->
       <div>
@@ -2878,7 +2889,7 @@
       <button type="button" class="cancel-modal-close" onclick="window.AdminApp.closeCancelModal()">&times;</button>
     </div>
     <div class="cancel-modal-body">
-      <p id="cancelModalText">Tem certeza que deseja cancelar este pedido? Ele será removido do fluxo de produção da cozinha e arquivado na aba de <b>Cancelados</b>.</p>
+      <p id="cancelModalText">Tem certeza que deseja cancelar este pedido? Ele será removido do fluxo de produção da cozinha e arquivado na aba de <b>Cancelados</b>. Se o cliente já pagou, o valor é <b>devolvido a ele automaticamente</b> pelo Mercado Pago.</p>
     </div>
     <div class="cancel-modal-actions">
       <button type="button" class="btn-cancel-modal-back" onclick="window.AdminApp.closeCancelModal()">Voltar</button>
@@ -3965,6 +3976,7 @@
 
       this.render();
 
+      let refundNote = '';
       try {
         const res = await adminFetch(`/api/orders/${encodeURIComponent(cleanId)}`, {
           method: 'PATCH',
@@ -3973,6 +3985,7 @@
         });
         if (res.ok) {
           const data = await res.json();
+          if (data.refund) refundNote = data.refund.done ? ' 💸 O valor foi devolvido ao cliente.' : ' ⚠️ A devolução automática falhou: devolva este pedido no painel do Mercado Pago.';
           if (data.order) {
             const idx = this.orders.findIndex(o => (o.orderId || o.id) === cleanId || (o.orderId || o.id) === orderId);
             if (idx !== -1) {
@@ -3993,7 +4006,7 @@
         ? ` <a href="javascript:void(0)" onclick="window.AdminApp.switchView('canceled')" style="color:#FFF;text-decoration:underline;margin-left:8px;font-weight:700">Ver Cancelados &rarr;</a>` 
         : (nextStatus === 'concluido' ? ` <a href="javascript:void(0)" onclick="window.AdminApp.switchView('history')" style="color:#FFF;text-decoration:underline;margin-left:8px;font-weight:700">Ver Concluídos &rarr;</a>` : '');
 
-      showToast(`Pedido #${cleanId} ${labels[nextStatus] || 'atualizado'}.${extraLink}`);
+      showToast(`Pedido #${cleanId} ${labels[nextStatus] || 'atualizado'}.${refundNote}${extraLink}`);
     },
 
     reopenOrder(orderId) {
@@ -4176,6 +4189,7 @@
 
       document.getElementById('ticketId').textContent = `#${oid}`;
       document.getElementById('ticketStore').textContent = `${unit} · ${mode === 'entrega' ? 'Entrega' : 'Retirada'}`;
+      this.paintEta(ord, st);
       
       const pill = document.getElementById('ticketStatusPill');
       pill.className = `ticket-status-pill ${st}`;
@@ -4255,6 +4269,40 @@
         mainBtn.style.display = 'none';
         cancelBtn.style.display = 'none';
       }
+    },
+
+    // Previsão de entrega ao vivo: minutos que faltam a partir de agora; o cliente vê a mudança na próxima atualização (8 s)
+    etaLeft(ord) { return ord && ord.etaAt ? Math.max(0, Math.round((ord.etaAt * 1000 - Date.now()) / 60000)) : null; },
+    paintEta(ord, st) {
+      const box = document.getElementById('ticketEtaBox');
+      if (!box) return;
+      const live = ord && ['novo', 'preparando', 'entrega'].includes(st);
+      box.style.display = live ? 'flex' : 'none';
+      if (!live) return;
+      const left = this.etaLeft(ord);
+      document.getElementById('ticketEtaText').textContent = left === null ? 'sem previsão' : `${new Date(ord.etaAt * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} (${left} min)`;
+      const input = document.getElementById('ticketEtaMin');
+      if (document.activeElement !== input) input.value = left === null ? '' : left;
+    },
+    adjustEta(delta) {
+      const ord = this.orders.find(o => (o.orderId || o.id) === this.selectedOrderId);
+      const base = this.etaLeft(ord);
+      this.setEta(Math.max(0, (base === null ? 30 : base) + delta));
+    },
+    async setEta(minutes) {
+      const id = this.selectedOrderId;
+      if (!id) return;
+      const m = minutes === undefined ? Number(document.getElementById('ticketEtaMin').value) : minutes;
+      if (!(m >= 0 && m <= 300)) return showToast('Digite entre 0 e 300 minutos.');
+      try {
+        const res = await adminFetch(`/api/orders/${encodeURIComponent(id)}/eta`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ minutes: m }) });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok || !d.order) return showToast(res.status === 503 ? '❌ Prévia sem servidor: nada foi alterado.' : '❌ Não foi possível mudar a previsão.');
+        const i = this.orders.findIndex(o => (o.orderId || o.id) === id);
+        if (i !== -1) this.orders[i] = { ...this.orders[i], ...d.order };
+        this.render();
+        showToast(`⏱ Previsão de entrega: ${m} min. O cliente já vê.`);
+      } catch (e) { showToast('❌ Sem conexão com o servidor.'); }
     },
 
     renderHistory() {
