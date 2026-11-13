@@ -4365,13 +4365,15 @@ window.__CFG__ = {
     muitas_tentativas: 'Muitas tentativas. Espere 5 minutos e tente de novo.', senha_incorreta: 'Senha incorreta.',
     entrada_recente_necessaria: 'Entre de novo com a senha para usar a raspadinha.', qr_invalido: 'QR code inválido. Leia o QR code que está no balcão da loja.',
     sem_raspadinha: 'Você não tem raspadinha disponível. Cada pedido pago libera uma nova.', raspadinha_bloqueada: 'Não foi possível liberar a raspadinha para esta conta.',
-    codigo_invalido: 'Código inválido ou vencido. Gere outro.', entre_na_conta: 'Entre na sua conta.', '2fa_ja_ligado': 'A segunda etapa já está ligada.'
+    codigo_invalido: 'Código inválido ou vencido. Gere outro.', sem_servidor: 'Esta página é só uma prévia, sem servidor: contas, raspadinha e pedidos só funcionam no site oficial com servidor.', sem_conexao: 'Sem conexão com a internet. Confira e tente de novo.', entre_na_conta: 'Entre na sua conta.', '2fa_ja_ligado': 'A segunda etapa já está ligada.'
   };
   const acct = { me: null, qr: '' };
   try { acct.qr = sessionStorage.getItem('dads_qr') || ''; } catch (e) {}
   async function accApi(path, body) {
     try {
       const r = await fetch(`/api/account/${path}`, body === undefined ? { cache: 'no-store' } : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      // Um servidor de verdade sempre responde em JSON; outra coisa (a página 404 do GitHub) é um endereço sem servidor
+      if (!(r.headers.get('content-type') || '').includes('json')) return { ok: false, status: r.status, d: { error: 'sem_servidor' } };
       const d = await r.json().catch(() => ({}));
       return { ok: r.ok, status: r.status, d };
     } catch (e) { return { ok: false, status: 0, d: { error: 'sem_conexao' } }; }

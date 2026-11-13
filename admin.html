@@ -2257,6 +2257,14 @@
             </div>
           </button>
 
+          <button type="button" class="settings-nav-item" id="tabBtnRaspadinha" data-tab="raspadinha" onclick="AdminApp.switchSettingsTab('raspadinha')">
+            <span class="nav-icon">🎟️</span>
+            <div>
+              <span class="nav-title">Raspadinha</span>
+              <span class="nav-sub">QR do balcão e prêmios</span>
+            </div>
+          </button>
+
           <button type="button" class="settings-nav-item" id="tabBtnPrinter" data-tab="printer" onclick="AdminApp.switchSettingsTab('printer')">
             <span class="nav-icon">🖨️</span>
             <div>
@@ -2542,6 +2550,51 @@
                 <input type="checkbox" id="chkPay_vr_online" disabled style="width:20px;height:20px;accent-color:var(--brand);cursor:not-allowed" onchange="window.SettingsEngine.togglePaymentCard(this, 'payCard_vr_online')">
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- ABA: RASPADINHA (QR do balcão e prêmios) -->
+        <div class="settings-tab-panel" id="tabPanelRaspadinha">
+          <div class="settings-card">
+            <div class="settings-card-head"><div>
+              <h3 class="settings-card-title">QR code do balcão</h3>
+              <div class="settings-card-subtitle">Imprima e cole no balcão. O cliente lê com a câmera, entra na conta com a senha e gera o código da raspadinha.</div>
+            </div></div>
+            <div id="rspPreview" style="display:none;font-size:13px;color:#92400E;background:#FEF3C7;padding:10px 12px;border-radius:10px;margin-bottom:12px">Prévia sem servidor: o QR e os prêmios só aparecem no site com servidor.</div>
+            <div id="rspHttpsWarn" style="display:none;font-size:13px;color:#991B1B;background:#FEE2E2;padding:10px 12px;border-radius:10px;margin-bottom:12px">Este QR aponta para um endereço sem https (APP_URL ainda não está configurada). Só imprima depois de configurar o endereço público do site.</div>
+            <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+              <img id="rspQr" alt="QR code da raspadinha" width="200" height="200" style="background:#fff;border:1px solid var(--border);border-radius:12px;display:none">
+              <div style="flex:1;min-width:220px">
+                <div style="font-size:12px;font-weight:800;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px">Endereço do QR</div>
+                <input type="text" id="rspUrl" readonly style="width:100%;padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;box-sizing:border-box">
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                  <button type="button" class="cat-btn primary" onclick="window.RaspadinhaAdmin.copy()">Copiar endereço</button>
+                  <button type="button" class="cat-btn" onclick="window.RaspadinhaAdmin.print()">Imprimir QR</button>
+                </div>
+                <div id="rspStats" style="margin-top:12px;font-size:12.5px;color:var(--text-muted)"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px">
+            <div class="settings-card-head"><div>
+              <h3 class="settings-card-title">Prêmios</h3>
+              <div class="settings-card-subtitle">O prêmio vira um item grátis no próximo pedido pago do cliente. A chance de cada um é o peso dele dividido pela soma dos pesos. Deixe o nome vazio para "sem prêmio desta vez".</div>
+            </div></div>
+            <div id="rspPrizes"></div>
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button type="button" class="cat-btn" onclick="window.RaspadinhaAdmin.addPrize()">+ Adicionar prêmio</button>
+              <button type="button" class="cat-btn primary" onclick="window.RaspadinhaAdmin.save()">Salvar prêmios</button>
+            </div>
+            <div id="rspSaveMsg" style="margin-top:8px;font-size:13px;font-weight:700"></div>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px">
+            <div class="settings-card-head"><div>
+              <h3 class="settings-card-title">Tentativas barradas</h3>
+              <div class="settings-card-subtitle">Contas que tentaram a raspadinha com o mesmo CPF, nome, endereço ou meio de pagamento de outra conta que já ganhou.</div>
+            </div></div>
+            <div id="rspBlocked" style="font-size:13px"></div>
           </div>
         </div>
 
@@ -3631,6 +3684,7 @@
         hours: 'tabPanelHours',
         delivery: 'tabPanelDelivery',
         payments: 'tabPanelPayments',
+        raspadinha: 'tabPanelRaspadinha',
         printer: 'tabPanelPrinter'
       };
 
@@ -3640,6 +3694,7 @@
       });
 
       // Dispara renderizações específicas de cada aba
+      if (tabName === 'raspadinha' && window.RaspadinhaAdmin) window.RaspadinhaAdmin.load();
       if (tabName === 'catalog') {
         if (window.CatalogEngine) {
           window.CatalogEngine.load().then(() => window.CatalogEngine.render());
@@ -5569,6 +5624,49 @@
     }
   };
 
+  // Raspadinha no painel: endereço e QR do balcão, tabela de prêmios e tentativas barradas
+  const RaspadinhaAdmin = {
+    prizes: [],
+    esc(t) { return String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
+    async load() {
+      if (window.PREVIEW_MODE) { document.getElementById('rspPreview').style.display = 'block'; this.prizes = []; this.render(); return; }
+      let d = null;
+      try { const r = await adminFetch('/api/admin/raspadinha'); if (r.ok) d = await r.json(); } catch (e) {}
+      if (!d) return showToast('❌ Não foi possível carregar a raspadinha.');
+      this.url = d.url;
+      document.getElementById('rspUrl').value = d.url;
+      document.getElementById('rspHttpsWarn').style.display = d.https ? 'none' : 'block';
+      const img = document.getElementById('rspQr'); img.src = `/api/admin/raspadinha/qr.svg?t=${Date.now()}`; img.style.display = 'block';
+      document.getElementById('rspStats').textContent = `${d.accounts} conta(s) · ${d.claims} raspadinha(s) usada(s)${d.defaultPrizes ? ' · usando os prêmios padrão (edite e salve para personalizar)' : ''}`;
+      this.prizes = d.prizes.map((p) => ({ id: p.id, name: p.name, weight: p.weight }));
+      this.render();
+      const b = d.blocked || [];
+      document.getElementById('rspBlocked').innerHTML = b.length ? b.map((x) => `<div style="padding:6px 0;border-bottom:1px dashed var(--border)">${new Date(x.at).toLocaleString('pt-BR')} · ${this.esc(x.account)} · motivo: <b>${this.esc(x.reason)}</b></div>`).join('') : '<span style="color:var(--text-muted)">Nenhuma até agora.</span>';
+    },
+    render() {
+      const total = this.prizes.reduce((s, p) => s + Math.max(0, Number(p.weight) || 0), 0) || 1;
+      document.getElementById('rspPrizes').innerHTML = this.prizes.map((p, i) => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+        <input type="text" value="${this.esc(p.name)}" placeholder="Sem prêmio" maxlength="60" onchange="window.RaspadinhaAdmin.prizes[${i}].name=this.value" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
+        <input type="number" value="${Number(p.weight) || 0}" min="0" max="1000" onchange="window.RaspadinhaAdmin.prizes[${i}].weight=Number(this.value);window.RaspadinhaAdmin.render()" style="width:72px;padding:8px;border:1px solid var(--border);border-radius:8px" aria-label="Peso">
+        <span style="width:54px;font-size:12.5px;color:var(--text-muted)">${Math.round((Math.max(0, Number(p.weight) || 0) / total) * 100)}%</span>
+        <button type="button" onclick="window.RaspadinhaAdmin.prizes.splice(${i},1);window.RaspadinhaAdmin.render()" style="border:0;background:none;color:#B91C1C;font-weight:800;cursor:pointer" aria-label="Remover">✕</button></div>`).join('');
+    },
+    addPrize() { this.prizes.push({ id: 'p' + Date.now().toString(36), name: '', weight: 10 }); this.render(); },
+    async save() {
+      const msg = document.getElementById('rspSaveMsg');
+      SettingsEngine.settings.raspadinha = { prizes: this.prizes.map((p) => ({ id: p.id || 'p' + Math.random().toString(36).slice(2, 7), name: String(p.name || '').trim(), weight: Math.max(0, Number(p.weight) || 0) })) };
+      const ok = await SettingsEngine.save();
+      msg.style.color = ok ? '#15803D' : '#B91C1C';
+      msg.textContent = ok ? '✅ Prêmios salvos.' : '❌ Não foi salvo: confira os prêmios (até 12, pelo menos um com peso maior que zero).';
+    },
+    async copy() { try { await navigator.clipboard.writeText(document.getElementById('rspUrl').value); showToast('Endereço copiado.'); } catch (e) { document.getElementById('rspUrl').select(); } },
+    print() {
+      const w = window.open('', '_blank'); if (!w) return;
+      w.document.write(`<title>QR da raspadinha</title><body style="font-family:sans-serif;text-align:center;padding:30px"><h1 style="font-size:34px;margin:0 0 6px">Raspadinha Dad's Burger 🎟️</h1><p style="font-size:20px;margin:0 0 16px">Leia com a câmera do celular, entre na sua conta e raspe!</p><img src="/api/admin/raspadinha/qr.svg" width="420" height="420" onload="setTimeout(()=>print(),300)"></body>`);
+      w.document.close();
+    }
+  };
+  window.RaspadinhaAdmin = RaspadinhaAdmin;
   window.AdminApp = AdminApp;
   window.AlarmEngine = AlarmEngine;
   window.PrinterEngine = PrinterEngine;

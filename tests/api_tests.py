@@ -519,6 +519,9 @@ check('manage: changing the password logs the other sessions out and the new pas
 check('manage: name, CPF and phone have no way to be changed', all(ac('POST', f'/api/account/{p}', {'name': 'X Y', 'cpf': mkcpf(99), 'phone': '5199999999'}, E2)[0] == 404 for p in ('name', 'cpf', 'phone', 'profile')) and ac('GET', '/api/account/me', None, E2)[1]['account']['name'] == 'Eva Martins Rocha')
 ac('POST', '/api/account/logout', {}, E2)
 check('accounts: private files are never served', all(rcall(B, 'GET', p)[0] == 404 for p in ('/accounts.json', '/account.key', '/ACCOUNTS.JSON')))
+c, d = acall(B, 'GET', '/api/admin/raspadinha'); svg = rcall(B, 'GET', '/api/admin/raspadinha/qr.svg', None, {'Cookie': COOKIE})
+check('admin: the owner gets the QR address (with https), the prizes and the blocked attempts, and the QR as an SVG; nobody else does', c == 200 and d['https'] is True and d['url'].startswith('https://dads.example.test/?raspadinha=') and d['prizes'] and call(B, 'GET', '/api/admin/raspadinha')[0] == 401 and call(B, 'GET', '/api/admin/raspadinha/qr.svg')[0] == 401 and svg[0] == 200 and b'<svg' in svg[1] and b'raspadinha' not in svg[1][:0])
+check('admin: prizes are validated before saving (none, all zero, too long a name, over 12 are refused)', all(set_settings(lambda s, v=v: s.__setitem__('raspadinha', {'prizes': v}))[0] == 400 for v in ([], [{'name': 'x', 'weight': 0}], [{'name': 'x' * 61, 'weight': 5}], [{'name': 'x', 'weight': 1}] * 13)) and set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': [{'id': 't', 'name': 'Brinde de teste', 'weight': 1}]}))[0] == 200)
 # previsão de entrega ao vivo
 t_before = track(orders_file()[oidA]['trackToken'])[1]
 check('ETA: a paid order starts with an estimate (store max prep time) and the tracking answer carries it', t_before['etaAt'] > time.time() + 60 * 30)

@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import QRCode from 'qrcode';
 
 const scrypt = promisify(crypto.scrypt);
 const DAY = 86400000;
@@ -276,8 +277,15 @@ export function mountAccounts(app, ctx) {
   });
 
   // Dono: endereço que vira o QR code impresso no balcão e as tentativas barradas
+  // O QR do balcão tem que apontar para o endereço público (https); sem APP_URL usa o endereço por onde o painel foi aberto
+  const qrUrl = (req) => { const base = appUrl() || `${req.protocol}://${req.get('host')}`; return { url: `${base}/?raspadinha=${DB.qrToken}`, https: /^https:\/\//i.test(base) }; };
   app.get('/api/admin/raspadinha', requireAdmin, (req, res) => {
-    res.json({ url: `${appUrl() || ''}/?raspadinha=${DB.qrToken}`, blocked: DB.blocked.slice(-30).reverse(), accounts: Object.keys(DB.accounts).length, claims: DB.claims.length });
+    const cfg = getSettings().raspadinha && Array.isArray(getSettings().raspadinha.prizes) && getSettings().raspadinha.prizes.length ? getSettings().raspadinha.prizes : null;
+    res.json({ ...qrUrl(req), prizes: cfg || DEFAULT_PRIZES, defaultPrizes: !cfg, blocked: DB.blocked.slice(-30).reverse(), accounts: Object.keys(DB.accounts).length, claims: DB.claims.length });
+  });
+  app.get('/api/admin/raspadinha/qr.svg', requireAdmin, async (req, res) => {
+    res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'no-store' });
+    res.send(await QRCode.toString(qrUrl(req).url, { type: 'svg', margin: 2, width: 320, errorCorrectionLevel: 'M' }));
   });
 
   return {

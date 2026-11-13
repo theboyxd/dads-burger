@@ -706,6 +706,17 @@ function checkSettingsPatch(b) {
       for (const t of d.tiers) if (!t || !(Number(t.maxKm) > 0) || !(Number(t.fee) >= 0 && Number(t.fee) < 1000)) return 'faixas_invalidas';
     }
   }
+  const rp = b.raspadinha;
+  if (rp !== undefined) {
+    const list = rp && rp.prizes;
+    if (!Array.isArray(list) || list.length < 1 || list.length > 12) return 'premios_invalidos';
+    let total = 0;
+    for (const p of list) {
+      if (!p || String(p.name || '').length > 60 || !(Number(p.weight) >= 0 && Number(p.weight) <= 1000)) return 'premios_invalidos';
+      total += Number(p.weight);
+    }
+    if (!(total > 0)) return 'premios_invalidos';
+  }
   const s = b.store;
   if (s) {
     const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
