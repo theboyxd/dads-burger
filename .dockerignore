@@ -1,0 +1,30 @@
+# Nada disto entra na imagem Docker. O Dockerfile já copia só o que o servidor usa; isto é a segunda trava:
+# segredos, dados de clientes e rascunhos nunca vão para dentro de uma imagem.
+
+# controle de versão e dependências (o build instala as dependências por conta própria)
+.git
+.gitignore
+node_modules
+
+# segredos
+.env
+.env.*
+
+# dados de clientes e arquivos enviados pelo dono: ficam só no disco persistente (/data)
+orders.json
+uploads/
+data/
+dados/
+*.tmp
+
+# testes, rascunhos e ferramentas de desenvolvimento
+tests/
+.aistudio
+.claude
+.legacy_folders_backup
+*.log
+vite.config.ts
+tsconfig.json
+metadata.json
+README.md
+DEPLOY.md
