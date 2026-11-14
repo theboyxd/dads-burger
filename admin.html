@@ -2257,6 +2257,14 @@
             </div>
           </button>
 
+          <button type="button" class="settings-nav-item" id="tabBtnUsers" data-tab="users" onclick="AdminApp.switchSettingsTab('users')">
+            <span class="nav-icon">👥</span>
+            <div>
+              <span class="nav-title">Clientes</span>
+              <span class="nav-sub">Contas cadastradas</span>
+            </div>
+          </button>
+
           <button type="button" class="settings-nav-item" id="tabBtnRaspadinha" data-tab="raspadinha" onclick="AdminApp.switchSettingsTab('raspadinha')">
             <span class="nav-icon">🎟️</span>
             <div>
@@ -2553,6 +2561,20 @@
           </div>
         </div>
 
+        <!-- ABA: CLIENTES (contas cadastradas) -->
+        <div class="settings-tab-panel" id="tabPanelUsers">
+          <div class="settings-card">
+            <div class="settings-card-head"><div>
+              <h3 class="settings-card-title">Clientes cadastrados</h3>
+              <div class="settings-card-subtitle">Veja, bloqueie, redefina a senha, desligue a verificação em duas etapas, dê uma raspadinha ou apague a conta de um cliente. O CPF aparece só com os 2 últimos dígitos.</div>
+            </div></div>
+            <div id="usrPreview" style="display:none;font-size:13px;color:#92400E;background:#FEF3C7;padding:10px 12px;border-radius:10px;margin-bottom:12px">Prévia sem servidor: as contas só aparecem no site com servidor.</div>
+            <input type="search" id="usrSearch" placeholder="Buscar por nome, e-mail, telefone ou final do CPF…" oninput="window.UsersAdmin.search()" style="width:100%;padding:11px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;box-sizing:border-box">
+            <div id="usrCount" style="margin:8px 2px;font-size:12.5px;color:var(--text-muted)"></div>
+            <div id="usrList"></div>
+          </div>
+        </div>
+
         <!-- ABA: RASPADINHA (QR do balcão e prêmios) -->
         <div class="settings-tab-panel" id="tabPanelRaspadinha">
           <div class="settings-card">
@@ -2579,7 +2601,7 @@
           <div class="settings-card" style="margin-top:16px">
             <div class="settings-card-head"><div>
               <h3 class="settings-card-title">Prêmios</h3>
-              <div class="settings-card-subtitle">O prêmio vira um item grátis no próximo pedido pago do cliente. A chance de cada um é o peso dele dividido pela soma dos pesos. Deixe o nome vazio para "sem prêmio desta vez".</div>
+              <div class="settings-card-subtitle">Cada prêmio vale no próximo pedido do cliente (item grátis, desconto ou frete grátis), respeitando o pedido mínimo e a validade. A chance é o peso dividido pela soma dos pesos. Limites por dia e no total tiram o prêmio do sorteio quando acabam.</div>
             </div></div>
             <div id="rspPrizes"></div>
             <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
@@ -2587,6 +2609,20 @@
               <button type="button" class="cat-btn primary" onclick="window.RaspadinhaAdmin.save()">Salvar prêmios</button>
             </div>
             <div id="rspSaveMsg" style="margin-top:8px;font-size:13px;font-weight:700"></div>
+          </div>
+
+          <div class="settings-card" style="margin-top:16px">
+            <div class="settings-card-head"><div>
+              <h3 class="settings-card-title">Recompensa acumulada: Dad's Special</h3>
+              <div class="settings-card-subtitle">Cada raspadinha premiada soma 1 na conta do cliente. Ao juntar a quantidade abaixo, ele ganha um brinde surpresa (o cliente só vê o nome; o que vai nele é combinado com a cozinha) e a contagem recomeça.</div>
+            </div></div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+              <label style="font-size:12px;font-weight:700"><input type="checkbox" id="rspSpEnabled" checked> Ligado</label>
+              <label style="font-size:12px;font-weight:700">Nome<input type="text" id="rspSpName" maxlength="60" style="display:block;margin-top:3px;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+              <label style="font-size:12px;font-weight:700">Recompensas para ganhar<input type="number" id="rspSpThreshold" min="1" max="50" style="display:block;margin-top:3px;width:90px;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+              <label style="font-size:12px;font-weight:700">Vale por (dias)<input type="number" id="rspSpDays" min="0" max="365" style="display:block;margin-top:3px;width:90px;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+            </div>
+            <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">Para salvar, use o botão "Salvar prêmios" acima.</div>
           </div>
 
           <div class="settings-card" style="margin-top:16px">
@@ -3684,6 +3720,7 @@
         hours: 'tabPanelHours',
         delivery: 'tabPanelDelivery',
         payments: 'tabPanelPayments',
+        users: 'tabPanelUsers',
         raspadinha: 'tabPanelRaspadinha',
         printer: 'tabPanelPrinter'
       };
@@ -3695,6 +3732,7 @@
 
       // Dispara renderizações específicas de cada aba
       if (tabName === 'raspadinha' && window.RaspadinhaAdmin) window.RaspadinhaAdmin.load();
+      if (tabName === 'users' && window.UsersAdmin) window.UsersAdmin.load();
       if (tabName === 'catalog') {
         if (window.CatalogEngine) {
           window.CatalogEngine.load().then(() => window.CatalogEngine.render());
@@ -5638,23 +5676,49 @@
       document.getElementById('rspHttpsWarn').style.display = d.https ? 'none' : 'block';
       const img = document.getElementById('rspQr'); img.src = `/api/admin/raspadinha/qr.svg?t=${Date.now()}`; img.style.display = 'block';
       document.getElementById('rspStats').textContent = `${d.accounts} conta(s) · ${d.claims} raspadinha(s) usada(s)${d.defaultPrizes ? ' · usando os prêmios padrão (edite e salve para personalizar)' : ''}`;
-      this.prizes = d.prizes.map((p) => ({ id: p.id, name: p.name, weight: p.weight }));
+      this.prizes = d.prizes.map((p) => ({ ...p }));
+      this.awarded = d.awarded || {};
+      const sp = d.special || {};
+      document.getElementById('rspSpEnabled').checked = sp.enabled !== false;
+      document.getElementById('rspSpName').value = sp.name || "Dad's Special";
+      document.getElementById('rspSpThreshold').value = sp.threshold || 10;
+      document.getElementById('rspSpDays').value = sp.validDays === undefined ? 30 : sp.validDays;
       this.render();
       const b = d.blocked || [];
       document.getElementById('rspBlocked').innerHTML = b.length ? b.map((x) => `<div style="padding:6px 0;border-bottom:1px dashed var(--border)">${new Date(x.at).toLocaleString('pt-BR')} · ${this.esc(x.account)} · motivo: <b>${this.esc(x.reason)}</b></div>`).join('') : '<span style="color:var(--text-muted)">Nenhuma até agora.</span>';
     },
+    TYPES: { item: 'Item grátis', desconto_pct: 'Desconto em %', desconto_reais: 'Desconto em R$', frete_gratis: 'Frete grátis', nada: 'Sem prêmio' },
+    field(i, key, label, val, extra = '') { return `<label style="font-size:11.5px;font-weight:700;color:var(--text-muted)">${label}<input type="number" min="0" ${extra} value="${val === undefined || val === null || val === 0 ? '' : val}" placeholder="0" onchange="window.RaspadinhaAdmin.prizes[${i}].${key}=Number(this.value);window.RaspadinhaAdmin.render()" style="display:block;width:100%;margin-top:3px;padding:7px 8px;border:1px solid var(--border);border-radius:8px;box-sizing:border-box"></label>`; },
     render() {
       const total = this.prizes.reduce((s, p) => s + Math.max(0, Number(p.weight) || 0), 0) || 1;
-      document.getElementById('rspPrizes').innerHTML = this.prizes.map((p, i) => `<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
-        <input type="text" value="${this.esc(p.name)}" placeholder="Sem prêmio" maxlength="60" onchange="window.RaspadinhaAdmin.prizes[${i}].name=this.value" style="flex:1;min-width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
-        <input type="number" value="${Number(p.weight) || 0}" min="0" max="1000" onchange="window.RaspadinhaAdmin.prizes[${i}].weight=Number(this.value);window.RaspadinhaAdmin.render()" style="width:72px;padding:8px;border:1px solid var(--border);border-radius:8px" aria-label="Peso">
-        <span style="width:54px;font-size:12.5px;color:var(--text-muted)">${Math.round((Math.max(0, Number(p.weight) || 0) / total) * 100)}%</span>
-        <button type="button" onclick="window.RaspadinhaAdmin.prizes.splice(${i},1);window.RaspadinhaAdmin.render()" style="border:0;background:none;color:#B91C1C;font-weight:800;cursor:pointer" aria-label="Remover">✕</button></div>`).join('');
+      const names = (window.CatalogEngine && window.CatalogEngine.products || []).map((p) => `<option value="${this.esc(p.name)}">`).join('');
+      document.getElementById('rspPrizes').innerHTML = `<datalist id="rspProducts">${names}</datalist>` + this.prizes.map((p, i) => {
+        const t = p.type || (p.name ? 'item' : 'nada');
+        const a = this.awarded && this.awarded[p.id] || { today: 0, total: 0 };
+        const valueLabel = t === 'desconto_pct' ? 'Desconto (%)' : t === 'desconto_reais' ? 'Desconto (R$)' : '';
+        return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+            <select onchange="window.RaspadinhaAdmin.prizes[${i}].type=this.value;window.RaspadinhaAdmin.render()" style="padding:8px;border:1px solid var(--border);border-radius:8px;font-weight:700">${Object.entries(this.TYPES).map(([k, v]) => `<option value="${k}"${k === t ? ' selected' : ''}>${v}</option>`).join('')}</select>
+            ${t === 'nada' ? '<span style="color:var(--text-muted);font-size:13px">O cliente raspa e não ganha nada desta vez.</span>' : `<input type="text" list="${t === 'item' ? 'rspProducts' : ''}" value="${this.esc(p.name || '')}" maxlength="60" placeholder="${t === 'item' ? 'Produto grátis (escolha do cardápio)' : 'Texto que o cliente vê (opcional)'}" onchange="window.RaspadinhaAdmin.prizes[${i}].name=this.value" style="flex:1;min-width:170px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">`}
+            <button type="button" onclick="window.RaspadinhaAdmin.prizes.splice(${i},1);window.RaspadinhaAdmin.render()" style="border:0;background:none;color:#B91C1C;font-weight:800;cursor:pointer" aria-label="Remover prêmio">✕ Remover</button>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px">
+            ${valueLabel ? this.field(i, 'value', valueLabel, p.value, 'step="0.01"') : ''}
+            ${t === 'nada' ? '' : this.field(i, 'minOrder', 'Pedido mínimo (R$)', p.minOrder, 'step="0.01"') + this.field(i, 'validDays', 'Vale por (dias)', p.validDays)}
+            ${this.field(i, 'dailyLimit', 'Limite por dia', p.dailyLimit)}
+            ${this.field(i, 'totalLimit', 'Limite no total', p.totalLimit)}
+            ${this.field(i, 'weight', 'Peso (chance)', p.weight, 'max="1000"')}
+          </div>
+          <div style="margin-top:8px;font-size:12.5px;color:var(--text-muted)">Chance: <b>${Math.round((Math.max(0, Number(p.weight) || 0) / total) * 100)}%</b> · já saiu: hoje ${a.today}, no total ${a.total}${p.dailyLimit && a.today >= p.dailyLimit ? ' · <b style="color:#B91C1C">limite do dia atingido</b>' : ''}${p.totalLimit && a.total >= p.totalLimit ? ' · <b style="color:#B91C1C">acabou</b>' : ''}</div>
+        </div>`;
+      }).join('');
     },
-    addPrize() { this.prizes.push({ id: 'p' + Date.now().toString(36), name: '', weight: 10 }); this.render(); },
+    addPrize() { this.prizes.push({ id: 'p' + Date.now().toString(36), type: 'item', name: '', weight: 10, validDays: 30 }); this.render(); },
     async save() {
       const msg = document.getElementById('rspSaveMsg');
-      SettingsEngine.settings.raspadinha = { prizes: this.prizes.map((p) => ({ id: p.id || 'p' + Math.random().toString(36).slice(2, 7), name: String(p.name || '').trim(), weight: Math.max(0, Number(p.weight) || 0) })) };
+      const n = (v) => Math.max(0, Number(v) || 0);
+      const special = { enabled: document.getElementById('rspSpEnabled').checked, name: document.getElementById('rspSpName').value.trim() || "Dad's Special", threshold: Number(document.getElementById('rspSpThreshold').value) || 10, validDays: n(document.getElementById('rspSpDays').value) };
+      SettingsEngine.settings.raspadinha = { special, prizes: this.prizes.map((p) => ({ id: p.id || 'p' + Math.random().toString(36).slice(2, 7), type: p.type || (p.name ? 'item' : 'nada'), name: String(p.name || '').trim(), weight: n(p.weight), value: n(p.value), minOrder: n(p.minOrder), validDays: n(p.validDays), dailyLimit: n(p.dailyLimit), totalLimit: n(p.totalLimit) })) };
       const ok = await SettingsEngine.save();
       msg.style.color = ok ? '#15803D' : '#B91C1C';
       msg.textContent = ok ? '✅ Prêmios salvos.' : '❌ Não foi salvo: confira os prêmios (até 12, pelo menos um com peso maior que zero).';
@@ -5667,6 +5731,83 @@
     }
   };
   window.RaspadinhaAdmin = RaspadinhaAdmin;
+
+  // Clientes: lista com busca e ações em cada conta
+  const UsersAdmin = {
+    users: [], open: null, timer: null,
+    esc(t) { return String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); },
+    fmt(ts) { return ts ? new Date(ts).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'nunca'; },
+    search() { clearTimeout(this.timer); this.timer = setTimeout(() => this.load(), 300); },
+    async load() {
+      if (window.PREVIEW_MODE) { document.getElementById('usrPreview').style.display = 'block'; this.users = []; return this.render(0); }
+      const q = encodeURIComponent((document.getElementById('usrSearch') || {}).value || '');
+      try {
+        const r = await adminFetch(`/api/admin/users?q=${q}`);
+        const d = r.ok ? await r.json() : null;
+        if (!d) return showToast('❌ Não foi possível carregar os clientes.');
+        this.users = d.users; this.render(d.total);
+      } catch (e) { showToast('❌ Sem conexão com o servidor.'); }
+    },
+    render(total) {
+      document.getElementById('usrCount').textContent = `${this.users.length} de ${total} cliente(s)`;
+      const btn = (label, fn, danger) => `<button type="button" class="cat-btn small" onclick="window.UsersAdmin.${fn}"${danger ? ' style="color:#B91C1C;border-color:#FCA5A5"' : ''}>${label}</button>`;
+      document.getElementById('usrList').innerHTML = this.users.map((u) => {
+        const badges = [u.blocked ? '<b style="color:#B91C1C">BLOQUEADA</b>' : '', u.twoFactor ? '🛡️ 2 etapas' : '', `${u.orders} pedido(s)`].filter(Boolean).join(' · ');
+        const detail = this.open === u.id ? `<div style="padding:10px 4px 4px;font-size:13px;line-height:1.7">
+          <div>Telefone: <b>${this.esc(u.phone)}</b> · CPF: <b>${this.esc(u.cpf)}</b></div>
+          <div>Cadastro: ${this.fmt(u.createdAt)} · Última entrada: ${this.fmt(u.lastLogin)}</div>
+          <div>Recompensas: ${u.progress} acumulada(s) · ${u.tickets} raspadinha(s) para usar · ${u.won} prêmio(s) já ganho(s)</div>
+          <div>Prêmios abertos: ${u.prizes.length ? u.prizes.map((p) => this.esc(p.name) + (p.mystery ? ' (surpresa)' : '')).join(', ') : 'nenhum'}</div>
+          ${u.blocked && u.blockReason ? `<div>Motivo do bloqueio: ${this.esc(u.blockReason)}</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            ${btn(u.blocked ? 'Desbloquear' : 'Bloquear', `block('${u.id}')`)}
+            ${btn('Nova senha', `resetPassword('${u.id}')`)}
+            ${u.twoFactor ? btn('Desligar 2 etapas', `twoFactorOff('${u.id}')`) : ''}
+            ${btn('+1 raspadinha', `ticket('${u.id}')`)}
+            ${btn('Apagar conta', `remove('${u.id}')`, true)}
+          </div></div>` : '';
+        return `<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;${u.blocked ? 'background:#FEF2F2' : ''}">
+          <div onclick="window.UsersAdmin.toggle('${u.id}')" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div><b>${this.esc(u.name)}</b><div style="font-size:12.5px;color:var(--text-muted)">${this.esc(u.email)}</div></div>
+            <div style="font-size:12.5px;color:var(--text-muted);text-align:right">${badges}</div></div>${detail}</div>`;
+      }).join('') || '<div style="color:var(--text-muted);font-size:13px">Nenhum cliente encontrado.</div>';
+    },
+    toggle(id) { this.open = this.open === id ? null : id; this.render(this.users.length); },
+    async call(method, path, body, okMsg) {
+      try {
+        const r = await adminFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast(r.status === 503 ? '❌ Prévia sem servidor: nada foi alterado.' : '❌ Não foi possível: ' + (d.error || r.status)); return null; }
+        if (okMsg) showToast(okMsg);
+        await this.load();
+        return d;
+      } catch (e) { showToast('❌ Sem conexão com o servidor.'); return null; }
+    },
+    find(id) { return this.users.find((u) => u.id === id); },
+    async block(id) {
+      const u = this.find(id); if (!u) return;
+      if (!u.blocked) {
+        const reason = prompt(`Bloquear a conta de ${u.name}?\n\nEla sai de todos os aparelhos e não consegue entrar nem usar a conta. Motivo (opcional, só você vê):`);
+        if (reason === null) return;
+        await this.call('POST', `/api/admin/users/${id}/block`, { blocked: true, reason }, 'Conta bloqueada.');
+      } else await this.call('POST', `/api/admin/users/${id}/block`, { blocked: false }, 'Conta desbloqueada.');
+    },
+    async resetPassword(id) {
+      const u = this.find(id); if (!u || !confirm(`Gerar uma senha provisória para ${u.name}?\n\nA senha antiga deixa de valer e a conta sai de todos os aparelhos.`)) return;
+      const d = await this.call('POST', `/api/admin/users/${id}/reset-password`, {});
+      if (d) prompt(`Senha provisória de ${u.name} (aparece só agora). Passe para o cliente e peça para trocar na conta:`, d.tempPassword);
+    },
+    async twoFactorOff(id) { const u = this.find(id); if (u && confirm(`Desligar a verificação em duas etapas de ${u.name}?`)) await this.call('POST', `/api/admin/users/${id}/2fa-off`, {}, 'Verificação em duas etapas desligada.'); },
+    async ticket(id) { const u = this.find(id); if (u && confirm(`Dar mais uma raspadinha para ${u.name}?`)) await this.call('POST', `/api/admin/users/${id}/ticket`, {}, 'Raspadinha entregue.'); },
+    async remove(id) {
+      const u = this.find(id); if (!u) return;
+      if (!confirm(`APAGAR a conta de ${u.name}?\n\nOs dados pessoais dela somem para sempre. Os pedidos já feitos continuam no histórico, sem o vínculo com a conta.`)) return;
+      if (prompt('Para confirmar, digite APAGAR:') !== 'APAGAR') return showToast('Nada foi apagado.');
+      this.open = null;
+      await this.call('DELETE', `/api/admin/users/${id}`, {}, 'Conta apagada.');
+    }
+  };
+  window.UsersAdmin = UsersAdmin;
   window.AdminApp = AdminApp;
   window.AlarmEngine = AlarmEngine;
   window.PrinterEngine = PrinterEngine;

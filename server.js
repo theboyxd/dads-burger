@@ -711,11 +711,19 @@ function checkSettingsPatch(b) {
     const list = rp && rp.prizes;
     if (!Array.isArray(list) || list.length < 1 || list.length > 12) return 'premios_invalidos';
     let total = 0;
+    const inRange = (v, max) => v === undefined || v === null || v === '' || (Number(v) >= 0 && Number(v) <= max);
     for (const p of list) {
       if (!p || String(p.name || '').length > 60 || !(Number(p.weight) >= 0 && Number(p.weight) <= 1000)) return 'premios_invalidos';
+      if (p.type !== undefined && !['item', 'desconto_pct', 'desconto_reais', 'frete_gratis', 'nada'].includes(p.type)) return 'premios_invalidos';
+      if (!inRange(p.value, 10000) || !inRange(p.minOrder, 1000) || !inRange(p.validDays, 365) || !inRange(p.dailyLimit, 100000) || !inRange(p.totalLimit, 100000)) return 'premios_invalidos';
+      if (p.type === 'desconto_pct' && !(Number(p.value) > 0 && Number(p.value) <= 90)) return 'premios_invalidos';
+      if (p.type === 'desconto_reais' && !(Number(p.value) > 0)) return 'premios_invalidos';
+      if (p.type === 'item' && !String(p.name || '').trim()) return 'premios_invalidos';
       total += Number(p.weight);
     }
     if (!(total > 0)) return 'premios_invalidos';
+    const sp = rp.special;
+    if (sp !== undefined && (!sp || typeof sp !== 'object' || String(sp.name || '').length > 60 || !(Number(sp.threshold) >= 1 && Number(sp.threshold) <= 50) || !inRange(sp.validDays, 365))) return 'premios_invalidos';
   }
   const s = b.store;
   if (s) {
@@ -1223,6 +1231,7 @@ app.post('/api/mercadopago/pix', async (req, res) => {
   if (changed) return res.status(409).json(changed);
 
   const oid = newOrderId();
+  const benefit = accountsApi ? accountsApi.reserveBenefit(req, oid, priced) : null; // brinde ou desconto da raspadinha, se a conta tiver
   const expires = mpExpiry(30);
   const notificationUrl = mpNotificationUrl();
   const addr = mpAddress(order, priced);
@@ -1246,6 +1255,8 @@ app.post('/api/mercadopago/pix', async (req, res) => {
 
   ORDERS[oid] = buildOrder(oid, priced, customer, order, 'Pix', {
     accountId: acctOf(req),
+    benefit,
+    discount: priced.discount || 0,
     paymentId: String(r.data.id),
     mpOrderId: String(r.data.id),
     paymentKind: 'pix',
@@ -1290,6 +1301,7 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
   if (changed) return res.status(409).json(changed);
 
   const oid = newOrderId();
+  const benefit = accountsApi ? accountsApi.reserveBenefit(req, oid, priced) : null; // brinde ou desconto da raspadinha, se a conta tiver
   const notificationUrl = mpNotificationUrl();
   const addr = mpAddress(order, priced);
   const r = await mpCreatePayment({
@@ -1322,6 +1334,8 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
 
   const rec = buildOrder(oid, priced, customer, order, 'Cartão', {
     accountId: acctOf(req),
+    benefit,
+    discount: priced.discount || 0,
     paymentId: String(p.id),
     mpOrderId: String(p.id),
     paymentKind: 'cartao',
@@ -1367,16 +1381,21 @@ app.post('/api/mercadopago/wallet', async (req, res) => {
   if (changed) return res.status(409).json(changed);
 
   const oid = newOrderId();
+  const benefit = accountsApi ? accountsApi.reserveBenefit(req, oid, priced) : null; // brinde ou desconto da raspadinha, se a conta tiver
   const rec = buildOrder(oid, priced, customer, order, 'Mercado Pago (saldo ou crédito)', {
     accountId: acctOf(req),
+    benefit,
+    discount: priced.discount || 0,
     paymentKind: 'wallet',
     paymentConfirmed: false,
     expires_at: mpExpiry(30)
   });
   const parts = nameParts(customer);
   const back = `${envFirst('APP_URL').replace(/\/+$/, '')}/?pedido=${rec.trackToken}`;
-  const items = priced.items.map((it) => ({ id: it.id, title: it.name, quantity: it.q, unit_price: it.price, currency_id: 'BRL' }));
+  let items = priced.items.map((it) => ({ id: it.id, title: it.name, quantity: it.q, unit_price: it.price, currency_id: 'BRL' }));
   if (priced.deliveryFee > 0) items.push({ id: 'entrega', title: 'Taxa de entrega', quantity: 1, unit_price: priced.deliveryFee, currency_id: 'BRL' });
+  // Com desconto o Mercado Pago recebe um item só, no valor final (preferência não aceita item com preço negativo)
+  if (priced.discount) items = [{ id: 'pedido', title: `Pedido ${oid} - Dad's Burger`, quantity: 1, unit_price: priced.total, currency_id: 'BRL' }];
   const exp = new Date(Date.now() + 30 * 60000);
   const r = await mpCall(() => new Preference(mpCfg()).create({
     body: {
@@ -1600,6 +1619,7 @@ app.post('/api/orders/:id/eta', requireAdmin, (req, res) => {
 accountsApi = mountAccounts(app, {
   DATA_DIR, SESSION_SECRET, readCookie, isHttps, writeJson, validCpf, requireAdmin,
   getOrders: () => ORDERS,
+  saveOrders,
   getSettings: () => { loadSettings(); return SETTINGS; },
   appUrl: () => envFirst('APP_URL').replace(/\/+$/, '')
 });

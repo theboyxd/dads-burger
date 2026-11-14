@@ -62,6 +62,8 @@ http.createServer((req, res) => {
       else if (body.token === 'tok_pending_0000000000000') p = { ...base, status: 'in_process', status_detail: 'pending_review_manual' };
       else p = { ...base, status: 'approved', status_detail: 'accredited' };
       pays.set(id, p);
+      // só para teste manual na tela: Pix "pago" sozinho depois de alguns segundos (MOCK_AUTO_APPROVE_MS)
+      if (Number(process.env.MOCK_AUTO_APPROVE_MS) && p.status === 'pending') setTimeout(() => { if (p.status === 'pending') p.status = 'approved'; }, Number(process.env.MOCK_AUTO_APPROVE_MS));
       if (key) idem.set(key, { code: 201, body: p });
       return reply(res, 201, p);
     }

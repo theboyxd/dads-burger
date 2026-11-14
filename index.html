@@ -1019,13 +1019,10 @@
   @media (max-width: 370px) { .nav { gap: 2px; padding: 6px; } .nav a { width: 42px; height: 42px; } }
   .nav a[hidden] { display: none; }
   .nav a.logged::after { content: ""; position: absolute; top: 9px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: #16A34A; border: 2px solid #fff; }
-  .acc-modal { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; }
-  .acc-modal[hidden] { display: none; }
-  .acc-back { position: absolute; inset: 0; background: rgba(11,7,5,.55); }
-  .acc-sheet { position: relative; width: min(100%, 460px); max-height: 92vh; overflow-y: auto; background: var(--card, #fff); color: var(--ink); border-radius: 26px 26px 0 0; padding: 20px 18px 28px; box-shadow: 0 -10px 40px rgba(0,0,0,.25); }
-  .acc-sheet h3 { margin: 0 0 4px; font-size: 20px; }
-  .acc-sheet .acc-sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.4; }
-  .acc-x { position: absolute; top: 12px; right: 14px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--cream); font-size: 20px; color: var(--ink); }
+  .acc-page { padding-bottom: 110px; }
+  #accTabs:empty { display: none; }
+  #accBody h3 { margin: 0 0 4px; font-size: 20px; }
+  #accBody .acc-sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.4; }
   .acc-f { display: block; margin: 10px 0 0; font-size: 12.5px; font-weight: 700; }
   .acc-f input { display: block; width: 100%; margin-top: 4px; padding: 13px 14px; border: 1.5px solid #E5DDD6; border-radius: 14px; font: inherit; font-size: 15px; background: #fff; color: var(--ink); box-sizing: border-box; }
   .acc-f input[readonly] { background: #F5F1EC; color: var(--muted); }
@@ -1042,8 +1039,21 @@
   .acc-link { display: block; margin-top: 12px; text-align: center; font-size: 13px; font-weight: 700; color: var(--brand); background: none; border: 0; width: 100%; }
   .rsp-code { font: 800 30px/1 ui-monospace, monospace; letter-spacing: 4px; text-align: center; padding: 14px 0; background: #FEF3C7; border-radius: 14px; margin: 10px 0; }
   .rsp-card { position: relative; height: 130px; margin: 12px 0; border-radius: 18px; overflow: hidden; display: grid; place-items: center; background: linear-gradient(135deg, #FDE68A, #FBBF24); font-weight: 800; font-size: 20px; text-align: center; padding: 0 14px; }
-  .rsp-cover { position: absolute; inset: 0; background: repeating-linear-gradient(45deg, #C0C0C8, #C0C0C8 8px, #D4D4DC 8px, #D4D4DC 16px); display: grid; place-items: center; color: #52525B; font-weight: 800; transition: opacity .9s, transform .9s; }
-  .rsp-card.open .rsp-cover { opacity: 0; transform: scale(1.15); pointer-events: none; }
+  .rsp-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; border-radius: 18px; }
+  .acc-profile { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 20px; background: linear-gradient(135deg, #1B1714, #33271A); color: #fff; margin-bottom: 4px; }
+  .acc-profile b { display: block; font-size: 17px; }
+  .acc-profile small { color: #D6CBBB; font-size: 12.5px; word-break: break-all; }
+  .acc-av { width: 54px; height: 54px; border-radius: 50%; background: var(--brand); color: #1B1208; display: grid; place-items: center; font-weight: 900; font-size: 20px; flex: none; }
+  .acc-sec { font-size: 11.5px; font-weight: 900; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 18px 2px 8px; }
+  .acc-list { background: var(--card, #fff); border: 1.5px solid #E5DDD6; border-radius: 18px; overflow: hidden; }
+  .acc-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 14px; border: 0; background: none; font: inherit; font-size: 14px; font-weight: 600; text-align: left; border-bottom: 1px solid #EFE9E2; color: var(--ink); cursor: pointer; }
+  .acc-item:last-child { border-bottom: 0; }
+  .acc-item .ico { width: 36px; height: 36px; border-radius: 11px; background: var(--cream); display: grid; place-items: center; font-size: 17px; flex: none; }
+  .acc-item .chev { margin-left: auto; color: var(--muted); font-size: 18px; }
+  .acc-item.danger { color: #B91C1C; }
+  .acc-kv { display: flex; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #EFE9E2; font-size: 13.5px; }
+  .acc-kv:last-child { border-bottom: 0; }
+  .acc-kv span:first-child { color: var(--muted); }
   .trk-banner .trk-ico { width: 40px; height: 40px; border-radius: 50%; background: var(--brand); color: var(--brand-text); display: grid; place-items: center; font-size: 20px; flex: none; }
   .trk-banner b { display: block; font-size: 14px; }
   .trk-banner small { display: block; font-size: 12.5px; opacity: .82; margin-top: 1px; }
@@ -1315,6 +1325,12 @@
     </div>
   </div>
 
+  <div data-tab="conta" hidden class="acc-page">
+    <h1 class="tab-title">Minha conta</h1>
+    <div id="accTabs"></div>
+    <div id="accBody"></div>
+  </div>
+
   <div data-tab="reservas" hidden>
     <h1 class="tab-title">Reservar mesa</h1>
     <p class="tab-sub">Escolha o dia e o horário. A confirmação chega pelo WhatsApp.</p>
@@ -1369,18 +1385,13 @@
 
 <div class="cart" id="cart" data-go="pedido"><div><b id="cartTotal"></b><small id="cartItems"></small></div><button class="pill brand" style="margin:0">Ver pedido</button></div>
 
-<div class="acc-modal" id="accModal" hidden role="dialog" aria-modal="true" aria-label="Minha conta">
-  <div class="acc-back" id="accBack"></div>
-  <div class="acc-sheet"><button type="button" class="acc-x" id="accClose" aria-label="Fechar">&times;</button><div id="accBody"></div></div>
-</div>
-
 <nav class="nav">
   <a href="#" class="on" data-go="home" aria-label="Início e cardápio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg></a>
   <a href="#" data-go="pedido" aria-label="Carrinho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 7h12l1 14H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span class="count" id="navCount" hidden></span></a>
   <a href="#" data-go="reservas" aria-label="Reservar mesa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg></a>
   <a href="#" data-go="local" aria-label="Localização"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></a>
   <a href="#" id="navTrack" hidden aria-label="Acompanhar meu pedido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6M6 14l3-6h4l2 4h3M13 8l-1-3H9"/></svg><span class="count" id="navEta"></span></a>
-  <a href="#" id="navAccount" aria-label="Minha conta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></a>
+  <a href="#" id="navAccount" data-go="conta" aria-label="Minha conta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></a>
 </nav>
 
 <!-- MODAL DE SELEÇÃO DE UNIDADE (DECISÃO AO ENTRAR NO SITE) -->
@@ -4364,8 +4375,8 @@ window.__CFG__ = {
     email_ou_senha_incorretos: 'E-mail ou senha incorretos.', codigo_2fa: 'Digite o código de 6 dígitos do app autenticador.', codigo_incorreto: 'Código incorreto.',
     muitas_tentativas: 'Muitas tentativas. Espere 5 minutos e tente de novo.', senha_incorreta: 'Senha incorreta.',
     entrada_recente_necessaria: 'Entre de novo com a senha para usar a raspadinha.', qr_invalido: 'QR code inválido. Leia o QR code que está no balcão da loja.',
-    sem_raspadinha: 'Você não tem raspadinha disponível. Cada pedido pago libera uma nova.', raspadinha_bloqueada: 'Não foi possível liberar a raspadinha para esta conta.',
-    codigo_invalido: 'Código inválido ou vencido. Gere outro.', sem_servidor: 'Esta página é só uma prévia, sem servidor: contas, raspadinha e pedidos só funcionam no site oficial com servidor.', sem_conexao: 'Sem conexão com a internet. Confira e tente de novo.', entre_na_conta: 'Entre na sua conta.', '2fa_ja_ligado': 'A segunda etapa já está ligada.'
+    sem_raspadinha: 'Você não tem raspadinha para usar agora. Cada pedido pago libera uma nova.', raspadinha_bloqueada: 'Não foi possível liberar a raspadinha para esta conta.',
+    codigo_invalido: 'Código inválido ou vencido. Gere outro.', sem_servidor: 'Esta página é só uma prévia, sem servidor: contas, raspadinha e pedidos só funcionam no site oficial com servidor.', sem_conexao: 'Sem conexão com a internet. Confira e tente de novo.', entre_na_conta: 'Entre na sua conta.', conta_bloqueada: 'Esta conta está bloqueada. Fale com a loja.', '2fa_ja_ligado': 'A segunda etapa já está ligada.'
   };
   const acct = { me: null, qr: '' };
   try { acct.qr = sessionStorage.getItem('dads_qr') || ''; } catch (e) {}
@@ -4387,7 +4398,7 @@ window.__CFG__ = {
     if (g) {
       const p = acct.me && acct.me.prizes[0];
       g.hidden = !p;
-      if (p) g.textContent = `🎁 Brinde da raspadinha: ${p.name}. Vai junto no seu próximo pedido pago.`;
+      if (p) g.textContent = `🎁 ${p.name}${p.minOrder ? ` (pedido a partir de R$ ${p.minOrder.toFixed(2).replace('.', ',')})` : ''}: vale no seu próximo pedido${p.type === 'item' || p.type === 'frete_gratis' ? '' : ', já descontado no pagamento'}.`;
     }
     if (acct.me) { // dados fixos da conta já preenchem o pedido (o CPF o cliente digita, só para o Pix)
       const put = (sel, v) => { const e = $(sel); if (e && !e.value) { e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); } };
@@ -4396,19 +4407,31 @@ window.__CFG__ = {
     return acct.me;
   }
   const accBody = () => $('#accBody');
-  function openAccount() { $('#accModal').hidden = false; document.body.style.overflow = 'hidden'; }
-  function closeAccount() { $('#accModal').hidden = true; document.body.style.overflow = ''; }
+  const openAccount = () => go('conta');
+  const closeAccount = () => go('home');
+  let accActive = '';
   function accField(label, attrs = {}) {
     const input = el('input', attrs);
     return { node: el('label', { className: 'acc-f' }, label, input), input };
   }
-  function accShow(...nodes) { accBody().replaceChildren(...nodes); }
+  // Abas da página da conta: dados da conta e recompensas (só para quem entrou)
+  function accShow(...nodes) {
+    const t = $('#accTabs');
+    if (t) {
+      t.replaceChildren(...(acct.me && accActive ? [el('div', { className: 'seg', style: 'margin:6px 0 14px' },
+        el('button', { type: 'button', className: accActive === 'conta' ? 'on' : '', textContent: 'Conta', onclick: () => viewHome() }),
+        el('button', { type: 'button', className: accActive === 'rec' ? 'on' : '', textContent: '🎟️ Recompensas', onclick: () => viewRaspadinha() }))] : []));
+    }
+    accBody().replaceChildren(...nodes);
+    window.scrollTo(0, 0);
+  }
   const accBtn = (text, onclick, alt) => el('button', { type: 'button', className: `acc-btn${alt ? ' alt' : ''}`, textContent: text, onclick });
   const accLink = (text, onclick) => el('button', { type: 'button', className: 'acc-link', textContent: text, onclick });
   const accMsgEl = () => el('p', { className: 'acc-msg', role: 'status', 'aria-live': 'polite' });
   const say = (m, text, ok) => { m.textContent = text; m.className = `acc-msg${ok ? ' ok' : ''}`; };
 
   function viewLogin(note, needCode) {
+    accActive = '';
     const email = accField('E-mail', { type: 'email', autocomplete: 'email', inputMode: 'email', placeholder: 'voce@email.com' });
     const pw = accField('Senha', { type: 'password', autocomplete: 'current-password' });
     const code = accField('Código do app autenticador', { type: 'text', inputMode: 'numeric', autocomplete: 'one-time-code', maxLength: 6, placeholder: '000000' });
@@ -4427,6 +4450,7 @@ window.__CFG__ = {
       email.node, pw.node, code.node, m, go, accLink('Ainda não tenho conta: criar agora', viewRegister));
   }
   function viewRegister() {
+    accActive = '';
     const name = accField('Nome completo', { type: 'text', autocomplete: 'name', placeholder: 'Nome e sobrenome' });
     const cpf = accField('CPF', { type: 'text', inputMode: 'numeric', placeholder: '000.000.000-00' });
     cpf.input.addEventListener('input', () => { cpf.input.value = maskCpf(cpf.input.value); });
@@ -4448,19 +4472,26 @@ window.__CFG__ = {
   function afterEntry() { if (acct.qr && acct.me) return viewRaspadinha(); return viewHome(); }
 
   function viewHome() {
+    accActive = 'conta';
     const a = acct.me;
     if (!a) return viewLogin();
-    const row = (k, v) => el('div', { className: 'acc-row' }, el('span', { textContent: k }), el('span', { textContent: v }));
-    const rsp = el('div', { className: 'acc-box' }, el('h4', { textContent: `🎟️ Raspadinha: ${a.tickets} disponível${a.tickets === 1 ? '' : 'is'}` }),
-      el('p', { textContent: 'Leia o QR code que está no balcão da loja com a câmera do celular para liberar. Cada pedido pago libera uma nova.' }),
-      a.tickets ? accBtn('Usar raspadinha', viewRaspadinha) : el('span'));
-    const tf = el('div', { className: 'acc-box' }, el('h4', { textContent: `Verificação em duas etapas: ${a.twoFactor ? 'ligada' : 'desligada'}` }),
-      el('p', { textContent: 'Usa um app autenticador (Google Authenticator) para pedir um código ao entrar. Opcional.' }),
-      accBtn(a.twoFactor ? 'Desligar' : 'Ligar', a.twoFactor ? viewTwoFactorOff : viewTwoFactorOn, true));
-    accShow(el('h3', { textContent: `Olá, ${a.name.split(' ')[0]}` }), el('p', { className: 'acc-sub', textContent: 'Você continua conectado neste aparelho para pedir. Para usar a raspadinha é preciso entrar com a senha de novo a cada visita.' }),
-      row('Nome', a.name), row('CPF', a.cpf), row('Telefone', a.phone), row('E-mail', a.email),
-      rsp, tf, accBtn('Mudar e-mail', viewEmail, true), accBtn('Mudar senha', viewPassword, true),
-      accBtn('Sair da conta', async () => { await accApi('logout', {}); acct.me = null; await accRefresh(); closeAccount(); toast('Você saiu da conta.'); }, true));
+    const item = (ico, label, onclick, danger) => el('button', { type: 'button', className: `acc-item${danger ? ' danger' : ''}`, onclick },
+      el('span', { className: 'ico', textContent: ico }), label, el('span', { className: 'chev', textContent: '›' }));
+    const kv = (k, v) => el('div', { className: 'acc-kv' }, el('span', { textContent: k }), el('span', { textContent: v }));
+    const initials = a.name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+    accShow(
+      el('div', { className: 'acc-profile' }, el('span', { className: 'acc-av', textContent: initials }),
+        el('div', {}, el('b', { textContent: a.name }), el('small', { textContent: a.email }))),
+      el('div', { className: 'acc-sec', textContent: 'Dados do cadastro (não mudam)' }),
+      el('div', { className: 'acc-list' }, kv('Nome', a.name), kv('CPF', a.cpf), kv('Telefone', a.phone)),
+      el('div', { className: 'acc-sec', textContent: 'Recompensas' }),
+      el('div', { className: 'acc-list' }, item('🎟️', 'Raspadinha e prêmios', viewRaspadinha)),
+      el('div', { className: 'acc-sec', textContent: 'Conta e segurança' }),
+      el('div', { className: 'acc-list' },
+        item('✉️', 'Mudar e-mail', viewEmail),
+        item('🔑', 'Mudar senha', viewPassword),
+        item('🛡️', `Verificação em duas etapas · ${a.twoFactor ? 'ligada' : 'desligada'}`, a.twoFactor ? viewTwoFactorOff : viewTwoFactorOn),
+        item('🚪', 'Sair da conta', async () => { await accApi('logout', {}); acct.me = null; await accRefresh(); closeAccount(); toast('Você saiu da conta.'); }, true)));
   }
   function viewEmail() {
     const email = accField('Novo e-mail', { type: 'email', autocomplete: 'email', inputMode: 'email' });
@@ -4518,44 +4549,110 @@ window.__CFG__ = {
   }
 
   function viewRaspadinha() {
+    accActive = 'rec';
     const a = acct.me;
     if (!a) return viewLogin();
-    if (!a.fresh) return viewLogin('Entre de novo com a senha para usar a raspadinha.', a.twoFactor);
+    if (!a.fresh) return viewLogin('Entre de novo com a senha para usar as recompensas.', a.twoFactor);
     const m = accMsgEl();
+    const when = (p) => [p.minOrder ? `pedido a partir de R$ ${Number(p.minOrder).toFixed(2).replace('.', ',')}` : '', p.expiresAt ? `vale até ${new Date(p.expiresAt).toLocaleDateString('pt-BR')}` : ''].filter(Boolean).join(' · ');
+    const dots = a.threshold ? el('div', { className: 'acc-box' }, el('h4', { textContent: `🤫 ${a.specialName}` }),
+      el('p', { textContent: `Qual item vai ser? Um burger? Uma porção? Uma sobremesa? Ninguém conta. Junte ${a.threshold} recompensas e o ${a.specialName} chega de surpresa no seu pedido, por conta da casa.` }),
+      el('div', { style: 'font-size:22px;letter-spacing:3px;line-height:1.4', 'aria-label': `${a.progress} de ${a.threshold} recompensas`, textContent: '●'.repeat(Math.min(a.progress, a.threshold)) + '○'.repeat(Math.max(0, a.threshold - a.progress)) }),
+      el('p', { textContent: `${a.progress} de ${a.threshold}` })) : el('span');
+    const mine = el('div', { className: 'acc-box' }, el('h4', { textContent: 'Meus prêmios' }),
+      ...(a.prizes.length ? a.prizes.map((p) => el('div', { className: 'acc-row' }, el('span', { textContent: p.mystery ? `🤫 ${p.name} — qual item será?` : `🎁 ${p.name}` }), el('span', { textContent: when(p) || 'vale no próximo pedido' })))
+        : [el('p', { textContent: 'Nenhum prêmio por enquanto.' })]));
     if (!acct.qr) {
-      accShow(el('h3', { textContent: '🎟️ Raspadinha' }), el('p', { className: 'acc-sub', textContent: 'Leia o QR code que está no balcão da loja com a câmera do celular. Ele abre esta tela já liberada.' }), accLink('Voltar', viewHome));
+      accShow(el('h3', { textContent: '🎟️ Recompensas' }), el('p', { className: 'acc-sub', textContent: 'Para usar a raspadinha, leia o QR code que está no balcão da loja com a câmera do celular. Ele abre esta tela já liberada.' }), dots, mine);
       return;
     }
-    const go = accBtn('Gerar meu código', async () => {
-      go.disabled = true;
+    const go2 = accBtn('Usar minha raspadinha', async () => {
+      go2.disabled = true;
       const r = await accApi('raspadinha/code', { qr: acct.qr });
-      if (!r.ok) { go.disabled = false; return say(m, accMsg(r.d)); }
-      const card = el('div', { className: 'rsp-card' }, el('span', { id: 'rspPrize', textContent: '' }), el('div', { className: 'rsp-cover', textContent: 'RASPE AQUI' }));
-      const scratch = accBtn('Raspar agora', async () => {
-        scratch.disabled = true;
-        const r2 = await accApi('raspadinha/scratch', { code: r.d.code });
-        if (!r2.ok) { scratch.disabled = false; return say(m, accMsg(r2.d)); }
-        card.querySelector('#rspPrize').textContent = r2.d.prize ? `🎁 ${r2.d.prize.name}!` : 'Não foi desta vez. Tente no próximo pedido!';
-        card.classList.add('open');
-        say(m, r2.d.prize ? 'O brinde vai junto no seu próximo pedido pago.' : '', true);
-        await accRefresh();
-        scratch.replaceWith(accBtn(r2.d.left ? `Ainda tem ${r2.d.left} para raspar` : 'Voltar', r2.d.left ? () => { go.disabled = false; viewRaspadinha(); } : viewHome, true));
-      });
-      accShow(el('h3', { textContent: '🎟️ Raspadinha liberada' }), el('p', { className: 'acc-sub', textContent: 'Este é o seu código (vale 10 minutos). Toque em Raspar para ver o prêmio.' }),
-        el('div', { className: 'rsp-code', textContent: r.d.code }), card, m, scratch);
+      if (!r.ok) { go2.disabled = false; return say(m, accMsg(r.d)); }
+      const prizeSpan = el('span', { id: 'rspPrize', textContent: '' });
+      const canvas = el('canvas', { className: 'rsp-canvas' });
+      const card = el('div', { className: 'rsp-card' }, prizeSpan, canvas);
+      accShow(el('h3', { textContent: '🎟️ Raspadinha liberada' }), el('p', { className: 'acc-sub', textContent: 'Este é o seu código (vale 10 minutos). Raspe a área cinza com o dedo ou o mouse para revelar o prêmio.' }),
+        el('div', { className: 'rsp-code', textContent: r.d.code }), card, m, accLink('Voltar às recompensas', viewRaspadinha));
+      initScratch(canvas, card, prizeSpan, r.d.code, m);
     });
-    accShow(el('h3', { textContent: '🎟️ Raspadinha' }), el('p', { className: 'acc-sub', textContent: `Você tem ${a.tickets} disponível${a.tickets === 1 ? '' : 'is'}. Toque para gerar o código e raspar.` }), m, a.tickets ? go : el('span', { className: 'acc-msg', textContent: ACC_ERR.sem_raspadinha }), accLink('Voltar', viewHome));
+    accShow(el('h3', { textContent: '🎟️ Recompensas' }), el('p', { className: 'acc-sub', textContent: 'Toque para liberar a raspadinha. Cada pedido pago libera uma nova.' }), m, go2, dots, mine);
+  }
+
+  // Raspadinha raspada de verdade: uma camada cinza desenhada em canvas sai com o dedo ou com o mouse. O prêmio é
+  // sorteado no servidor na primeira raspada (a raspadinha é gasta ali) e vai aparecendo por baixo conforme a camada sai.
+  function initScratch(canvas, card, prizeSpan, code, m) {
+    const ctx = canvas.getContext('2d');
+    let W = 0, H = 0, strokes = 0, revealed = false, started = null, down = false;
+    const fmtWhen = (p) => `${p.minOrder ? ` (pedido a partir de R$ ${Number(p.minOrder).toFixed(2).replace('.', ',')})` : ''}${p.expiresAt ? `, até ${new Date(p.expiresAt).toLocaleDateString('pt-BR')}` : ''}`;
+    requestAnimationFrame(() => {
+      const r = card.getBoundingClientRect();
+      W = canvas.width = Math.max(1, Math.round(r.width));
+      H = canvas.height = Math.max(1, Math.round(r.height));
+      const g = ctx.createLinearGradient(0, 0, W, H);
+      g.addColorStop(0, '#C9C9D2'); g.addColorStop(0.5, '#E4E4EA'); g.addColorStop(1, '#BBBBC5');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#5E5E68';
+      ctx.font = '800 17px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('RASPE AQUI ✨', W / 2, H / 2);
+    });
+    // A primeira raspada gasta a raspadinha no servidor e põe o resultado embaixo da camada
+    function start() {
+      if (!started) {
+        started = accApi('raspadinha/scratch', { code }).then(async (r2) => {
+          if (!r2.ok) { say(m, accMsg(r2.d)); canvas.remove(); return null; }
+          prizeSpan.textContent = r2.d.prize ? `🎁 ${r2.d.prize.name}!` : 'Não foi desta vez. Tente no próximo pedido!';
+          say(m, r2.d.special ? `🎉 Você juntou ${r2.d.threshold} recompensas e ganhou o ${r2.d.special}! Qual item vem dentro? Segredo: descubra no seu próximo pedido.` : r2.d.prize ? `Vale no seu próximo pedido${fmtWhen(r2.d.prize)}.` : '', Boolean(r2.d.prize || r2.d.special));
+          await accRefresh();
+          return r2;
+        });
+      }
+      return started;
+    }
+    function erase(e) {
+      const rect = canvas.getBoundingClientRect();
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc((e.clientX - rect.left) * (W / rect.width), (e.clientY - rect.top) * (H / rect.height), 24, 0, Math.PI * 2);
+      ctx.fill();
+      if (++strokes % 10 === 0) checkCleared();
+    }
+    // Com quase metade da camada raspada, o resto sai sozinho
+    function checkCleared() {
+      if (revealed || !W) return;
+      const d = ctx.getImageData(0, 0, W, H).data;
+      let open = 0, total = 0;
+      for (let i = 3; i < d.length; i += 64) { total++; if (d[i] < 40) open++; }
+      if (open / total > 0.45) {
+        revealed = true;
+        card.classList.add('open');
+        canvas.style.transition = 'opacity .7s';
+        canvas.style.opacity = '0';
+        canvas.style.pointerEvents = 'none';
+        setTimeout(() => canvas.remove(), 750);
+      }
+    }
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      down = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      start().then((r2) => { if (r2) erase(e); });
+    });
+    canvas.addEventListener('pointermove', (e) => { if (down && started) started.then((r2) => { if (r2) erase(e); }); });
+    const stop = () => { if (down) { down = false; checkCleared(); } };
+    canvas.addEventListener('pointerup', stop);
+    canvas.addEventListener('pointercancel', stop);
   }
 
   $('#navAccount')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    openAccount();
     await accRefresh();
     acct.me ? viewHome() : viewLogin();
   });
-  $('#accClose')?.addEventListener('click', closeAccount);
-  $('#accBack')?.addEventListener('click', closeAccount);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#accModal') && !$('#accModal').hidden) closeAccount(); });
   // QR code do balcão: /?raspadinha=CÓDIGO guarda o código só nesta sessão e abre a conta
   (async () => {
     const q = P.get('raspadinha');

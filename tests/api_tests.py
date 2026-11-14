@@ -522,6 +522,80 @@ check('accounts: private files are never served', all(rcall(B, 'GET', p)[0] == 4
 c, d = acall(B, 'GET', '/api/admin/raspadinha'); svg = rcall(B, 'GET', '/api/admin/raspadinha/qr.svg', None, {'Cookie': COOKIE})
 check('admin: the owner gets the QR address (with https), the prizes and the blocked attempts, and the QR as an SVG; nobody else does', c == 200 and d['https'] is True and d['url'].startswith('https://dads.example.test/?raspadinha=') and d['prizes'] and call(B, 'GET', '/api/admin/raspadinha')[0] == 401 and call(B, 'GET', '/api/admin/raspadinha/qr.svg')[0] == 401 and svg[0] == 200 and b'<svg' in svg[1] and b'raspadinha' not in svg[1][:0])
 check('admin: prizes are validated before saving (none, all zero, too long a name, over 12 are refused)', all(set_settings(lambda s, v=v: s.__setitem__('raspadinha', {'prizes': v}))[0] == 400 for v in ([], [{'name': 'x', 'weight': 0}], [{'name': 'x' * 61, 'weight': 5}], [{'name': 'x', 'weight': 1}] * 13)) and set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': [{'id': 't', 'name': 'Brinde de teste', 'weight': 1}]}))[0] == 200)
+# prêmios detalhados: desconto, frete grátis, pedido mínimo, validade, limites
+def set_prizes(lst): return set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': lst}))
+def win(jar):
+    c, d, _ = ac('POST', '/api/account/raspadinha/code', {'qr': QR}, jar); return ac('POST', '/api/account/raspadinha/scratch', {'code': d.get('code', '')}, jar)
+def newacc(n, name):
+    c, d, jar = reg(name, mkcpf(n), f'u{n}@example.com'); return jar
+disc = round(expected * 0.1, 2)
+set_prizes([{'id': 'd10', 'type': 'desconto_pct', 'value': 10, 'weight': 1, 'minOrder': 40, 'validDays': 30}])
+F1 = newacc(21, 'Fabio Nunes Alves'); c, d, _ = win(F1)
+check('prizes: a 10% discount prize comes with its label, minimum order and expiry date', d['prize']['name'] == '10% de desconto' and d['prize']['minOrder'] == 40 and d['prize']['expiresAt'] > time.time() * 1000, d)
+reset(); c, px = pix_as(F1)
+check('prizes: the discount is taken from the products only (delivery fee untouched) and Mercado Pago is charged the discounted amount', abs(px['total'] - (expected_total - disc)) < 0.01 and abs(posts()[-1]['body']['transaction_amount'] - px['total']) < 0.005, (px['total'], expected_total - disc))
+c, px2 = pix_as(F1)
+check('prizes: a prize is held by the order that is using it: a second order meanwhile pays full price', abs(px2['total'] - expected_total) < 0.01)
+approve(px['paymentId']); o = until(lambda: board(px['orderId'])); line = o['order']['items'][-1]
+check('prizes: once paid, the order lists the discount as a negative line, the lines add up to the total, and the prize is spent', line['name'] == '🎁 10% de desconto' and abs(line['price'] + disc) < 0.01 and abs(sum(i['price'] * i['q'] for i in o['order']['items']) + o['deliveryFee'] - o['total']) < 0.01 and ac('GET', '/api/account/me', None, F1)[1]['account']['prizes'] == [])
+set_prizes([{'id': 'd500', 'type': 'desconto_pct', 'value': 10, 'weight': 1, 'minOrder': 1000}])
+G1 = newacc(22, 'Gabriela Torres Melo'); win(G1); c, pg = pix_as(G1)
+check('prizes: below the minimum order the prize is not used (full price) and stays in the account', abs(pg['total'] - expected_total) < 0.01 and len(ac('GET', '/api/account/me', None, G1)[1]['account']['prizes']) == 1)
+set_prizes([{'id': 'fg', 'type': 'frete_gratis', 'weight': 1}])
+H1 = newacc(23, 'Henrique Barros Vieira'); r = win(H1); c, ph = pix_as(H1)
+check('prizes: free delivery takes the whole delivery fee off', r[1]['prize']['name'] == 'Frete grátis' and abs(ph['total'] - expected) < 0.01, (ph['total'], expected))
+set_prizes([{'id': 'rs', 'type': 'desconto_reais', 'value': 20, 'weight': 1, 'validDays': 0}])
+I1 = newacc(24, 'Isabela Ramos Freitas'); r = win(I1); c, pi_ = pix_as(I1)
+check('prizes: a R$ 20 discount is taken off and a prize with no validity never expires', r[1]['prize']['expiresAt'] == 0 and abs(pi_['total'] - (expected_total - 20)) < 0.01)
+reset()
+set_prizes([{'id': 'rs2', 'type': 'desconto_reais', 'value': 20, 'weight': 1}])
+J1 = newacc(25, 'Julia Campos Pires'); win(J1); c, wj, _ = rcall(B, 'POST', '/api/mercadopago/wallet', {'customer': cust, 'order': order1}, {'Cookie': ck(J1)})
+pbj = [x for x in mp_log() if x.get('preference')][-1]['body']
+check('prizes: with a discount the wallet payment sends Mercado Pago one item at the final amount', c == 200 and len(pbj['items']) == 1 and abs(pbj['items'][0]['unit_price'] - wj['total']) < 0.005 and abs(wj['total'] - (expected_total - 20)) < 0.01, (c, wj, pbj['items']))
+set_prizes([{'id': 'rare', 'type': 'item', 'name': 'Combo raro', 'weight': 1, 'totalLimit': 1}])
+K1 = newacc(26, 'Kleber Dias Santos'); L1 = newacc(27, 'Livia Duarte Neves'); r1 = win(K1); r2 = win(L1)
+check('prizes: a prize with a total limit leaves the draw when it runs out (second player gets nothing)', r1[1]['prize']['name'] == 'Combo raro' and r2[1]['prize'] is None, (r1[1], r2[1]))
+adm = acall(B, 'GET', '/api/admin/raspadinha')[1]
+check('prizes: the owner sees how many of each prize came out', adm['awarded']['rare'] == {'total': 1, 'today': 1} and adm['prizes'][0]['totalLimit'] == 1)
+check('prizes: invalid settings are refused (unknown type, discount over 90%, item without a product name, negative limit)', all(set_prizes(v)[0] == 400 for v in ([{'type': 'sorte', 'weight': 1}], [{'type': 'desconto_pct', 'value': 95, 'weight': 1}], [{'type': 'item', 'name': '', 'weight': 1}], [{'type': 'nada', 'weight': 1, 'dailyLimit': -1}])))
+set_prizes([{'id': 't', 'name': 'Brinde de teste', 'weight': 1}])
+
+# recompensa acumulada: Dad's Special
+set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': [{'id': 't', 'type': 'item', 'name': 'Brinde de teste', 'weight': 1}], 'special': {'enabled': True, 'name': "Dad's Special", 'threshold': 3, 'validDays': 30}}))
+Z1 = newacc(31, 'Zeca Lima Prado'); Zo = deliv('90430181')
+r1 = win(Z1); paid_as(Z1, Zo); r2 = win(Z1); paid_as(Z1, Zo); r3 = win(Z1)
+check('special: each rewarded scratch adds one to the progress and the third (threshold) unlocks the mystery Dad\'s Special, then the count restarts', [r1[1].get('progress'), r2[1].get('progress')] == [1, 2] and r3[1].get('special') == "Dad's Special" and r3[1]['progress'] == 0 and r1[1].get('special') is None, (r1[1], r2[1], r3[1]))
+me = ac('GET', '/api/account/me', None, Z1)[1]['account']
+check('special: the account shows the progress/threshold and a mystery prize waiting', me['threshold'] == 3 and me['progress'] == 0 and any(p['mystery'] and p['name'] == "Dad's Special" for p in me['prizes']), me)
+oz = paid_as(Z1, Zo); last = orders_file()[oz]['order']['items'][-1]
+check('special: the next paid order gets the Dad\'s Special as a free item (it goes first, before ordinary prizes)', last['name'] == "🎁 Dad's Special — item surpresa da casa" and last['price'] == 0, last)
+check('special: an empty prize (nothing) does not add to the progress', (lambda: (set_settings(lambda s: s.__setitem__('raspadinha', {'prizes': [{'id': 'n', 'type': 'nada', 'weight': 1}], 'special': {'enabled': True, 'threshold': 3}})), ac('GET', '/api/account/me', None, newacc(32, 'Zilda Prado Reis'))[1]['account']['progress'] == 0 and win(newacc(33, 'Zuleica Prado Rios'))[1]['progress'] == 0)[-1])())
+check('special: invalid special settings are refused (threshold 0 or 51, long name)', all(set_settings(lambda s, v=v: s.__setitem__('raspadinha', {'prizes': [{'id': 'x', 'type': 'item', 'name': 'a', 'weight': 1}], 'special': v}))[0] == 400 for v in ({'threshold': 0}, {'threshold': 51}, {'threshold': 3, 'name': 'x' * 61})))
+set_prizes([{'id': 't', 'name': 'Brinde de teste', 'weight': 1}])
+
+# gestão de clientes no painel
+M1 = newacc(41, 'Marta Pinto Cunha'); mid = M1['dads_user'].split('.')[0]
+c, d = acall(B, 'GET', '/api/admin/users?q=marta')
+mu = next((u for u in d.get('users', []) if u['id'] == mid), None)
+check('users: the owner lists and searches the registered clients (CPF only masked); nobody else can', c == 200 and mu and mu['name'] == 'Marta Pinto Cunha' and mu['cpf'].startswith('***') and mu['orders'] == 0 and mu['blocked'] is False and all(call(B, m_, p_)[0] == 401 for m_, p_ in [('GET', '/api/admin/users'), ('POST', f'/api/admin/users/{mid}/block'), ('POST', f'/api/admin/users/{mid}/reset-password'), ('DELETE', f'/api/admin/users/{mid}')]), (c, d))
+check('users: searching by e-mail, by the last digits of the CPF and by a name that does not exist', any(u['id'] == mid for u in acall(B, 'GET', '/api/admin/users?q=u41@example.com')[1]['users']) and any(u['id'] == mid for u in acall(B, 'GET', '/api/admin/users?q=' + mkcpf(41)[-4:])[1]['users']) and acall(B, 'GET', '/api/admin/users?q=ninguem-assim')[1]['users'] == [])
+c, d = acall(B, 'POST', f'/api/admin/users/{mid}/block', {'blocked': True, 'reason': 'teste'}); ob = pix_as(M1)[1]['orderId']
+check('users: blocking logs the client out at once and refuses a new login (403 conta_bloqueada), also for ordering with the old cookie', c == 200 and d['user']['blocked'] and ac('GET', '/api/account/me', None, M1)[1]['authenticated'] is False and login('u41@example.com')[0] == 403 and 'accountId' not in orders_file()[ob])
+acall(B, 'POST', f'/api/admin/users/{mid}/block', {'blocked': False})
+check('users: unblocking lets the client log in again (the old cookie stays dead)', login('u41@example.com')[0] == 200 and ac('GET', '/api/account/me', None, M1)[1]['authenticated'] is False)
+c, d = acall(B, 'POST', f'/api/admin/users/{mid}/reset-password', {}); temp = d.get('tempPassword', '')
+check('users: resetting the password gives a one-time temporary password; it works and the old one does not', c == 200 and len(temp) == 12 and login('u41@example.com', temp)[0] == 200 and login('u41@example.com')[0] == 401)
+M2 = login('u41@example.com', temp)[2]; ac('POST', '/api/account/2fa/setup', {'password': temp}, M2)
+sec2 = ac('POST', '/api/account/2fa/setup', {'password': temp}, M2)[1].get('secret', '')
+ac('POST', '/api/account/2fa/enable', {'code': totp_py(sec2)}, M2)
+check('users: with 2FA on, login asks for a code; the owner can switch it off for a client who lost the phone', login('u41@example.com', temp)[1].get('error') == 'codigo_2fa' and acall(B, 'POST', f'/api/admin/users/{mid}/2fa-off', {})[1]['user']['twoFactor'] is False and login('u41@example.com', temp)[0] == 200)
+M3 = login('u41@example.com', temp)[2]; before = ac('GET', '/api/account/me', None, M3)[1]['account']['tickets']
+acall(B, 'POST', f'/api/admin/users/{mid}/ticket', {})
+check('users: the owner can give a client one more scratch card', ac('GET', '/api/account/me', None, M3)[1]['account']['tickets'] == before + 1)
+oidM = paid_as(M3, deliv('90430181'))
+check('users: the list counts the client paid orders', next(u for u in acall(B, 'GET', '/api/admin/users?q=marta')[1]['users'] if u['id'] == mid)['orders'] == 1)
+check('users: deleting an account erases it (login fails, gone from the list), keeps the paid order without the link, and a second delete is 404', acall(B, 'DELETE', f'/api/admin/users/{mid}')[0] == 200 and login('u41@example.com', temp)[0] == 401 and not any(u['id'] == mid for u in acall(B, 'GET', '/api/admin/users')[1]['users']) and 'accountId' not in orders_file()[oidM] and acall(B, 'DELETE', f'/api/admin/users/{mid}')[0] == 404)
+
 # previsão de entrega ao vivo
 t_before = track(orders_file()[oidA]['trackToken'])[1]
 check('ETA: a paid order starts with an estimate (store max prep time) and the tracking answer carries it', t_before['etaAt'] > time.time() + 60 * 30)
