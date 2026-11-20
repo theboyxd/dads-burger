@@ -4485,7 +4485,7 @@ window.__CFG__ = {
       el('div', { className: 'acc-sec', textContent: 'Dados do cadastro (não mudam)' }),
       el('div', { className: 'acc-list' }, kv('Nome', a.name), kv('CPF', a.cpf), kv('Telefone', a.phone)),
       el('div', { className: 'acc-sec', textContent: 'Recompensas' }),
-      el('div', { className: 'acc-list' }, item('🎟️', 'Raspadinha e prêmios', viewRaspadinha)),
+      el('div', { className: 'acc-list' }, item('🎟️', a.tickets > 0 ? 'Raspadinha e prêmios · tem raspadinha esperando!' : 'Raspadinha e prêmios', viewRaspadinha)),
       el('div', { className: 'acc-sec', textContent: 'Conta e segurança' }),
       el('div', { className: 'acc-list' },
         item('✉️', 'Mudar e-mail', viewEmail),
@@ -4563,7 +4563,7 @@ window.__CFG__ = {
       ...(a.prizes.length ? a.prizes.map((p) => el('div', { className: 'acc-row' }, el('span', { textContent: p.mystery ? `🤫 ${p.name} — qual item será?` : `🎁 ${p.name}` }), el('span', { textContent: when(p) || 'vale no próximo pedido' })))
         : [el('p', { textContent: 'Nenhum prêmio por enquanto.' })]));
     if (!acct.qr) {
-      accShow(el('h3', { textContent: '🎟️ Recompensas' }), el('p', { className: 'acc-sub', textContent: 'Para usar a raspadinha, leia o QR code que está no balcão da loja com a câmera do celular. Ele abre esta tela já liberada.' }), dots, mine);
+      accShow(el('h3', { textContent: '🎟️ Recompensas' }), el('p', { className: 'acc-sub', textContent: a.tickets > 0 ? '🎉 Tem uma raspadinha esperando por você! Leia o QR code que está no balcão da loja com a câmera do celular para raspar.' : 'Para usar a raspadinha, leia o QR code que está no balcão da loja com a câmera do celular. Ele abre esta tela já liberada.' }), dots, mine);
       return;
     }
     const go2 = accBtn('Usar minha raspadinha', async () => {

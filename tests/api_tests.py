@@ -82,6 +82,17 @@ for path, want in [('/orders.json', 404), ('/products.json', 404), ('/server.js'
     except urllib.error.HTTPError as e: code = e.code
     check(f'static {path} -> {want}', code == want, code)
 check('every payment logo file is served', all(urllib.request.urlopen(B + f'/assets/pay/{n}').status == 200 for n in ['visa.svg', 'mastercard.svg', 'elo.png', 'amex.svg', 'pix.svg', 'mercadopago.svg', 'vr.png', 'alelo.png', 'pluxee.svg', 'ticket.svg']))
+# O servidor só serve as duas páginas, a logo, assets/ e vendor/: o resto da pasta do programa nunca sai como arquivo
+for name, body in [('zz-private.json', '{"segredo": "ZZ-PRIVADO"}'), ('zz-helper.js', '// ZZ-PRIVADO'), ('zz-notas.md', 'ZZ-PRIVADO')]:
+    open(f'{SITE}/{name}', 'w', encoding='utf-8').write(body)
+def raw(path):
+    try: r = urllib.request.urlopen(B + path); return r.status, r.read()
+    except urllib.error.HTTPError as e: return e.code, e.read()
+leaks = {p: raw(p) for p in ['/accounts.js', '/settings.json', '/zz-private.json', '/zz-helper.js', '/zz-notas.md', '/package-lock.json', '/accounts.json', '/account.key', '/vault.js', '/secrets.json', '/secrets.key', '/events.json', '/.env', '/tests/api_tests.py', '/node_modules/express/package.json', '/assets/../server.js', '/assets/../orders.json', '/vendor/../accounts.js', '/assets/%2e%2e/server.js', '/assets/..%2fserver.js', '/assets/%2e%2e%2forders.json', '/favicon.ico']}
+check('static: code, settings and any other file of the program folder answer 404 and never leak their text', all(c == 404 and b'ZZ-PRIVADO' not in b and b'createHmac' not in b and b'PUBLISHED_PASSWORDS' not in b for c, b in leaks.values()), {p: c for p, (c, b) in leaks.items()})
+check('static: the pages, the logo, the payment logos and leaflet still open', all(raw(p)[0] == 200 for p in ['/', '/index.html', '/admin', '/admin.html', '/logo.png', '/vendor/leaflet/leaflet.js', '/vendor/leaflet/leaflet.css', '/assets/pay/pix.svg']), {p: raw(p)[0] for p in ['/', '/index.html', '/admin', '/admin.html', '/logo.png', '/vendor/leaflet/leaflet.js', '/assets/pay/pix.svg']})
+check('static: a path with a file extension that is not a site file is a plain 404, a page route is still the home page', raw('/zz-nada.png')[0] == 404 and raw('/pedido/abc')[0] == 200 and b'<html' in raw('/pedido/abc')[1].lower())
+check('static: api paths that end in a file extension are not caught (the panel QR image still opens)', acall(B, 'GET', '/api/admin/raspadinha/qr.svg')[0] == 200)
 
 # ============================================================ LOGIN DO PAINEL
 check('auth: order list without login -> 401', call(B, 'GET', '/api/orders')[0] == 401)
@@ -622,7 +633,7 @@ atexit.register(_cleanup_hosting)
 
 # Cópia do programa SEM nenhum arquivo de dados (como a imagem Docker): é daqui que o servidor parte
 APP2 = HOSTED + '/app'; os.makedirs(APP2)
-for f in ('server.js', 'accounts.js', 'package.json', 'index.html', 'admin.html', 'logo.png', 'products.json'): shutil.copy(f'{SITE}/{f}', f'{APP2}/{f}')
+for f in ('server.js', 'accounts.js', 'vault.js', 'package.json', 'index.html', 'admin.html', 'logo.png', 'products.json'): shutil.copy(f'{SITE}/{f}', f'{APP2}/{f}')
 seed = json.load(open(f'{SITE}/settings.json', encoding='utf-8')); seed['store'].update({'isOpenManual': True, 'autoSchedule': False})
 json.dump(seed, open(f'{APP2}/settings.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 os.symlink(f'{SITE}/node_modules', f'{APP2}/node_modules')
@@ -771,6 +782,239 @@ stop_node(p8)
 c, d, hd = rcall(B, 'POST', '/api/admin/login', {'password': 'testpass-123'}, {'X-Forwarded-Proto': 'https'}); c0, d0, hd0 = rcall(B, 'POST', '/api/admin/login', {'password': 'testpass-123'})
 check('hosting: behind the https proxy (X-Forwarded-Proto) the login cookie is Secure and HttpOnly; plain http does not force Secure', c == 200 and 'Secure' in (hd.get('Set-Cookie') or '') and 'HttpOnly' in (hd.get('Set-Cookie') or '') and 'Secure' not in (hd0.get('Set-Cookie') or ''), (hd.get('Set-Cookie'), hd0.get('Set-Cookie')))
 check('hosting: /healthz also works in the default mode (no DATA_DIR) and needs no login', rcall(B, 'GET', '/healthz')[0] == 200 and rcall(B0, 'GET', '/healthz')[0] == 200)
+
+# ---- painel: estado do sistema, início, acontecimentos ao vivo, conexões (chaves) e Financeiro com Google Authenticator
+import re as _re
+panel_html = open(SITE + '/admin.html', encoding='utf-8').read()
+code_only = _re.sub(r'<!--.*?-->', '', panel_html, flags=_re.S)
+check('panel: no native browser dialogs (alert, confirm, prompt) anywhere in the admin page', not _re.search(r'(?<![\w.])(alert|confirm|prompt)\s*\(', code_only), _re.findall(r'(?<![\w.])(?:alert|confirm|prompt)\s*\([^)]{0,40}', code_only)[:3])
+nav_keys = set(_re.findall(r'data-nav="([a-z]+)"', panel_html))
+check('panel: the side menu reaches every screen (home, board, history, canceled, catalog, clients, raspadinha, finance, hours, delivery, payments, printer, connections, how)', nav_keys == {'home', 'kanban', 'history', 'canceled', 'catalog', 'users', 'raspadinha', 'finance', 'hours', 'delivery', 'payments', 'printer', 'connections', 'how'}, nav_keys)
+check('panel: every settings panel the menu opens exists in the page', all(f'id="tabPanel{k}"' in panel_html for k in ('Catalog', 'Users', 'Raspadinha', 'Finance', 'Hours', 'Delivery', 'Payments', 'Printer', 'Connections')))
+check('panel: no key, token or secret is written into the page itself', not _re.search(r'APP_USR-[A-Za-z0-9-]{12,}|TEST-[0-9a-f-]{20,}', panel_html))
+import secrets as _secrets
+def keys_of(o):
+    if isinstance(o, dict): return {k for k in o} | set().union(*[keys_of(v) for v in o.values()])
+    if isinstance(o, list): return set().union(*[keys_of(v) for v in o]) if o else set()
+    return set()
+check('system: needs the panel login', call(B, 'GET', '/api/admin/system')[0] == 401)
+c, d = acall(B, 'GET', '/api/admin/system')
+check('system: demo flag, Mercado Pago in test mode with keys and wallet ready, Authenticator not set up yet, menu size, courier not connected', c == 200 and d.get('demo') is True and d['mp']['mode'] == 'teste' and d['mp']['keys'] is True and d['mp']['wallet'] is True and d['finance']['configured'] is False and d['menu']['products'] == len(products) and d['courier']['connected'] is False and d['courier']['saved'] is False, d)
+c, d = call(B0, 'GET', '/api/admin/system', None, {'Cookie': tok0})
+check('system: without credentials the mode is sem_chaves, no demo and the wallet is off', c == 200 and d['mp']['mode'] == 'sem_chaves' and d['demo'] is False and d['mp']['wallet'] is False, d)
+
+# início: só números do dia, nunca dinheiro
+check('dashboard: needs the panel login', call(B, 'GET', '/api/admin/dashboard')[0] == 401)
+c, d = acall(B, 'GET', '/api/admin/dashboard')
+real_orders = [o for o in acall(B, 'GET', '/api/orders')[1]['orders'] if o.get('paymentConfirmed')]
+check('dashboard: today, kitchen board, 24 hours, 7 days, channels and top items', c == 200 and set(d) >= {'today', 'open', 'hourly', 'week', 'channels', 'topItems', 'yesterdayOrders'} and len(d['hourly']) == 24 and len(d['week']) == 7 and set(d['channels']) == {'pix', 'cartao', 'saldo'} and d['today']['orders'] + d['today']['cancelled'] == len(real_orders) and sum(d['hourly']) == d['today']['orders'], (d['today'], len(real_orders)))
+check('dashboard: no money anywhere (revenue stays behind the Authenticator)', not (keys_of(d) & {'gross', 'revenue', 'total', 'price', 'amount', 'fee', 'avgTicket'}), sorted(keys_of(d)))
+
+# acontecimentos ao vivo
+check('events: need the panel login', call(B, 'GET', '/api/admin/events')[0] == 401)
+c, d = acall(B, 'GET', '/api/admin/events?limit=200')
+evs = d.get('events', []); kinds = {e['kind'] for e in evs}
+check('events: the order journey, refunds, webhooks and panel logins were recorded', c == 200 and kinds >= {'order.created', 'payment.confirmed', 'order.status', 'refund.done', 'courier.requested', 'webhook.received', 'admin.login'}, sorted(kinds))
+blob = json.dumps(d, ensure_ascii=False)
+check('events: no phone, CPF, e-mail, full name, address or key ever shows up (customers appear as first name + initial)', all(x not in blob for x in (cust['phone'], CPF, EMAIL, 'Pereira', 'Rua Teste', 'TESTTOKEN', 'whsec_test', 'TEST-PUBLIC-KEY')) and any(re.search(r'Joana L\.', e['detail']) for e in evs), [e['detail'] for e in evs[:3]])
+check('events: ids grow, every event has level, title and time', all(evs[i]['id'] < evs[i + 1]['id'] for i in range(len(evs) - 1)) and all(e['level'] in ('ok', 'info', 'warn', 'error') and e['title'] and e['at'] > 1e9 for e in evs))
+last = evs[-1]['id']; rcall(B, 'POST', '/api/admin/login', {'password': 'testpass-123'})  # (login() mais abaixo é o das contas de clientes)
+c, d = acall(B, 'GET', f'/api/admin/events?after={last}')
+check('events: asking "after" the last id brings only what is new', c == 200 and d['events'] and all(e['id'] > last for e in d['events']) and any(e['kind'] == 'admin.login' for e in d['events']), d)
+check('events: limit keeps the newest ones', len(acall(B, 'GET', '/api/admin/events?limit=5')[1]['events']) == 5)
+
+# conexões: chaves coladas no painel (servidor próprio, sem chaves de ambiente, pasta de dados própria e Mercado Pago de mentira)
+KD = HOSTED + '/keysdata'; os.makedirs(KD, exist_ok=True)
+ks = json.load(open(f'{APP2}/settings.json', encoding='utf-8')); ks['store'].update({'isOpenManual': True, 'autoSchedule': False}); ks['payments']['pix_online']['enabled'] = True
+json.dump(ks, open(KD + '/settings.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+KENV = {'DATA_DIR': KD, 'ADMIN_PASSWORD': PW, 'SESSION_SECRET': 'k-secret', 'MP_API_BASE': MP, 'MP_PROBE_MS': '600000'}
+def kstart(extra=None):
+    global pk, portk, BK, ck
+    pk, portk = start_node({**KENV, **(extra or {})}); up = wait_up(pk, portk); BK = f'http://127.0.0.1:{portk}'
+    ck = rcall(BK, 'POST', '/api/admin/login', {'password': PW})[2].get('Set-Cookie', '').split(';')[0]
+    return up
+def kcall(m, p, body=None, headers=None): return call(BK, m, p, body, {'Cookie': ck, **(headers or {})})
+upk = kstart()
+check('connections: the keys server starts with its own data folder', upk)
+check('connections: need the panel login', call(BK, 'GET', '/api/admin/connections')[0] == 401)
+c, d = kcall('GET', '/api/admin/connections')
+check('connections: a new site has nothing connected and no site address', c == 200 and d['mp']['connected'] is False and not any(f['set'] for f in d['mp']['fields'].values()) and d['nn']['saved'] is False and d['nn']['active'] is False and d['site']['url'] == '' and d['demo'] is False, d)
+check('connections: without keys the payment routes say so (503) and the public config says not configured', kcall('POST', '/api/mercadopago/pix', {'customer': cust, 'order': order1})[0] == 503 and call(BK, 'GET', '/api/mercadopago/config')[1]['configured'] is False)
+WHS = _secrets.token_hex(16)
+GOOD = {'accessToken': 'TESTTOKEN', 'publicKey': 'TESTPUB-0123456789', 'webhookSecret': WHS}
+c, d = kcall('PUT', '/api/admin/connections/mp', GOOD)
+check('connections: changing a key asks for the panel password again (403, not 401, so the panel keeps the session)', c == 403 and d.get('error') == 'senha_incorreta', (c, d))
+c, d = kcall('PUT', '/api/admin/connections/mp', {**GOOD, 'password': 'errada'})
+check('connections: a wrong password changes nothing', c == 403 and kcall('GET', '/api/admin/connections')[1]['mp']['connected'] is False, (c, d))
+c, d = kcall('PUT', '/api/admin/connections/mp', {'password': PW})
+check('connections: an empty save is refused (nothing to save)', c == 400 and d.get('error') == 'nada_para_salvar', (c, d))
+c, d = kcall('PUT', '/api/admin/connections/mp', {'password': PW, 'accessToken': 'x y'})
+check('connections: a key with spaces is refused before anything is sent anywhere (formato_invalido, names the field)', c == 400 and d.get('error') == 'formato_invalido' and d.get('field') == 'accessToken', (c, d))
+reset()
+c, d = kcall('PUT', '/api/admin/connections/mp', {'password': PW, 'accessToken': 'BADTOKEN1234567'})
+check('connections: a key that Mercado Pago refuses (401) is not saved (chave_recusada)', c == 400 and d.get('error') == 'chave_recusada' and kcall('GET', '/api/admin/connections')[1]['mp']['connected'] is False and any(x.get('me') == '4567' for x in mp_log()), (c, d))
+c, d = kcall('PUT', '/api/admin/connections/mp', {'password': PW, **GOOD})
+raw_view = json.dumps(d); f0 = d.get('mp', {}).get('fields', {}).get('accessToken', {})
+check('connections: a good key is checked with Mercado Pago, saved and shown only as its last 4 characters; the account is named', c == 200 and d['mp']['connected'] is True and f0.get('set') is True and f0.get('source') == 'painel' and f0.get('hint') == 'OKEN' and d['mp']['account']['ok'] is True and d['mp']['account']['nickname'] == 'LOJA_TESTE' and d['mp']['test'] is True and not any(v in raw_view for v in GOOD.values()), (c, d))
+check('connections: the saved key is what payments use now (Pix with a bad CPF answers 400 instead of 503) and the public key reaches the page', kcall('POST', '/api/mercadopago/pix', {'customer': {**cust, 'cpf': '11111111111'}, 'order': order1})[0] == 400 and call(BK, 'GET', '/api/mercadopago/config')[1] == {'configured': True, 'publicKey': 'TESTPUB-0123456789', 'hasPublicKey': True})
+sj = open(KD + '/secrets.json', encoding='utf-8').read(); kf = open(KD + '/secrets.key', encoding='utf-8').read().strip()
+check('connections: on disk the keys are encrypted (no plain text), and both files are private (mode 600)', 'TESTTOKEN' not in sj and WHS not in sj and 'TESTPUB' not in sj and len(kf) == 64 and oct(os.stat(KD + '/secrets.json').st_mode & 0o777) == '0o600' and oct(os.stat(KD + '/secrets.key').st_mode & 0o777) == '0o600', (oct(os.stat(KD + '/secrets.json').st_mode & 0o777), sj[:120]))
+c, d = kcall('POST', '/api/admin/connections/mp/test', {})
+check('connections: the connection test asks Mercado Pago again and reports the account', c == 200 and d['result']['ok'] is True and d['result']['nickname'] == 'LOJA_TESTE', (c, d))
+check('connections: the connection test needs the login', call(BK, 'POST', '/api/admin/connections/mp/test', {})[0] == 401)
+# o webhook confere a assinatura com o segredo guardado no painel
+ts = str(int(time.time() * 1000))
+c1 = call(BK, 'POST', '/api/mercadopago/webhook?data.id=123&type=payment', {'type': 'payment', 'data': {'id': '123'}}, {'x-signature': f'ts={ts},v1={"0" * 64}', 'x-request-id': 'r1'})[0]
+c2_ = call(BK, 'POST', '/api/mercadopago/webhook?data.id=123&type=payment', {'type': 'payment', 'data': {'id': '123'}}, {'x-signature': f'ts={ts},v1={sig(WHS, "123", "r1", ts)}', 'x-request-id': 'r1'})[0]
+ke = kcall('GET', '/api/admin/events?limit=200')[1]['events']
+check('connections: the webhook signature is checked with the secret saved in the panel (wrong 401, right 200) and both show up in the terminal', c1 == 401 and c2_ == 200 and {'webhook.rejected', 'webhook.received'} <= {e['kind'] for e in ke}, (c1, c2_, [e['kind'] for e in ke]))
+# 99 Empresas: só guarda as credenciais (a chamada à API da 99 ainda não existe e o painel não finge que existe)
+c, d = kcall('PUT', '/api/admin/connections/nn', {'password': PW, 'clientId': 'loja-99-teste'})
+check('connections: 99 Empresas asks for the client id and the secret key (faltam_campos names the missing one)', c == 400 and d.get('error') == 'faltam_campos' and d.get('fields') == ['apiKey'], (c, d))
+c, d = kcall('PUT', '/api/admin/connections/nn', {'password': 'errada', 'clientId': 'loja-99-teste', 'apiKey': 'chave-secreta-99-xyz'})
+check('connections: 99 Empresas also needs the panel password', c == 403 and kcall('GET', '/api/admin/connections')[1]['nn']['saved'] is False, (c, d))
+c, d = kcall('PUT', '/api/admin/connections/nn', {'password': PW, 'clientId': 'loja-99-teste', 'apiKey': 'chave-secreta-99-xyz', 'storeId': 'LOJA-77'})
+sj = open(KD + '/secrets.json', encoding='utf-8').read()
+check('connections: 99 credentials are saved encrypted and never echoed; the courier call is honestly NOT active', c == 200 and d['nn']['saved'] is True and d['nn']['active'] is False and d['nn']['fields']['apiKey']['hint'] == '-xyz' and 'chave-secreta-99-xyz' not in json.dumps(d) and 'chave-secreta-99-xyz' not in sj and 'loja-99-teste' not in sj, (c, d))
+c, d = kcall('GET', '/api/admin/system')
+check('system: shows the 99 credentials as saved but the courier as not connected', c == 200 and d['courier']['saved'] is True and d['courier']['connected'] is False, d)
+# endereço do site
+c, d = kcall('PUT', '/api/admin/connections/site', {'password': PW, 'appUrl': 'http://loja.example.test'})
+check('connections: the site address must be https (formato_invalido)', c == 400 and d.get('field') == 'appUrl', (c, d))
+v = kcall('GET', '/api/admin/connections')[1]
+check('connections: before a site address the wallet is off and the webhook address empty', v['mp']['wallet'] is False and v['mp']['webhookUrl'] == '')
+c, d = kcall('PUT', '/api/admin/connections/site', {'password': PW, 'appUrl': 'https://Loja.Example.test/'})
+check('connections: a good site address is saved (lower case, no trailing slash), gives the webhook address and turns the wallet on', c == 200 and d['site']['url'] == 'https://loja.example.test' and d['site']['source'] == 'painel' and d['mp']['webhookUrl'] == 'https://loja.example.test/api/mercadopago/webhook' and d['mp']['wallet'] is True, (c, d))
+# falha de login registrada sem a senha
+rcall(BK, 'POST', '/api/admin/login', {'password': 'senha-errada-zz'})
+ke = kcall('GET', '/api/admin/events?limit=200')[1]['events']
+check('events: a wrong panel password is recorded as a warning without the password', any(e['kind'] == 'admin.login_failed' and e['level'] == 'warn' for e in ke) and 'senha-errada-zz' not in json.dumps(ke))
+# o que foi guardado volta depois de reiniciar
+stop_node(pk); upk = kstart()
+c, d = kcall('GET', '/api/admin/connections')
+check('connections: after a restart the keys, the 99 credentials and the site address are all still there', upk and c == 200 and d['mp']['connected'] is True and d['mp']['fields']['webhookSecret']['hint'] == WHS[-4:] and d['nn']['saved'] is True and d['site']['url'] == 'https://loja.example.test', (upk, d))
+until(lambda: kcall('GET', '/api/admin/connections')[1]['mp']['account'], 6)
+ce = kcall('GET', '/api/admin/events?limit=200')[1]['events']
+check('events: the key changes are recorded without any key in them, and they survive the restart', {e['kind'] for e in ce} >= {'keys.saved', 'site.url', 'system.start'} and sum(e['kind'] == 'system.start' for e in ce) == 2 and not any(x in json.dumps(ce) for x in ('TESTTOKEN', 'chave-secreta-99-xyz', WHS)), [e['title'] for e in ce])
+# desligar
+c, d = kcall('POST', '/api/admin/connections/mp/disconnect', {'password': 'errada'})
+check('connections: disconnecting asks for the password too', c == 403 and kcall('GET', '/api/admin/connections')[1]['mp']['connected'] is True)
+c, d = kcall('POST', '/api/admin/connections/mp/disconnect', {'password': PW})
+check('connections: disconnecting Mercado Pago removes the keys and payments say unavailable again', c == 200 and d['mp']['connected'] is False and not any(f['set'] for f in d['mp']['fields'].values()) and kcall('POST', '/api/mercadopago/pix', {'customer': cust, 'order': order1})[0] == 503, (c, d))
+c, d = kcall('POST', '/api/admin/connections/nn/disconnect', {'password': PW})
+check('connections: disconnecting 99 removes the credentials', c == 200 and d['nn']['saved'] is False and 'loja-99-teste' not in open(KD + '/secrets.json', encoding='utf-8').read())
+# sem a secrets.key as chaves não abrem, e o servidor segue de pé (o dono conecta de novo)
+kcall('PUT', '/api/admin/connections/mp', {'password': PW, **GOOD})
+stop_node(pk); os.remove(KD + '/secrets.key'); upk = kstart()
+c, d = kcall('GET', '/api/admin/connections')
+lost_ok = upk and c == 200 and d['mp']['connected'] is False and 'secrets.key' in logtext(portk)
+c2k, _ = kcall('PUT', '/api/admin/connections/mp', {'password': PW, 'accessToken': 'TESTKEY-novo-123456'})
+check('connections: if secrets.key is lost the old keys cannot be opened (shown as not connected, warning in the log), the server keeps working and a new key can be saved', lost_ok and c2k == 200 and kcall('GET', '/api/admin/connections')[1]['mp']['connected'] is True, (upk, d))
+stop_node(pk)
+
+# demonstração: só vale a chave de teste que já está conectada; chave de verdade nunca é guardada
+c, d = acall(B, 'GET', '/api/admin/connections')
+check('connections (demo): shows the test key from the environment as connected, test mode, wallet ready', c == 200 and d['demo'] is True and d['mp']['connected'] is True and d['mp']['fields']['accessToken']['source'] == 'ambiente' and d['mp']['fields']['accessToken']['hint'] == 'OKEN' and d['mp']['test'] is True and d['mp']['wallet'] is True and 'TESTTOKEN' not in json.dumps(d), d)
+c, d = acall(B, 'PUT', '/api/admin/connections/mp', {'password': 'testpass-123', 'accessToken': 'APP_USR-1234567890abcdef-real'})
+check('connections (demo): a different key is refused (demo_somente_teste) and not kept', c == 403 and d.get('error') == 'demo_somente_teste' and acall(B, 'GET', '/api/admin/connections')[1]['mp']['fields']['accessToken']['source'] == 'ambiente', (c, d))
+c, d = acall(B, 'PUT', '/api/admin/connections/mp', {'password': 'testpass-123', 'accessToken': 'TESTTOKEN'})
+check('connections (demo): saving the same test key again is fine and changes nothing', c == 200 and d['mp']['connected'] is True and not os.path.exists(SITE + '/secrets.json'), (c, d))
+check('connections (demo): 99, disconnect and site address are refused too', all(acall(B, m, p, body)[1].get('error') == 'demo_somente_teste' for m, p, body in (('PUT', '/api/admin/connections/nn', {'password': 'testpass-123', 'clientId': 'abc-123', 'apiKey': 'abcdefgh-12345'}), ('POST', '/api/admin/connections/mp/disconnect', {'password': 'testpass-123'}), ('POST', '/api/admin/connections/nn/disconnect', {'password': 'testpass-123'}), ('PUT', '/api/admin/connections/site', {'password': 'testpass-123', 'appUrl': 'https://x.example.test'}))))
+
+# Financeiro: abre com o código do Google Authenticator
+check('finance: every route needs the panel login', all(call(B, m, p)[0] == 401 for m, p in (('GET', '/api/admin/finance'), ('GET', '/api/admin/finance/status'), ('POST', '/api/admin/finance/setup'), ('POST', '/api/admin/finance/activate'), ('POST', '/api/admin/finance/verify'), ('POST', '/api/admin/finance/lock'), ('POST', '/api/admin/finance/reset'))))
+c, d = acall(B, 'GET', '/api/admin/finance')
+check('finance: locked by default (423) and no numbers leave the server', c == 423 and 'periods' not in d and 'daily' not in d, d)
+c, d = acall(B, 'GET', '/api/admin/finance/status')
+check('finance: status says not configured, not pending, locked', c == 200 and d['configured'] is False and d['pending'] is False and d['unlocked'] is False and d['minutes'] == 10, d)
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': '123456'})
+check('finance: before the Authenticator is set up a code cannot open anything (409 nao_configurado)', c == 409 and d.get('error') == 'nao_configurado', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/activate', {'code': '123456'})
+check('finance: activating without a pending setup answers 410', c == 410 and d.get('error') == 'sem_configuracao_pendente', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/setup', {})
+check('finance: setup asks for the panel password (403)', c == 403 and d.get('error') == 'senha_incorreta', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/setup', {'password': 'testpass-123'})
+sec = d.get('secret', ''); png = base64.b64decode(d['qr'].split(',', 1)[1]) if c == 200 and ',' in d.get('qr', '') else b''
+check('finance: setup gives the secret for manual entry, the otpauth link (tap to open on a phone) and a square QR code image', c == 200 and re.fullmatch(r'[A-Z2-7]{32}', sec) and d['uri'] == f"otpauth://totp/Dad's%20Burger:Financeiro?secret={sec}&issuer=Dad's%20Burger&algorithm=SHA1&digits=6&period=30" and png[:8] == b'\x89PNG\r\n\x1a\n' and png[16:20] == png[20:24] and len(png) > 500, (c, str(d)[:260]))
+c, d = acall(B, 'GET', '/api/admin/finance/status')
+check('finance: status now shows pending', d['pending'] is True and d['configured'] is False)
+c, d = acall(B, 'POST', '/api/admin/finance/activate', {'code': '12345'})
+check('finance: activation with a malformed code is refused and counted (403, 4 tries left)', c == 403 and d.get('error') == 'codigo_incorreto' and d.get('left') == 4, (c, d))
+act_code = totp_py(sec)
+c, d, hd = rcall(B, 'POST', '/api/admin/finance/activate', {'code': act_code}, {'Cookie': COOKIE})
+rec = d.get('recovery', [])
+fin_cookie = [x for x in (hd.get_all('Set-Cookie') or []) if x.startswith('dads_fin=')]
+check('finance: the first right code turns the Authenticator on, opens the finance for 10 minutes (HttpOnly cookie on the finance path) and gives 8 recovery codes', c == 200 and len(rec) == 8 and len(set(rec)) == 8 and all(re.fullmatch(r'[0-9a-f]{4}-[0-9a-f]{4}', x) for x in rec) and d.get('minutes') == 10 and fin_cookie and 'HttpOnly' in fin_cookie[0] and 'Path=/api/admin/finance' in fin_cookie[0] and 'SameSite=Strict' in fin_cookie[0], (c, d, fin_cookie))
+FIN = fin_cookie[0].split(';')[0] if fin_cookie else 'dads_fin=x'
+c, d = call(B, 'GET', '/api/admin/finance/status', None, {'Cookie': COOKIE + '; ' + FIN})
+check('finance: status of an unlocked session says how long it stays open (about 10 minutes, so the panel can show the countdown)', c == 200 and d['unlocked'] is True and 560 < d['expiresInSec'] <= 600, d)
+c, d = acall(B, 'GET', '/api/admin/finance/status')
+check('finance: a locked session reports 0 seconds', d['unlocked'] is False and d['expiresInSec'] == 0, d)
+check('finance: status shows configured with 8 recovery codes left', d['configured'] is True and d['pending'] is False and d['recoveryLeft'] == 8, d)
+sj = open(SITE + '/secrets.json', encoding='utf-8').read()
+check('finance: on disk the Authenticator secret is encrypted and the recovery codes are only hashes (file mode 600)', sec not in sj and not any(r in sj or r.replace('-', '') in sj for r in rec) and '"recovery"' in sj and oct(os.stat(SITE + '/secrets.json').st_mode & 0o777) == '0o600', sj[:160])
+c, d = acall(B, 'POST', '/api/admin/finance/setup', {'password': 'testpass-123'})
+check('finance: once configured, setup answers 409 (the QR is never shown again)', c == 409 and d.get('error') == 'ja_configurado' and 'secret' not in d, (c, d))
+c, d = call(B, 'GET', '/api/admin/finance', None, {'Cookie': COOKIE + '; ' + FIN})
+check('finance: unlocked answers the report (periods, 14 days, methods, units, items, recent, refunds)', c == 200 and set(d) >= {'periods', 'daily', 'byMethod', 'byUnit', 'topItems', 'recent', 'refunds'} and len(d['daily']) == 14, list(d)[:9])
+board = [o for o in acall(B, 'GET', '/api/orders')[1]['orders'] if o.get('paymentConfirmed') and o.get('status') != 'cancelado' and not o.get('refunded')]
+check('finance: the report counts exactly the paid orders that were not cancelled or refunded', d['periods']['all']['orders'] == len(board) and abs(d['periods']['all']['gross'] - round(sum(o['total'] for o in board), 2)) < 0.01, (d['periods']['all'], len(board)))
+check('finance: the report keeps no customer phone, CPF or address (only first name and initial)', all(set(r) == {'orderId', 'at', 'customer', 'total', 'method', 'status'} and not re.search(r'\d', r['customer']) for r in d['recent']), d['recent'][:2])
+c2 = (rcall(B, 'POST', '/api/admin/login', {'password': 'testpass-123'})[2].get('Set-Cookie') or '').split(';')[0]
+check('finance: the unlock cookie does not work on another panel session', call(B, 'GET', '/api/admin/finance', None, {'Cookie': c2 + '; ' + FIN})[0] == 423)
+c, d, hd = rcall(B, 'POST', '/api/admin/finance/lock', {}, {'Cookie': COOKIE})
+check('finance: locking again clears the cookie and the report is locked', c == 200 and any('dads_fin=' in x and 'Max-Age=0' in x for x in (hd.get_all('Set-Cookie') or [])) and acall(B, 'GET', '/api/admin/finance')[0] == 423, hd.get_all('Set-Cookie'))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': act_code})
+check('finance: the code that was just used cannot open it again (replay, 403 codigo_ja_usado)', c == 403 and d.get('error') == 'codigo_ja_usado', (c, d))
+c, d, hd = rcall(B, 'POST', '/api/admin/finance/verify', {'code': totp_py(sec, time.time() + 30)}, {'Cookie': COOKIE})
+check('finance: the next 30-second code from the app opens it again', c == 200 and d.get('how') == 'app' and any(x.startswith('dads_fin=') for x in (hd.get_all('Set-Cookie') or [])), (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': totp_py(sec, time.time() - 600)})
+check('finance: an old code (10 minutes ago) is refused', c == 403 and d.get('error') == 'codigo_incorreto', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': rec[0]})
+check('finance: a recovery code opens it once and says how many are left', c == 200 and d.get('how') == 'recuperacao' and d.get('recoveryLeft') == 7, (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': rec[0]})
+check('finance: the same recovery code does not work twice', c == 403 and d.get('error') == 'codigo_incorreto', (c, d))
+# trocou de celular: desliga com senha + código e liga de novo
+c, d = acall(B, 'POST', '/api/admin/finance/reset', {'password': 'errada', 'code': rec[1]})
+check('finance: turning the Authenticator off needs the panel password', c == 403 and d.get('error') == 'senha_incorreta' and acall(B, 'GET', '/api/admin/finance/status')[1]['configured'] is True, (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/reset', {'password': 'testpass-123', 'code': '000000' if totp_py(sec) != '000000' else '111111'})
+check('finance: ... and a valid code (a wrong one is refused and it stays configured)', c == 403 and d.get('error') == 'codigo_incorreto' and acall(B, 'GET', '/api/admin/finance/status')[1]['configured'] is True, (c, d))
+c, d, hd = rcall(B, 'POST', '/api/admin/finance/reset', {'password': 'testpass-123', 'code': rec[1]}, {'Cookie': COOKIE})
+check('finance: password + a recovery code turns it off: not configured, locked, report locked', c == 200 and acall(B, 'GET', '/api/admin/finance/status')[1]['configured'] is False and acall(B, 'GET', '/api/admin/finance')[0] == 423, (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/setup', {'password': 'testpass-123'})
+sec2 = d.get('secret', '')
+check('finance: setting up again gives a brand new secret', c == 200 and sec2 and sec2 != sec, (c, sec2))
+c, d = acall(B, 'POST', '/api/admin/finance/activate', {'code': totp_py(sec)})
+check('finance: a code from the OLD secret does not activate the new one', c == 403 and d.get('error') == 'codigo_incorreto', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/activate', {'code': totp_py(sec2)})
+rec2 = d.get('recovery', [])
+check('finance: the new secret activates and brings 8 new recovery codes (old ones are gone)', c == 200 and len(rec2) == 8 and not set(rec) & set(rec2), (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': rec[2]})
+check('finance: recovery codes from the old Authenticator do not work any more', c == 403 and d.get('error') == 'codigo_incorreto', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': totp_py(sec2, time.time() + 30)})
+check('finance: a right code clears the count of wrong ones', c == 200, (c, d))
+# 5 códigos errados seguidos travam o Financeiro por 10 minutos (vale para todas as sessões), até para o código certo
+valid_now = {totp_py(sec2, time.time() + k * 30) for k in (-1, 0, 1, 2)}
+bad_codes = [x for x in ('000000', '111111', '222222', '333333', '444444', '555555') if x not in valid_now][:5]
+seq = [acall(B, 'POST', '/api/admin/finance/verify', {'code': x}) for x in bad_codes]
+check('finance: five wrong codes in a row lock it (403 with 4, 3, 2 and 1 tries left, then 429 with the waiting time)', [x[0] for x in seq] == [403, 403, 403, 403, 429] and [x[1].get('left') for x in seq[:4]] == [4, 3, 2, 1] and seq[-1][1].get('error') == 'bloqueado_temporariamente' and 500 < seq[-1][1].get('waitSec', 0) <= 600, seq)
+c, d = call(B, 'POST', '/api/admin/finance/verify', {'code': totp_py(sec2, time.time() + 60)}, {'Cookie': c2})
+check('finance: while locked even the right code is refused (429), from any session', c == 429 and d.get('error') == 'bloqueado_temporariamente', (c, d))
+c, d = acall(B, 'POST', '/api/admin/finance/verify', {'code': rec2[0]})
+check('finance: while locked a recovery code is refused too', c == 429, (c, d))
+check('finance: the report stays locked (423) the whole time', acall(B, 'GET', '/api/admin/finance')[0] == 423)
+# o que o terminal registrou do Financeiro: nunca códigos nem segredos
+c, d = acall(B, 'GET', '/api/admin/events?limit=200')
+fe = [e for e in d['events'] if e['kind'].startswith('finance.')]; fblob = json.dumps(fe)
+check('events: the Authenticator steps are recorded (setup, activated, unlocked, failed, reset, lockout) without any code or secret', {e['kind'] for e in fe} >= {'finance.setup', 'finance.activated', 'finance.unlocked', 'finance.failed', 'finance.reset', 'finance.lockout'} and not any(x in fblob for x in [sec, sec2, *rec, *rec2, act_code]), sorted({e['kind'] for e in fe}))
+# o servidor desliga o Authenticator quando o dono perdeu tudo (RESET_FINANCE_AUTH=1)
+upk = kstart()
+s3 = kcall('POST', '/api/admin/finance/setup', {'password': PW})[1].get('secret', '')
+c, d = kcall('POST', '/api/admin/finance/activate', {'code': totp_py(s3)})
+configured = kcall('GET', '/api/admin/finance/status')[1]['configured']
+stop_node(pk); upk2 = kstart({'RESET_FINANCE_AUTH': '1'})
+check('finance: RESET_FINANCE_AUTH=1 at startup turns the Authenticator off (with a loud warning in the log) so the owner can set it up again', upk and upk2 and configured is True and kcall('GET', '/api/admin/finance/status')[1]['configured'] is False and 'RESET_FINANCE_AUTH' in logtext(portk) and any(e['kind'] == 'finance.reset' for e in kcall('GET', '/api/admin/events?limit=200')[1]['events']), (upk, upk2, configured))
+stop_node(pk)
 
 print(f"\n{sum(res_all)}/{len(res_all)} checks passed")
 sys.exit(0 if all(res_all) else 1)

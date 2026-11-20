@@ -15,6 +15,9 @@ orders.json
 uploads/
 data/
 dados/
+secrets.json
+secrets.key
+events.json
 *.tmp
 
 # testes, rascunhos e ferramentas de desenvolvimento

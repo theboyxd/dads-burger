@@ -19,7 +19,7 @@ while [ "$TEST_PORT_MOCK" = "$TEST_PORT_MAIN" ] || [ "$TEST_PORT_MOCK" = "$TEST_
 export TEST_PORT_MAIN TEST_PORT_NOCRED TEST_PORT_MOCK
 
 mkdir -p "$TMP/site"
-for f in server.js accounts.js index.html admin.html products.json settings.json package.json package-lock.json logo.png; do [ -e "$SITE/$f" ] && cp "$SITE/$f" "$TMP/site/$f"; done
+for f in server.js accounts.js vault.js index.html admin.html products.json settings.json package.json package-lock.json logo.png; do [ -e "$SITE/$f" ] && cp "$SITE/$f" "$TMP/site/$f"; done
 [ -d "$SITE/assets" ] && cp -r "$SITE/assets" "$TMP/site/assets"
 [ -d "$SITE/vendor" ] && cp -r "$SITE/vendor" "$TMP/site/vendor"
 ln -s "$SITE/node_modules" "$TMP/site/node_modules"
@@ -36,7 +36,7 @@ PY
 
 MOCK_PORT=$TEST_PORT_MOCK node "$HERE/mock-mp.mjs" > "$TMP/mock.log" 2>&1 & PIDS+=($!)
 ( cd "$TMP/site" && exec env PORT=$TEST_PORT_MAIN MERCADOPAGO_ACCESS_TOKEN=TESTTOKEN MERCADOPAGO_PUBLIC_KEY=TEST-PUBLIC-KEY MERCADOPAGO_WEBHOOK_SECRET=whsec_test \
-    APP_URL=https://dads.example.test MP_API_BASE=http://127.0.0.1:$TEST_PORT_MOCK GEO_API_BASE=http://127.0.0.1:$TEST_PORT_MOCK/geo ADMIN_PASSWORD=testpass-123 \
+    APP_URL=https://dads.example.test MP_API_BASE=http://127.0.0.1:$TEST_PORT_MOCK GEO_API_BASE=http://127.0.0.1:$TEST_PORT_MOCK/geo ADMIN_PASSWORD=testpass-123 DEMO_MODE=1 \
     SESSION_SECRET=test-session-secret LOGIN_DELAY_MS=5 MP_RECONCILE_MS=800 MP_TIMEOUT_MS=700 node server.js > "$TMP/server-main.log" 2>&1 ) & PIDS+=($!)
 ( cd "$TMP/site" && exec env PORT=$TEST_PORT_NOCRED LOGIN_DELAY_MS=5 node server.js > "$TMP/server-nocred.log" 2>&1 ) & PIDS+=($!)
 

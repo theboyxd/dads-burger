@@ -23,3 +23,8 @@ data/
 # contas de clientes (dados pessoais) e a chave que protege os segredos do 2FA: só no servidor
 accounts.json
 account.key
+
+# chaves do Mercado Pago e da 99 (criptografadas), a chave que as protege e o registro de acontecimentos do painel: só no servidor
+secrets.json
+secrets.key
+events.json

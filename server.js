@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
 import { mountAccounts } from './accounts.js';
+import { createVault } from './vault.js';
 import { MercadoPagoConfig, Payment, Preference, PaymentRefund } from 'mercadopago';
 
 dotenv.config({ quiet: true });
@@ -121,9 +122,17 @@ app.get('/healthz', (req, res) => {
     res.status(503).send('pasta de dados indisponivel');
   }
 });
+// Caminho com segmento "." ou "..", barra invertida ou byte nulo nunca é pedido legítimo. O servidor de arquivos resolve
+// "/assets/../orders.json" para dentro da pasta do programa, o que furaria as listas de nomes abaixo (o nome não bate na lista).
+app.use((req, res, next) => {
+  let d;
+  try { d = decodeURIComponent(req.path); } catch { return res.status(400).end(); }
+  if (!/(^|[\/\\])\.\.?([\/\\]|$)/.test(d) && !d.includes('\\') && !d.includes('\0')) return next();
+  return req.path.startsWith('/api/') ? res.status(404).json({ success: false, error: 'rota_nao_encontrada' }) : res.status(404).end();
+});
 // Pedidos (dados de clientes) e código do servidor não saem como arquivo estático; o site em si, sim.
 // products.json também não: ele guarda os produtos escondidos pelo dono, e o cliente lê o cardápio em /api/menu.
-app.use((req, res, next) => (/^\/(orders\.json|accounts\.json|account\.key|products\.json|server\.js|vite\.config\.ts|package(-lock)?\.json|tsconfig\.json|\.env.*)$/i.test(req.path) ? res.status(404).end() : next()));
+app.use((req, res, next) => (/^\/(orders\.json|accounts\.json|account\.key|secrets\.json|secrets\.key|events\.json|products\.json|server\.js|accounts\.js|vault\.js|vite\.config\.ts|package(-lock)?\.json|tsconfig\.json|\.env.*)$/i.test(req.path) ? res.status(404).end() : next()));
 // Fotos enviadas pelo painel: só os arquivos feitos pelo servidor (nome aleatório, .webp), o navegador não pode tratar
 // nenhum como outro tipo de arquivo, e o nome nunca se repete, então o navegador pode guardar a foto por um ano.
 app.use('/uploads', (req, res, next) => {
@@ -141,7 +150,16 @@ const dataRel = path.relative(__dirname, DATA_DIR);
 if (CUSTOM_DATA_DIR && dataRel && !dataRel.startsWith('..') && !path.isAbsolute(dataRel)) {
   app.use(`/${dataRel.split(path.sep)[0]}`, (req, res) => res.status(404).end());
 }
-app.use(express.static(__dirname));
+// Da pasta do programa só saem estes arquivos: as duas páginas, a logo, as imagens de pagamento e o Leaflet do painel.
+// Todo o resto (código, configurações, testes, notas, arquivos novos que alguém colocar aqui) nunca é servido, mesmo que a
+// lista de nomes bloqueados acima não o conheça. Pedido de arquivo fora da lista (tem extensão) é 404 seco, nunca a página inicial.
+const STATIC_OK = /^\/(index\.html|admin\.html|logo\.png|assets\/.+|vendor\/.+)?$/i;
+const staticFiles = express.static(__dirname);
+app.use((req, res, next) => {
+  if (STATIC_OK.test(req.path)) return staticFiles(req, res, next);
+  if (!req.path.startsWith('/api/') && /\.[a-z0-9]{1,8}$/i.test(req.path)) return res.status(404).end();
+  next();
+});
 
 let ORDERS = {};
 if (fs.existsSync(ORDERS_FILE)) {
@@ -577,6 +595,21 @@ app.post('/api/delivery/validate', async (req, res) => {
 // -------------------------------------------------------------
 const adminPassword = () => (process.env.ADMIN_PASSWORD || '').trim() || 'dads123';
 const SESSION_SECRET = (process.env.SESSION_SECRET || '').trim() || crypto.randomBytes(32).toString('hex'); // sem SESSION_SECRET, quem entrou precisa entrar de novo depois que o servidor reinicia
+
+// Cofre de chaves (Mercado Pago, 99 Empresas), acontecimentos ao vivo e Google Authenticator do Financeiro: vault.js, na pasta de dados.
+const vault = createVault({ DATA_DIR, writeJson });
+const ev = (kind, level, title, detail, extra) => { try { return vault.event(kind, level, title, detail, extra); } catch { return null; } };
+const moneyBR = (n) => `R$ ${(Math.round((Number(n) || 0) * 100) / 100).toFixed(2).replace('.', ',')}`;
+const shortCustomer = (o) => {
+  const w = String((o && o.customer && o.customer.name) || 'Cliente').trim().split(/\s+/);
+  return w.length > 1 ? `${w[0]} ${w[w.length - 1][0]}.` : w[0];
+};
+const payLabel = (o) => {
+  if (!o) return '';
+  if (o.paymentKind === 'pix') return 'Pix';
+  if (o.paymentKind === 'wallet') return 'Saldo Mercado Pago';
+  return /^deb/i.test(String(o.cardBrand || '')) || /d[eé]bito/i.test(String(o.paymentMethod || '')) ? 'Cartão de débito' : 'Cartão de crédito';
+};
 const SESSION_HOURS = 12;
 const COOKIE_NAME = 'dads_admin';
 const signSession = (exp) => `${exp}.${crypto.createHmac('sha256', SESSION_SECRET).update(String(exp)).digest('base64url')}`;
@@ -603,22 +636,34 @@ const setSessionCookie = (req, res, value, seconds) => res.setHeader('Set-Cookie
 
 // Senha errada fica cada vez mais lenta (quanto mais erros seguidos, mais demora a resposta), então adivinhar a senha
 // não compensa. A senha certa nunca espera nem é bloqueada: ninguém consegue trancar o dono para fora.
+// checkAdminPassword vale no login e nas ações que pedem a senha de novo (trocar chave, ligar o Authenticator): 'ok' | 'bad' | 'busy'.
 let loginFails = { n: 0, since: Date.now(), pending: 0 };
-app.post('/api/admin/login', async (req, res) => {
+async function checkAdminPassword(pw) {
   const now = Date.now();
-  const given = crypto.createHash('sha256').update(String((req.body || {}).password || '')).digest();
+  const given = crypto.createHash('sha256').update(String(pw || '')).digest();
   const real = crypto.createHash('sha256').update(adminPassword()).digest();
   if (crypto.timingSafeEqual(given, real)) {
     loginFails = { n: 0, since: now, pending: loginFails.pending };
-    setSessionCookie(req, res, signSession(now + SESSION_HOURS * 3600000), SESSION_HOURS * 3600);
-    return res.json({ success: true });
+    return 'ok';
   }
   if (now - loginFails.since > 600000) loginFails = { n: 0, since: now, pending: loginFails.pending };
-  if (loginFails.pending >= 50) return res.status(429).json({ success: false, error: 'muitas_tentativas' });
+  if (loginFails.pending >= 50) return 'busy';
   loginFails.n += 1;
   loginFails.pending += 1;
   await new Promise((r) => setTimeout(r, Math.min(3000, (Number(process.env.LOGIN_DELAY_MS) || 300) * loginFails.n)));
   loginFails.pending -= 1;
+  return 'bad';
+}
+let lastFailEv = 0;
+app.post('/api/admin/login', async (req, res) => {
+  const r = await checkAdminPassword((req.body || {}).password);
+  if (r === 'ok') {
+    setSessionCookie(req, res, signSession(Date.now() + SESSION_HOURS * 3600000), SESSION_HOURS * 3600);
+    ev('admin.login', 'ok', 'Entrada no painel', 'Senha conferida.');
+    return res.json({ success: true });
+  }
+  if (r === 'busy') return res.status(429).json({ success: false, error: 'muitas_tentativas' });
+  if (Date.now() - lastFailEv > 60000) { lastFailEv = Date.now(); ev('admin.login_failed', 'warn', 'Senha errada ao entrar no painel', 'Se não foi você, troque a senha do painel (ADMIN_PASSWORD).'); }
   res.status(401).json({ success: false, error: 'senha_incorreta' });
 });
 app.post('/api/admin/logout', (req, res) => {
@@ -872,9 +917,11 @@ const envFirst = (...names) => {
   }
   return '';
 };
-const mpToken = () => envFirst('MERCADOPAGO_ACCESS_TOKEN', 'MERCADO_PAGO_ACCESS_TOKEN');
-const mpPublicKey = () => envFirst('MERCADOPAGO_PUBLIC_KEY', 'MERCADO_PAGO_PUBLIC_KEY');
-const mpWebhookSecret = () => envFirst('MERCADOPAGO_WEBHOOK_SECRET', 'MERCADO_PAGO_WEBHOOK_SECRET');
+// Chaves e endereço do site: valem os que o dono conectou no painel (cofre criptografado) e, na falta deles, as variáveis de ambiente
+const mpToken = () => vault.secret('mp.accessToken') || envFirst('MERCADOPAGO_ACCESS_TOKEN', 'MERCADO_PAGO_ACCESS_TOKEN');
+const mpPublicKey = () => vault.secret('mp.publicKey') || envFirst('MERCADOPAGO_PUBLIC_KEY', 'MERCADO_PAGO_PUBLIC_KEY');
+const mpWebhookSecret = () => vault.secret('mp.webhookSecret') || envFirst('MERCADOPAGO_WEBHOOK_SECRET', 'MERCADO_PAGO_WEBHOOK_SECRET');
+const appBase = () => (vault.config('appUrl') || envFirst('APP_URL')).replace(/\/+$/, '');
 // MP_API_BASE e GEO_API_BASE: só para testes locais. Apontam o SDK oficial e a consulta de CEP para APIs de mentira; em produção não existem.
 if (process.env.MP_API_BASE || process.env.GEO_API_BASE) {
   const redirects = [['https://api.mercadopago.com', process.env.MP_API_BASE], ['https://cep.awesomeapi.com.br', process.env.GEO_API_BASE]].filter(([, to]) => to);
@@ -886,7 +933,7 @@ if (process.env.MP_API_BASE || process.env.GEO_API_BASE) {
 }
 // O Mercado Pago só aceita notification_url em https
 const mpNotificationUrl = () => {
-  const base = envFirst('APP_URL').replace(/\/+$/, '');
+  const base = appBase();
   return /^https:\/\//i.test(base) ? `${base}/api/mercadopago/webhook` : '';
 };
 
@@ -1027,6 +1074,9 @@ function totalMismatch(order, priced) {
 function requestCourier(order) {
   if (!order || order.order?.mode !== 'entrega' || order.courier) return;
   order.courier = { provider: '99', status: 'aguardando_integracao', acceptedAt: Date.now() / 1000 };
+  ev('courier.requested', 'warn', `Entrega do pedido ${order.orderId}`, vault.has('nn.apiKey') && vault.has('nn.clientId')
+    ? '99 Empresas: credenciais guardadas, mas a chamada automática do entregador ainda não está ativa. Chame o entregador por lá.'
+    : '99 Empresas ainda não conectada (aba Conexões). Chame o entregador por lá.', { orderId: order.orderId });
   console.log(`Entrega 99: pedido ${order.orderId} aceito pelo restaurante; o motoboy será chamado quando a integração da 99 estiver ligada.`);
 }
 
@@ -1143,6 +1193,7 @@ function markPaid(order, mpPayment) {
   order.isNew = true;
   ORDERS[order.orderId] = order;
   saveOrders();
+  ev('payment.confirmed', 'ok', `Pagamento confirmado · ${order.orderId}`, `${shortCustomer(order)} · ${moneyBR(order.total)} · ${payLabel(order)}. O pedido já está na coluna Novos do quadro.`, { orderId: order.orderId });
 }
 
 // Pergunta ao Mercado Pago, nunca ao navegador: só vira pago o que a API confirma, para o mesmo pedido e valor.
@@ -1265,6 +1316,7 @@ app.post('/api/mercadopago/pix', async (req, res) => {
     expires_at: expires
   });
   saveOrders();
+  ev('order.created', 'info', `Pedido ${oid} aguardando o Pix`, `${shortCustomer(ORDERS[oid])} gerou o QR Code de ${moneyBR(priced.total)}. O pedido só aparece no quadro depois que o Mercado Pago confirmar o pagamento.`, { orderId: oid });
 
   res.json({
     success: true,
@@ -1325,6 +1377,7 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
   }
   const p = r.data;
   if (p.status === 'rejected') {
+    ev('payment.rejected', 'warn', 'Cartão recusado', `${shortCustomer({ customer })} · ${moneyBR(priced.total)} · motivo: ${String(p.status_detail || 'não informado').slice(0, 60)}. Nenhum pedido foi criado.`);
     return res.status(402).json({ success: false, status: 'rejected', reason: String(p.status_detail || '') });
   }
   if (!r.ok || (p.status !== 'approved' && p.status !== 'in_process' && p.status !== 'pending')) {
@@ -1345,6 +1398,7 @@ app.post('/api/mercadopago/card-payment', async (req, res) => {
     installments: Number(p.installments) || installments
   });
   ORDERS[oid] = rec;
+  ev('order.created', 'info', `Pedido ${oid} · ${payLabel(rec).toLowerCase()}`, `${shortCustomer(rec)} · ${moneyBR(priced.total)} · resposta do Mercado Pago: ${p.status === 'approved' ? 'aprovado' : 'em análise'}.`, { orderId: oid });
   if (p.status === 'approved') markPaid(rec, p); else saveOrders();
 
   res.json({
@@ -1391,7 +1445,7 @@ app.post('/api/mercadopago/wallet', async (req, res) => {
     expires_at: mpExpiry(30)
   });
   const parts = nameParts(customer);
-  const back = `${envFirst('APP_URL').replace(/\/+$/, '')}/?pedido=${rec.trackToken}`;
+  const back = `${appBase()}/?pedido=${rec.trackToken}`;
   let items = priced.items.map((it) => ({ id: it.id, title: it.name, quantity: it.q, unit_price: it.price, currency_id: 'BRL' }));
   if (priced.deliveryFee > 0) items.push({ id: 'entrega', title: 'Taxa de entrega', quantity: 1, unit_price: priced.deliveryFee, currency_id: 'BRL' });
   // Com desconto o Mercado Pago recebe um item só, no valor final (preferência não aceita item com preço negativo)
@@ -1420,6 +1474,7 @@ app.post('/api/mercadopago/wallet', async (req, res) => {
   rec.preferenceId = String(r.data.id);
   ORDERS[oid] = rec;
   saveOrders();
+  ev('order.created', 'info', `Pedido ${oid} aguardando pagamento no Mercado Pago`, `${shortCustomer(rec)} foi levado ao Mercado Pago para pagar ${moneyBR(priced.total)} com saldo ou crédito.`, { orderId: oid });
   res.json({ success: true, orderId: oid, initPoint: r.data.init_point, total: priced.total, trackToken: rec.trackToken });
 });
 
@@ -1432,9 +1487,11 @@ async function refundOrder(order) {
   const r = await mpCall(() => new PaymentRefund(mpCfg()).create({ payment_id: order.paymentId, body: {}, requestOptions: { idempotencyKey: `refund-${order.orderId}` } }));
   if (r.ok) {
     Object.assign(order, { refunded: true, refundedAmount: Number(order.total) || 0, mpStatus: 'refunded', refundError: undefined, refundId: String((r.data && r.data.id) || '') });
+    ev('refund.done', 'ok', `Devolução feita · ${order.orderId}`, `${moneyBR(order.total)} voltou para o cliente pelo Mercado Pago.`, { orderId: order.orderId });
   } else {
     order.refundError = String((r.data && r.data.message) || r.error || 'erro').slice(0, 200);
     console.warn(`Devolução do pedido ${order.orderId} falhou:`, r.status, order.refundError);
+    ev('refund.failed', 'error', `Devolução recusada · ${order.orderId}`, 'O Mercado Pago não fez a devolução. Devolva à mão no painel do Mercado Pago.', { orderId: order.orderId });
   }
   ORDERS[order.orderId] = order;
   saveOrders();
@@ -1442,12 +1499,24 @@ async function refundOrder(order) {
 }
 
 // Webhook do Mercado Pago: o corpo não é confiado, só serve para saber qual pagamento consultar
+const evRate = new Map(); // chave -> horas dos últimos registros (o webhook é público: sem limite, qualquer um encheria o terminal)
+const evAllow = (key, max, windowMs) => {
+  const now = Date.now();
+  const a = (evRate.get(key) || []).filter((t) => now - t < windowMs);
+  if (a.length >= max) { evRate.set(key, a); return false; }
+  a.push(now); evRate.set(key, a);
+  return true;
+};
 app.post(['/api/mercadopago/webhook', '/api/webhook'], async (req, res) => {
-  if (!verifyMpSignature(req)) return res.status(401).json({ success: false });
+  if (!verifyMpSignature(req)) {
+    if (evAllow('whbad', 3, 60000)) ev('webhook.rejected', 'warn', 'Aviso recusado: a assinatura não confere', 'Alguém pode ter tentado enviar um aviso falso. Nada foi alterado.');
+    return res.status(401).json({ success: false });
+  }
   const type = String(req.query.type || req.query.topic || (req.body && req.body.type) || '');
   const id = req.query['data.id'] || (req.body && req.body.data && req.body.data.id) || (req.query.topic === 'payment' ? req.query.id : '');
   // Responde logo (o Mercado Pago espera até 22 s e senão reenvia o aviso); a conferência na API segue depois
   res.status(200).json({ success: true });
+  if (id && (!type || type === 'payment') && evAllow('wh', 20, 60000)) ev('webhook.received', 'info', 'Aviso do Mercado Pago recebido', `Pagamento ${String(id).replace(/[^\w-]/g, '').slice(0, 20)}: o servidor confere o status direto na API antes de confiar.`);
   if (id && (!type || type === 'payment')) {
     try { await reconcilePayment(id, { refresh: true }); } catch (e) { /* o laço de conferência tenta de novo */ }
   }
@@ -1466,6 +1535,385 @@ app.post('/api/vr/charges', (req, res) => {
 // Pedido de verdade = pago e confirmado pelo Mercado Pago (a loja não recebe pagamento presencial).
 // Cobrança sem pagamento, recusada, de simulação ou de teste não aparece no quadro (fica só no arquivo).
 const isRealOrder = (o) => Boolean(o && o.paymentConfirmed === true);
+
+// -------------------------------------------------------------
+// PAINEL: início (números do dia), acontecimentos ao vivo, conexões (chaves) e Financeiro com Google Authenticator.
+//   Chaves: as do Mercado Pago e da 99 Empresas são coladas na aba Conexões, ficam criptografadas na pasta de dados
+//   (vault.js) e valem no lugar das variáveis de ambiente. Trocar ou remover uma chave pede a senha do painel de novo
+//   (assim uma sessão esquecida aberta não consegue desviar os pagamentos para outra conta).
+//   Financeiro: abre com o código de 6 dígitos do Google Authenticator (ou um código de recuperação) e fecha sozinho em 10 minutos.
+//   DEMO_MODE=1: demonstração; aceita só a chave de teste que já está conectada (nunca guarda chave de verdade).
+// -------------------------------------------------------------
+const DEMO_MODE = process.env.DEMO_MODE === '1';
+const sha256 = (v) => crypto.createHash('sha256').update(String(v)).digest();
+const FIN_COOKIE = 'dads_fin';
+const FIN_MINUTES = 10;
+const adminTok = (req) => readCookie(req, COOKIE_NAME);
+const finSig = (exp, tok) => crypto.createHmac('sha256', SESSION_SECRET).update(`fin|${exp}|${sha256(tok).toString('base64url')}`).digest('base64url');
+function finExpiry(req) { // quando o Financeiro aberto nesta sessão fecha (em ms), ou 0 se está fechado
+  const [exp, sig] = readCookie(req, FIN_COOKIE).split('.');
+  const tok = adminTok(req);
+  if (!(Number(exp) > Date.now()) || !sig || !tok) return 0;
+  try { return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(finSig(exp, tok))) ? Number(exp) : 0; } catch { return 0; }
+}
+const finUnlocked = (req) => finExpiry(req) > 0;
+const setFinCookie = (req, res, value, seconds) => res.append('Set-Cookie',
+  `${FIN_COOKIE}=${encodeURIComponent(value)}; Path=/api/admin/finance; HttpOnly; SameSite=Strict; Max-Age=${seconds}${isHttps(req) ? '; Secure' : ''}`);
+const openFinance = (req, res) => {
+  const exp = Date.now() + FIN_MINUTES * 60000;
+  setFinCookie(req, res, `${exp}.${finSig(exp, adminTok(req))}`, FIN_MINUTES * 60);
+};
+
+function financeReport() {
+  const BRT = 3 * 3600; // Brasília = UTC-3, sem horário de verão
+  const dayOf = (sec) => new Date((sec - BRT) * 1000).toISOString().slice(0, 10);
+  const nowS = Date.now() / 1000;
+  const ts = (o) => Number(o.paid_at) || Number(o.created_at) || 0;
+  const paid = Object.values(ORDERS).filter(isRealOrder);
+  const days = Array.from({ length: 30 }, (_, i) => dayOf(nowS - (29 - i) * 86400)); // do mais antigo ao de hoje
+  const idx = Object.fromEntries(days.map((d, i) => [d, i]));
+  const live = paid.filter((o) => o.status !== 'cancelado' && !o.refunded);
+  const gone = paid.filter((o) => o.status === 'cancelado' || o.refunded);
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const sum = (arr, f) => r2(arr.reduce((t, o) => t + (Number(f(o)) || 0), 0));
+  const within = (arr, n) => arr.filter((o) => (idx[dayOf(ts(o))] ?? -1) >= 30 - n);
+  const block = (arr) => ({ orders: arr.length, gross: sum(arr, (o) => o.total), avgTicket: arr.length ? r2(sum(arr, (o) => o.total) / arr.length) : 0, deliveryFees: sum(arr, (o) => o.deliveryFee), discounts: sum(arr, (o) => o.discount) });
+  const group = (arr, keyOf) => {
+    const m = new Map();
+    for (const o of arr) { const k = keyOf(o); const g = m.get(k) || { name: k, orders: 0, gross: 0 }; g.orders += 1; g.gross = r2(g.gross + (Number(o.total) || 0)); m.set(k, g); }
+    return [...m.values()].sort((a, b) => b.gross - a.gross);
+  };
+  const methodKey = (m) => { const t = String(m || ''); if (/pix/i.test(t)) return 'Pix'; if (/d[eé]bito/i.test(t)) return 'Cartão de débito'; if (/cart/i.test(t)) return 'Cartão de crédito'; return 'Saldo Mercado Pago'; };
+  const items = new Map();
+  for (const o of live) for (const it of (o.order && o.order.items) || []) {
+    const name = String(it.name || ''); if (!name || name.startsWith('🎁')) continue;
+    const g = items.get(name) || { name, qty: 0, gross: 0 }; g.qty += Number(it.q) || 0; g.gross = r2(g.gross + (Number(it.price) || 0) * (Number(it.q) || 0)); items.set(name, g);
+  }
+  const shortName = (n) => { const w = String((n && n.name) || 'Cliente').trim().split(/\s+/); return w.length > 1 ? `${w[0]} ${w[w.length - 1][0]}.` : w[0]; };
+  return {
+    generatedAt: nowS,
+    periods: { today: block(within(live, 1)), last7: block(within(live, 7)), last30: block(within(live, 30)), all: block(live) },
+    daily: days.slice(-14).map((d) => { const a = live.filter((o) => dayOf(ts(o)) === d); return { day: d, orders: a.length, gross: sum(a, (o) => o.total) }; }),
+    byMethod: group(live, (o) => methodKey(o.paymentMethod)),
+    byUnit: group(live, (o) => o.unitName || o.unitId || 'Loja'),
+    topItems: [...items.values()].sort((a, b) => b.gross - a.gross).slice(0, 6),
+    recent: [...live].sort((a, b) => ts(b) - ts(a)).slice(0, 8).map((o) => ({ orderId: o.orderId, at: ts(o), customer: shortName(o.customer), total: r2(o.total), method: methodKey(o.paymentMethod), status: o.status })),
+    refunds: { orders: gone.length, amount: sum(gone, (o) => o.total) }
+  };
+}
+
+// ---- Conexões: chaves do Mercado Pago e da 99 Empresas ----
+const relaxedKeys = Boolean(process.env.MP_API_BASE); // com o Mercado Pago de mentira (testes) as chaves não têm o formato real
+const MP_FIELDS = {
+  accessToken: { name: 'mp.accessToken', env: ['MERCADOPAGO_ACCESS_TOKEN', 'MERCADO_PAGO_ACCESS_TOKEN'], re: /^(APP_USR|TEST)-[A-Za-z0-9_-]{16,200}$/ },
+  publicKey: { name: 'mp.publicKey', env: ['MERCADOPAGO_PUBLIC_KEY', 'MERCADO_PAGO_PUBLIC_KEY'], re: /^(APP_USR|TEST)-[A-Za-z0-9_-]{16,100}$/ },
+  webhookSecret: { name: 'mp.webhookSecret', env: ['MERCADOPAGO_WEBHOOK_SECRET', 'MERCADO_PAGO_WEBHOOK_SECRET'], re: /^[A-Za-z0-9]{16,128}$/ }
+};
+// 99 Empresas: ainda não existe chamada à API deles neste servidor. Os campos só guardam as credenciais, criptografadas, para
+// quando a integração for ligada (o formato das credenciais da 99 não é público: aqui só se confere tamanho e caracteres).
+const NN_FIELDS = {
+  clientId: { name: 'nn.clientId', re: /^[\w.@:-]{3,120}$/ },
+  apiKey: { name: 'nn.apiKey', re: /^[\w.~+/=:-]{8,300}$/ },
+  storeId: { name: 'nn.storeId', re: /^[\w.@:-]{1,120}$/, optional: true }
+};
+const fieldState = (def) => {
+  if (vault.has(def.name)) return { set: true, source: 'painel', hint: vault.hint(def.name), at: vault.savedAt(def.name) };
+  const v = def.env ? envFirst(...def.env) : '';
+  return v ? { set: true, source: 'ambiente', hint: v.slice(-4), at: 0 } : { set: false, source: null, hint: '', at: 0 };
+};
+
+// Pergunta ao Mercado Pago quem é o dono da chave (GET /users/me): 401/403 = chave recusada; erro de rede = não deu para conferir
+async function mpProbe(token) {
+  try {
+    const r = await fetch('https://api.mercadopago.com/users/me', { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+    if (r.status === 401 || r.status === 403) return { ok: false, rejected: true };
+    if (!r.ok) return { ok: false, unreachable: true };
+    const d = await r.json().catch(() => ({}));
+    return { ok: true, nickname: String(d.nickname || '').slice(0, 60), siteId: String(d.site_id || '').slice(0, 6), test: Array.isArray(d.tags) && d.tags.includes('test_user') };
+  } catch {
+    return { ok: false, unreachable: true };
+  }
+}
+const connState = { mp: null }; // última conferência: { ok: true | false | null, nickname, siteId, test, checkedAt }
+async function refreshMpState() {
+  const token = mpToken();
+  const prev = connState.mp;
+  if (!token) { connState.mp = null; return null; }
+  const r = await mpProbe(token);
+  const at = Date.now() / 1000;
+  connState.mp = r.ok ? { ok: true, nickname: r.nickname, siteId: r.siteId, test: r.test, checkedAt: at }
+    : r.rejected ? { ok: false, checkedAt: at }
+      : { ...(prev || {}), ok: prev ? prev.ok : null, unreachable: true, checkedAt: at };
+  if (prev && prev.ok === true && connState.mp.ok === false) ev('mp.health', 'error', 'O Mercado Pago recusou a chave', 'Os pagamentos online podem falhar. Conecte a chave de novo na aba Conexões.');
+  if (prev && prev.ok === false && connState.mp.ok === true) ev('mp.health', 'ok', 'Mercado Pago voltou a aceitar a chave', 'Os pagamentos online estão normais.');
+  return connState.mp;
+}
+
+function connectionsView(req) {
+  const site = appBase();
+  const host = String((req && req.get('host')) || '').toLowerCase();
+  const nnSaved = Object.values(NN_FIELDS).filter((d) => !d.optional).every((d) => vault.has(d.name));
+  return {
+    success: true,
+    demo: DEMO_MODE,
+    mp: {
+      connected: Boolean(mpToken()),
+      fields: Object.fromEntries(Object.entries(MP_FIELDS).map(([k, d]) => [k, fieldState(d)])),
+      account: connState.mp,
+      wallet: walletReady(),
+      test: Boolean(process.env.MP_API_BASE) || Boolean(connState.mp && connState.mp.test),
+      webhookUrl: mpNotificationUrl(),
+      webhookSigned: Boolean(mpWebhookSecret())
+    },
+    nn: { saved: nnSaved, active: false, fields: Object.fromEntries(Object.entries(NN_FIELDS).map(([k, d]) => [k, fieldState(d)])) },
+    site: {
+      url: site,
+      https: /^https:\/\//i.test(site),
+      source: vault.config('appUrl') ? 'painel' : (envFirst('APP_URL') ? 'ambiente' : null),
+      suggested: req && isHttps(req) && /^[a-z0-9.-]+(:\d{2,5})?$/.test(host) ? `https://${host}` : ''
+    }
+  };
+}
+
+const demoOnlyTest = (res) => res.status(403).json({ success: false, error: 'demo_somente_teste' });
+// Ações que mexem em chave ou no Authenticator pedem a senha do painel de novo. Errar a senha aqui é 403 (não 401: 401 faria o painel dar a sessão por encerrada).
+async function askPassword(req, res) {
+  const r = await checkAdminPassword((req.body || {}).password);
+  if (r === 'ok') return true;
+  res.status(r === 'busy' ? 429 : 403).json({ success: false, error: r === 'busy' ? 'muitas_tentativas' : 'senha_incorreta' });
+  return false;
+}
+const pick = (body, defs) => {
+  const out = {};
+  for (const k of Object.keys(defs)) {
+    const v = String(body[k] === undefined || body[k] === null ? '' : body[k]).trim();
+    if (v) out[k] = v;
+  }
+  return out;
+};
+const badField = (given, defs, relaxed) => Object.keys(given).find((k) => !(relaxed ? /^[A-Za-z0-9_.~+/=:-]{4,300}$/.test(given[k]) : defs[k].re.test(given[k])));
+
+app.get('/api/admin/connections', requireAdmin, (req, res) => res.json(connectionsView(req)));
+
+app.put('/api/admin/connections/mp', requireAdmin, async (req, res) => {
+  const given = pick(req.body || {}, MP_FIELDS);
+  if (!Object.keys(given).length) return res.status(400).json({ success: false, error: 'nada_para_salvar' });
+  const bad = badField(given, MP_FIELDS, relaxedKeys);
+  if (bad) return res.status(400).json({ success: false, error: 'formato_invalido', field: bad });
+  if (!(await askPassword(req, res))) return;
+  // Demonstração: chave de verdade nunca é guardada num servidor temporário; só vale salvar de novo a chave de teste que já está conectada
+  if (DEMO_MODE && Object.entries(given).some(([k, v]) => v !== envFirst(...MP_FIELDS[k].env))) return demoOnlyTest(res);
+  let probe = null;
+  if (given.accessToken) {
+    probe = await mpProbe(given.accessToken);
+    if (probe.rejected) return res.status(400).json({ success: false, error: 'chave_recusada' });
+  }
+  if (!DEMO_MODE) {
+    if (!vault.setSecrets(Object.fromEntries(Object.entries(given).map(([k, v]) => [MP_FIELDS[k].name, v])))) return res.status(500).json({ success: false, error: 'nao_foi_possivel_salvar' });
+    ev('keys.saved', 'ok', 'Chaves do Mercado Pago atualizadas', Object.keys(given).map((k) => ({ accessToken: 'chave de acesso', publicKey: 'chave pública', webhookSecret: 'segredo do webhook' }[k])).join(', ') + '.');
+  }
+  if (probe) connState.mp = probe.ok ? { ok: true, nickname: probe.nickname, siteId: probe.siteId, test: probe.test, checkedAt: Date.now() / 1000 } : { ok: null, unreachable: true, checkedAt: Date.now() / 1000 };
+  res.json({ ...connectionsView(req), ...(probe && probe.unreachable ? { warning: 'nao_foi_possivel_conferir' } : {}) });
+});
+
+app.post('/api/admin/connections/mp/test', requireAdmin, async (req, res) => {
+  if (!mpToken()) return res.status(400).json({ success: false, error: 'sem_chave' });
+  const st = await refreshMpState();
+  ev('keys.tested', st && st.ok ? 'ok' : 'warn', st && st.ok ? 'Teste da conexão com o Mercado Pago: tudo certo' : 'Teste da conexão com o Mercado Pago: não passou', st && st.ok ? 'A chave é aceita e a conta foi encontrada.' : (st && st.ok === false ? 'O Mercado Pago recusou a chave.' : 'Não consegui falar com o Mercado Pago agora.'));
+  res.json({ ...connectionsView(req), result: st });
+});
+
+app.post('/api/admin/connections/mp/disconnect', requireAdmin, async (req, res) => {
+  if (!(await askPassword(req, res))) return;
+  if (DEMO_MODE) return demoOnlyTest(res);
+  vault.removeSecrets(Object.values(MP_FIELDS).map((d) => d.name));
+  await refreshMpState();
+  ev('keys.removed', 'warn', 'Chaves do Mercado Pago removidas do painel', mpToken() ? 'Ainda há chaves do ambiente do servidor em uso.' : 'Os pagamentos online ficam indisponíveis até conectar de novo.');
+  res.json(connectionsView(req));
+});
+
+app.put('/api/admin/connections/nn', requireAdmin, async (req, res) => {
+  const given = pick(req.body || {}, NN_FIELDS);
+  const missing = Object.entries(NN_FIELDS).filter(([k, d]) => !d.optional && !given[k] && !vault.has(d.name)).map(([k]) => k);
+  if (!Object.keys(given).length || missing.length) return res.status(400).json({ success: false, error: 'faltam_campos', fields: missing });
+  const bad = Object.keys(given).find((k) => !NN_FIELDS[k].re.test(given[k]));
+  if (bad) return res.status(400).json({ success: false, error: 'formato_invalido', field: bad });
+  if (!(await askPassword(req, res))) return;
+  if (DEMO_MODE) return demoOnlyTest(res);
+  if (!vault.setSecrets(Object.fromEntries(Object.entries(given).map(([k, v]) => [NN_FIELDS[k].name, v])))) return res.status(500).json({ success: false, error: 'nao_foi_possivel_salvar' });
+  ev('keys.saved', 'info', 'Credenciais da 99 Empresas guardadas', 'A chamada automática do entregador ainda precisa ser ativada.');
+  res.json(connectionsView(req));
+});
+
+app.post('/api/admin/connections/nn/disconnect', requireAdmin, async (req, res) => {
+  if (!(await askPassword(req, res))) return;
+  if (DEMO_MODE) return demoOnlyTest(res);
+  vault.removeSecrets(Object.values(NN_FIELDS).map((d) => d.name));
+  ev('keys.removed', 'warn', 'Credenciais da 99 Empresas removidas', '');
+  res.json(connectionsView(req));
+});
+
+// Endereço público do site (https): para onde o Mercado Pago avisa que o pagamento saiu e para onde o cliente volta
+app.put('/api/admin/connections/site', requireAdmin, async (req, res) => {
+  const url = String((req.body || {}).appUrl || '').trim().replace(/\/+$/, '').toLowerCase();
+  if (url && !/^https:\/\/[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{2,5})?$/.test(url)) return res.status(400).json({ success: false, error: 'formato_invalido', field: 'appUrl' });
+  if (!(await askPassword(req, res))) return;
+  if (DEMO_MODE) return demoOnlyTest(res);
+  if (!vault.setConfig('appUrl', url)) return res.status(500).json({ success: false, error: 'nao_foi_possivel_salvar' });
+  ev('site.url', 'ok', url ? 'Endereço do site atualizado' : 'Endereço do site voltou ao do servidor', url ? 'Os avisos do Mercado Pago passam a usar o novo endereço.' : '');
+  res.json(connectionsView(req));
+});
+
+// Confere sozinho, de tempos em tempos, se o Mercado Pago ainda aceita a chave (e avisa no terminal se deixar de aceitar)
+setTimeout(() => { refreshMpState().catch(() => {}); }, 2500).unref();
+setInterval(() => { refreshMpState().catch(() => {}); }, Number(process.env.MP_PROBE_MS) || 20 * 60 * 1000).unref();
+
+// ---- Estado do sistema: alimenta os selos do painel e o passo a passo "como funciona" ----
+app.get('/api/admin/system', requireAdmin, (req, res) => {
+  const real = Object.values(ORDERS).filter(isRealOrder);
+  const fin = vault.finStatus();
+  res.json({
+    success: true,
+    demo: DEMO_MODE,
+    server: { persistent: CUSTOM_DATA_DIR, https: /^https:\/\//i.test(appBase()), uptimeSec: Math.round(process.uptime()) },
+    menu: { products: PRODUCTS.length, visible: PRODUCTS.filter((p) => !p.hidden).length, paused: PRODUCTS.filter((p) => p.paused).length },
+    orders: { paid: real.length },
+    mp: {
+      keys: Boolean(mpToken()), publicKey: Boolean(mpPublicKey()), webhookSecret: Boolean(mpWebhookSecret()), wallet: walletReady(),
+      mode: process.env.MP_API_BASE ? 'teste' : (mpToken() ? 'chaves' : 'sem_chaves'),
+      account: connState.mp
+    },
+    courier: { provider: '99 Empresas', connected: false, saved: vault.has(NN_FIELDS.apiKey.name) && vault.has(NN_FIELDS.clientId.name) },
+    finance: { configured: fin.configured }
+  });
+});
+
+// ---- Início: números do dia, sem dinheiro (o faturamento só aparece no Financeiro, depois do código) ----
+const payKind = (o) => (o && o.paymentKind === 'pix' ? 'pix' : o && o.paymentKind === 'wallet' ? 'saldo' : 'cartao');
+app.get('/api/admin/dashboard', requireAdmin, (req, res) => {
+  const BRT = 3 * 3600; // Brasília = UTC-3, sem horário de verão
+  const nowS = Date.now() / 1000;
+  const dayOf = (sec) => new Date((sec - BRT) * 1000).toISOString().slice(0, 10);
+  const hourOf = (sec) => new Date((sec - BRT) * 1000).getUTCHours();
+  const ts = (o) => Number(o.paid_at) || Number(o.created_at) || 0;
+  const all = Object.values(ORDERS);
+  const real = all.filter(isRealOrder);
+  const live = real.filter((o) => o.status !== 'cancelado' && !o.refunded);
+  const today = dayOf(nowS);
+  const todays = real.filter((o) => dayOf(ts(o)) === today);
+  const todaysLive = todays.filter((o) => o.status !== 'cancelado' && !o.refunded);
+  const hourly = Array(24).fill(0);
+  for (const o of todaysLive) hourly[hourOf(ts(o))] += 1;
+  const days = Array.from({ length: 7 }, (_, i) => dayOf(nowS - (6 - i) * 86400));
+  const week = days.map((d) => ({ day: d, orders: live.filter((o) => dayOf(ts(o)) === d).length }));
+  const week7 = live.filter((o) => days.includes(dayOf(ts(o))));
+  const channels = { pix: 0, cartao: 0, saldo: 0 };
+  for (const o of week7) channels[payKind(o)] += 1;
+  const items = new Map();
+  for (const o of week7) for (const it of (o.order && o.order.items) || []) {
+    const name = String(it.name || '');
+    if (!name || name.startsWith('🎁')) continue;
+    items.set(name, (items.get(name) || 0) + (Number(it.q) || 0));
+  }
+  const at = (o, s) => { const h = (Array.isArray(o.history) ? o.history : []).find((x) => x.status === s); return h ? Number(h.at) : 0; };
+  const mins = (arr) => (arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length / 60) : null);
+  const ok = (x) => x > 0 && x < 6 * 3600;
+  const accept = todaysLive.map((o) => at(o, 'preparando') - (Number(o.paid_at) || at(o, 'novo'))).filter(ok);
+  const prep = todaysLive.map((o) => (at(o, 'entrega') || at(o, 'concluido')) - at(o, 'preparando')).filter(ok);
+  const open = (s) => real.filter((o) => o.status === s).length;
+  const yesterday = dayOf(nowS - 86400);
+  res.json({
+    success: true,
+    generatedAt: nowS,
+    today: {
+      orders: todaysLive.length,
+      cancelled: todays.length - todaysLive.length,
+      waitingPayment: all.filter((o) => o.paymentConfirmed === false && o.status === 'aguardando_pagamento' && nowS - Number(o.created_at) < 40 * 60).length,
+      avgAcceptMin: mins(accept),
+      avgPrepMin: mins(prep)
+    },
+    open: { novo: open('novo'), preparando: open('preparando'), entrega: open('entrega') },
+    yesterdayOrders: live.filter((o) => dayOf(ts(o)) === yesterday).length,
+    hourly,
+    week,
+    channels,
+    topItems: [...items.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, qty]) => ({ name, qty }))
+  });
+});
+
+// ---- Acontecimentos ao vivo (o terminal): o painel pergunta de poucos em poucos segundos só o que é novo ----
+app.get('/api/admin/events', requireAdmin, (req, res) => {
+  res.json({ success: true, events: vault.events(Number(req.query.after) || 0, Number(req.query.limit) || 80), serverTime: Date.now() / 1000 });
+});
+
+// ---- Financeiro: Google Authenticator ----
+const finFail = (res, r) => {
+  const code = { bloqueado_temporariamente: 429, codigo_incorreto: 403, codigo_ja_usado: 403, sem_configuracao_pendente: 410, nao_configurado: 409, ja_configurado: 409 }[r.error] || 500;
+  res.status(code).json({ success: false, error: r.error, ...(r.left !== undefined ? { left: r.left } : {}), ...(r.waitSec ? { waitSec: r.waitSec } : {}) });
+};
+const finEvents = (r) => {
+  if (r.error === 'codigo_incorreto') ev('finance.failed', 'warn', 'Código errado no Financeiro', r.left ? `Restam ${r.left} tentativas antes de travar por 10 minutos.` : '');
+  if (r.error === 'bloqueado_temporariamente') ev('finance.lockout', 'error', 'Financeiro travado por 10 minutos', 'Houve vários códigos errados seguidos.');
+};
+
+app.get('/api/admin/finance/status', requireAdmin, (req, res) => {
+  const s = vault.finStatus();
+  const open = s.configured && finUnlocked(req);
+  res.json({ success: true, ...s, unlocked: open, minutes: FIN_MINUTES, expiresInSec: open ? Math.max(0, Math.round((finExpiry(req) - Date.now()) / 1000)) : 0 });
+});
+
+// 1) Mostra o QR Code para o dono ler no Google Authenticator (só enquanto o Authenticator ainda não foi ligado)
+app.post('/api/admin/finance/setup', requireAdmin, async (req, res) => {
+  if (vault.finStatus().configured) return res.status(409).json({ success: false, error: 'ja_configurado' });
+  if (!(await askPassword(req, res))) return;
+  const issuer = String((SETTINGS.store && SETTINGS.store.name) || "Dad's Burger").replace(/[:%]/g, '').slice(0, 40) || "Dad's Burger";
+  const r = await vault.finBeginSetup({ issuer, account: 'Financeiro' });
+  if (!r.ok) return finFail(res, r);
+  ev('finance.setup', 'info', 'Configuração do Google Authenticator iniciada', 'Falta o primeiro código do aplicativo para ligar.');
+  res.json({ success: true, secret: r.secret, uri: r.uri, qr: r.qr, minutes: 30 });
+});
+
+// 2) O primeiro código certo liga o Authenticator, abre o Financeiro e entrega os códigos de recuperação (só desta vez)
+app.post('/api/admin/finance/activate', requireAdmin, (req, res) => {
+  const r = vault.finActivate((req.body || {}).code);
+  if (!r.ok) { finEvents(r); return finFail(res, r); }
+  openFinance(req, res);
+  ev('finance.activated', 'ok', 'Google Authenticator ligado', 'O Financeiro agora só abre com o código do aplicativo.');
+  res.json({ success: true, recovery: r.recovery, minutes: FIN_MINUTES });
+});
+
+// 3) Dia a dia: o código de 6 dígitos (ou um código de recuperação) abre o Financeiro por 10 minutos
+app.post('/api/admin/finance/verify', requireAdmin, (req, res) => {
+  const r = vault.finVerify((req.body || {}).code);
+  if (!r.ok) { finEvents(r); return finFail(res, r); }
+  openFinance(req, res);
+  ev('finance.unlocked', 'ok', 'Financeiro aberto', r.how === 'recuperacao' ? `Aberto com um código de recuperação (restam ${r.left}).` : `Aberto com o código do Google Authenticator. Fecha sozinho em ${FIN_MINUTES} minutos.`);
+  res.json({ success: true, minutes: FIN_MINUTES, how: r.how, ...(r.how === 'recuperacao' ? { recoveryLeft: r.left } : {}) });
+});
+
+app.post('/api/admin/finance/lock', requireAdmin, (req, res) => {
+  const was = finUnlocked(req);
+  setFinCookie(req, res, '', 0);
+  if (was) ev('finance.locked', 'info', 'Financeiro fechado', '');
+  res.json({ success: true });
+});
+
+// Trocou de celular? Desliga o Authenticator (senha do painel + um código do app ou de recuperação) e liga de novo no aparelho novo
+app.post('/api/admin/finance/reset', requireAdmin, async (req, res) => {
+  if (!vault.finStatus().configured) return res.status(409).json({ success: false, error: 'nao_configurado' });
+  if (!(await askPassword(req, res))) return;
+  const r = vault.finVerify((req.body || {}).code);
+  if (!r.ok) { finEvents(r); return finFail(res, r); }
+  if (!vault.finReset()) return res.status(500).json({ success: false, error: 'nao_foi_possivel_salvar' });
+  setFinCookie(req, res, '', 0);
+  ev('finance.reset', 'warn', 'Google Authenticator desligado', 'Ligue de novo, com o aplicativo no aparelho novo.');
+  res.json({ success: true });
+});
+
+app.get('/api/admin/finance', requireAdmin, (req, res) => {
+  if (!finUnlocked(req)) return res.status(423).json({ success: false, error: 'bloqueado' });
+  res.json({ success: true, ...financeReport() });
+});
 
 app.get('/api/orders', requireAdmin, (req, res) => {
   if (fs.existsSync(ORDERS_FILE)) {
@@ -1495,6 +1943,14 @@ app.get('/api/orders', requireAdmin, (req, res) => {
   res.json({ success: true, count: list.length, orders: list });
 });
 
+// O que o terminal do painel conta a cada mudança de andamento de um pedido
+const STATUS_EV = {
+  novo: ['info', 'voltou para Novos', ''],
+  preparando: ['info', 'foi aceito', 'A cozinha começou o preparo.'],
+  entrega: ['info', 'saiu para entrega', 'O cliente vê o andamento na página de acompanhamento.'],
+  concluido: ['ok', 'foi entregue', 'Pedido concluído.'],
+  cancelado: ['warn', 'foi cancelado', 'O restaurante cancelou o pedido.']
+};
 app.patch('/api/orders/:id', requireAdmin, async (req, res) => {
   const rawId = decodeURIComponent(req.params.id || '').trim();
   const id = rawId.replace(/^#/, '');
@@ -1529,6 +1985,7 @@ app.patch('/api/orders/:id', requireAdmin, async (req, res) => {
   let updatedOrder = null;
   for (const k of matchingKeys) {
     const wasNew = ORDERS[k].status === 'novo';
+    const prevStatus = ORDERS[k].status;
     ORDERS[k] = {
       ...ORDERS[k],
       ...updates,
@@ -1541,6 +1998,7 @@ app.patch('/api/orders/:id', requireAdmin, async (req, res) => {
       ORDERS[k].history = [...hist, { status: ORDERS[k].status, at: ORDERS[k].updated_at }];
     }
     updatedOrder = ORDERS[k];
+    if (prevStatus !== ORDERS[k].status) { const t = STATUS_EV[ORDERS[k].status]; if (t) ev('order.status', t[0], `Pedido ${ORDERS[k].orderId} ${t[1]}`, t[2], { orderId: ORDERS[k].orderId }); }
     // O restaurante aceitou o pedido (novo -> preparando): só agora o motoboy pode ser chamado
     if (wasNew && updates.status === 'preparando') requestCourier(ORDERS[k]);
   }
@@ -1621,7 +2079,7 @@ accountsApi = mountAccounts(app, {
   getOrders: () => ORDERS,
   saveOrders,
   getSettings: () => { loadSettings(); return SETTINGS; },
-  appUrl: () => envFirst('APP_URL').replace(/\/+$/, '')
+  appUrl: () => appBase()
 });
 
 // Rota de API que não existe: resposta JSON 404, e não a página inicial do site
@@ -1666,7 +2124,16 @@ if (mpToken() && !mpWebhookSecret()) {
   console.warn('Aviso: MERCADOPAGO_WEBHOOK_SECRET não está configurado. Os avisos do webhook ficam sem a assinatura conferida (o status do pagamento continua vindo da API do Mercado Pago).');
 }
 
+// Perdeu o celular e os códigos de recuperação? Ligue o servidor uma vez com RESET_FINANCE_AUTH=1: o Authenticator do Financeiro é desligado
+// e o painel pede para ligar de novo (com a senha do painel). Remova a variável depois, senão ele é desligado a cada reinício.
+if (process.env.RESET_FINANCE_AUTH === '1') {
+  vault.finReset();
+  ev('finance.reset', 'warn', 'Google Authenticator desligado pelo servidor', 'Remova RESET_FINANCE_AUTH do ambiente e ligue o Authenticator de novo no painel.');
+  console.warn('Aviso: RESET_FINANCE_AUTH=1 desligou o Google Authenticator do Financeiro. Remova essa variável e ligue o Authenticator de novo no painel (senão ele é desligado a cada reinício).');
+}
+
 const server = app.listen(PORT, HOST, () => {
+  ev('system.start', 'info', 'Sistema ligado', `${mpToken() ? 'Mercado Pago conectado' : 'Mercado Pago sem chaves'} · ${CUSTOM_DATA_DIR ? 'dados no disco persistente' : 'dados ao lado do programa'}.`);
   console.log(`🍔 Dad's Burger App rodando em http://localhost:${PORT}`);
   console.log(`Pasta de dados: ${DATA_DIR}${CUSTOM_DATA_DIR ? '' : ' (ao lado do server.js)'}`);
   if (EXPOSED) {
@@ -1683,6 +2150,7 @@ server.on('error', (e) => {
 for (const sig of ['SIGTERM', 'SIGINT']) {
   process.on(sig, () => {
     console.log(`Recebi ${sig}: encerrando o servidor.`);
+    vault.flush();
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(0), 5000).unref();
   });

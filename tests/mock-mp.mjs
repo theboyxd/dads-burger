@@ -42,6 +42,12 @@ http.createServer((req, res) => {
       return g ? json(res, 200, { cep, address: 'Rua Teste', district: 'Bairro Teste', city: 'Porto Alegre', state: 'RS', ...g }) : json(res, 404, { code: 'not_found', message: 'CEP nao encontrado' });
     }
     const auth = req.headers.authorization;
+    // Dono da chave (o servidor confere a chave colada no painel): TESTTOKEN e TESTKEY-... valem; qualquer outra é recusada (401)
+    if (req.method === 'GET' && url.pathname === '/users/me') {
+      const t = String(auth || '').replace(/^Bearer\s+/i, '');
+      log.push({ me: t.slice(-4) });
+      return /^(TESTTOKEN|TESTKEY-[A-Za-z0-9_-]{6,})$/.test(t) ? json(res, 200, { id: 424242, nickname: 'LOJA_TESTE', site_id: 'MLB', tags: ['test_user'] }) : json(res, 401, { message: 'invalid access token', status: 401 });
+    }
     if (req.method === 'POST' && url.pathname === '/v1/payments') {
       const key = req.headers['x-idempotency-key'];
       log.push({ auth, idem: key, device: req.headers['x-meli-session-id'] || null, product: req.headers['x-product-id'] || null, tracking: req.headers['x-tracking-id'] || null, ua: req.headers['user-agent'] || null, body });
