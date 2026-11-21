@@ -5637,13 +5637,15 @@ input[type=checkbox],input[type=radio]{accent-color:var(--ink)}
     // Etiqueta de estado de cada forma de pagamento: Ativo, Desligado ou o que falta para ligar
     renderBadges() {
       const pay = this.settings.payments || DEFAULT_SETTINGS.payments;
+      const mpConnected = window.Conn?.d ? Boolean(window.Conn.d.mp?.connected) : null;
       for (const [key, p] of Object.entries(pay)) {
         const el = document.getElementById(`pmBadge_${key}`);
         if (!el) continue;
-        const locked = 'connected' in p && !p.connected;
+        const isMp = ['pix_online', 'cartao_online', 'cartao_debito_online', 'mercadopago_saldo'].includes(key);
+        const locked = ('connected' in p && !p.connected) || (isMp && mpConnected === false);
         const chk = document.getElementById(`chkPay_${key}`);
         let txt, cls;
-        if (locked) { txt = key === 'vr_online' ? 'Provedor não ligado' : 'Aguardando chaves'; cls = 'warn'; }
+        if (locked) { txt = 'Aguardando conexão'; cls = 'warn'; }
         else if (chk && chk.checked) { txt = 'Ativo'; cls = 'ok'; }
         else { txt = 'Desligado'; cls = 'off'; }
         el.textContent = txt;
@@ -7005,7 +7007,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--ink)}
       const d = this.d;
       if (!d) { txt.textContent = 'verificando a conexão…'; bar.className = 'pro-status'; return; }
       const mp = d.mp; const bad = mp.account && mp.account.ok === false;
-      txt.textContent = bad ? 'o Mercado Pago recusou a chave' : mp.connected ? (mp.test ? 'conectado, em modo de teste' : 'conectado') : 'aguardando as chaves de produção';
+      txt.textContent = bad ? 'o Mercado Pago recusou a chave' : mp.connected ? (mp.test ? 'conectado, em modo de teste' : 'conectado') : 'aguardando conexão';
       bar.className = 'pro-status ' + (mp.connected && !bad ? 'ok' : 'warn');
     },
     dot(conn, sys) {
@@ -7025,7 +7027,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--ink)}
       out.push(ok('cardápio', `${s.menu.visible} itens visíveis` + (s.menu.paused ? `, ${s.menu.paused} esgotado${s.menu.paused > 1 ? 's' : ''}` : '')));
       out.push(ok('pedidos e acompanhamento ao vivo', 'prontos'), ok('contas de cliente e raspadinha', 'prontas'));
       out.push(this.fin && this.fin.configured ? ok('financeiro com Google Authenticator', 'protegido') : ['t-wait', '○ ' + 'financeiro com Google Authenticator '.padEnd(pad, '.') + ' falta ligar']);
-      out.push(mpOk ? ok('Pix, cartão e saldo Mercado Pago', d.mp.test ? 'conectado (modo de teste)' : 'conectado') : ['t-wait', '○ ' + 'Pix, cartão e saldo Mercado Pago '.padEnd(pad, '.') + ' aguardando chaves']);
+      out.push(mpOk ? ok('Pix, cartão e saldo Mercado Pago', d.mp.test ? 'conectado (modo de teste)' : 'conectado') : ['t-wait', '○ ' + 'Pix, cartão e saldo Mercado Pago '.padEnd(pad, '.') + ' aguardando conexão']);
       out.push(ok('entrega: momento do chamado', 'ao aceitar o pedido'));
       out.push(['t-dim', ''], ['t-cmd', '$ dads-burger proximos-passos']);
       const todo = [];
